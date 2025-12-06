@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="250" viewBox="0 0 300 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GAUGE BODY -->
+  <g id="gauge-body" transform="translate(150, 180)">
+
+    <!-- Outer ring/casing -->
+    <circle cx="0" cy="0" r="110" fill="#34495E" stroke="#1E3A5F" stroke-width="3"/>
+
+    <!-- Inner bezel -->
+    <circle cx="0" cy="0" r="100" fill="#1A252F" stroke="#0F1419" stroke-width="1"/>
+
+    <!-- Glass face -->
+    <circle cx="0" cy="0" r="95" fill="#F8F9FA" stroke="#ADB5BD" stroke-width="1"/>
+
+    <!-- Dial background -->
+    <circle cx="0" cy="0" r="85" fill="#E8E8E8"/>
+
+    <!-- SCALE MARKERS - MAJOR (every 10 units) -->
+    <line x1="0" y1="-65" x2="0" y2="-75" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="33" y1="-57" x2="38" y2="-62" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="57" y1="-33" x2="62" y2="-38" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="65" y1="0" x2="75" y2="0" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="57" y1="33" x2="62" y2="38" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="33" y1="57" x2="38" y2="62" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="0" y1="65" x2="0" y2="75" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="-33" y1="57" x2="-38" y2="62" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="-57" y1="33" x2="-62" y2="38" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="-65" y1="0" x2="-75" y2="0" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="-57" y1="-33" x2="-62" y2="-38" stroke="#2C3E50" stroke-width="3"/>
+    <line x1="-33" y1="-57" x2="-38" y2="-62" stroke="#2C3E50" stroke-width="3"/>
+
+    <!-- SCALE VALUES (0, 20, 40, 60, 80, 100) -->
+    <text x="0" y="-80" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">0</text>
+    <text x="45" y="-70" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">20</text>
+    <text x="78" y="-8" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">40</text>
+    <text x="45" y="72" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">60</text>
+    <text x="0" y="85" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">80</text>
+    <text x="-45" y="72" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">100</text>
+
+    <!-- NEEDLE - WAKTU PRODUCTION INI ROTATE BERDASARKAN PRESSURE -->
+    <g id="needle" transform="rotate(45)">  <!-- 45° = ~50% scale -->
+      <line x1="0" y1="0" x2="0" y2="-70" stroke="#E74C3C" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="0" cy="-70" r="3" fill="#E74C3C"/>
+      <circle cx="0" cy="0" r="6" fill="#E74C3C"/>
+      <circle cx="0" cy="0" r="4" fill="#2C3E50"/>
+    </g>
+
+    <!-- SCALE ARC - COLOR ZONES -->
+    <!-- Green zone (0-40) -->
+    <path d="M 50,-75 A 75,75 0 0,1 -50,-75" fill="none" stroke="#27AE60" stroke-width="6" opacity="0.4"/>
+    <!-- Yellow zone (40-60) -->
+    <path d="M -50,-75 A 75,75 0 0,1 -75,0" fill="none" stroke="#F39C12" stroke-width="6" opacity="0.4"/>
+    <!-- Red zone (60-100) -->
+    <path d="M -75,0 A 75,75 0 0,1 -50,75 A 75,75 0 0,1 50,75 A 75,75 0 0,1 75,0" fill="none" stroke="#E74C3C" stroke-width="6" opacity="0.4"/>
+    <path d="M 75,0 A 75,75 0 0,1 50,-75" fill="none" stroke="#E74C3C" stroke-width="6" opacity="0.4"/>
+
+    <!-- DIGITAL DISPLAY WINDOW -->
+    <rect x="-25" y="-15" width="50" height="20" fill="#1A252F" stroke="#343A40" stroke-width="1" rx="3"/>
+    <text x="0" y="-2" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#00FF41">50 PSI</text>
+
+    <!-- UNITS LABEL -->
+    <text x="0" y="-120" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#2C3E50">PRESSURE</text>
+
+    <!-- STATUS INDICATOR LIGHT -->
+    <circle cx="60" cy="-40" r="6" fill="#27AE60" stroke="#1A252F" stroke-width="1"/>
+    <text x="75" y="-35" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#2C3E50">OK</text>
+
+  </g>
+
+</svg>

@@ -1,0 +1,36 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ===== GROUP UTAMA MOTOR ===== -->
+  <g id="motor">
+
+    <!-- BODY MOTOR -->
+    <g id="motor-body">
+      <rect x="93.5" y="141.5" width="205.7" height="116" fill="#D9D9D9" stroke="black"/>
+      <rect x="93.5" y="141.5" width="46" height="116" fill="#D9D9D9" stroke="black"/>
+      <rect x="139.5" y="141.5" width="160" height="91" fill="#D9D9D9" stroke="black"/>
+      
+      <!-- Detail horizontal lines -->
+      <rect x="148.1" y="149.3" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+      <rect x="148.1" y="159.05" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+      <rect x="148.1" y="168.8" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+      <rect x="148.1" y="178.55" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+      <rect x="148.1" y="188.3" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+      <rect x="148.1" y="198.05" width="127.7" height="4.85" fill="#888888" stroke="black"/>
+    </g>
+
+    <!-- ROTOR / PULLEY -->
+    <g id="motor-rotor">
+      <rect x="298.25" y="166.85" width="8.75" height="34.1" fill="#D9D9D9" stroke="black"/>
+      <rect x="307.5" y="181.95" width="11.7" height="5.85" fill="black"/>
+      <circle cx="281.175" cy="218.025" r="12.175" fill="#898686" stroke="black"/>
+      <line x1="280.7" y1="207.3" x2="280.7" y2="220.95" stroke="black"/>
+    </g>
+
+    <!-- INDICATOR (Lampu Status) -->
+    <g id="motor-indicator">
+      <rect x="103" y="149" width="29" height="29" rx="4" fill="#FF0000"/>
+    </g>
+
+  </g>
+
+</svg>

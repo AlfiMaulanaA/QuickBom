@@ -1,0 +1,530 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  // Note: For production with Supabase, the DATABASE_URL will be automatically
+  // switched to SUPABASE_DATABASE_URL by our database utility
+  // DIRECT_URL is used for migrations and schema operations
+}
+
+// ENUMS FOR USER SYSTEM
+// ====================
+
+enum UserRole {
+  SUPER_ADMIN    // Full system access
+  ADMIN         // Company admin access
+  PROJECT_MANAGER // Project management access
+  SITE_MANAGER   // Construction site management
+  FOREMAN       // Team lead/supervisor
+  WORKER        // Basic construction worker
+  CLIENT        // Client access (limited)
+  ACCOUNTANT    // Financial access
+  ESTIMATOR     // Cost estimation access
+  ENGINEER      // Engineering design and technical access
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+// User model untuk authentication dengan roles
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  password      String
+  name          String?
+  role          UserRole   @default(WORKER)
+  status        UserStatus @default(PENDING_VERIFICATION)
+
+  // Personal Information
+  phone         String?
+  avatar        String?
+  dateOfBirth   DateTime?
+  address       String?
+
+  // Employment Information
+  employeeId    String?    @unique // Company employee ID
+  department    String?
+  position      String?
+  hireDate      DateTime?
+  salary        Decimal?   // Monthly salary
+
+  // System Information
+  lastLogin     DateTime?
+  isEmailVerified Boolean  @default(false)
+  emailVerificationToken String?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+
+  // Relations
+  createdProjects Project[] // Projects created by this user
+  assignedTasks   ProjectTask[] // Tasks assigned to this user (many-to-many)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([employeeId])
+}
+
+// ENUMS FOR CLIENT SYSTEM
+// ======================
+
+enum ClientType {
+  INDIVIDUAL      // Personal client
+  COMPANY        // Business entity
+  GOVERNMENT     // Government agency
+  CONTRACTOR     // Sub-contractor
+  PARTNERSHIP    // Business partnership
+  NON_PROFIT     // Non-profit organization
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+  PENDING_APPROVAL
+  UNDER_REVIEW
+}
+
+enum ClientCategory {
+  RESIDENTIAL    // Individual home owners
+  COMMERCIAL    // Office buildings, malls, etc.
+  INDUSTRIAL    // Factories, warehouses
+  INSTITUTIONAL // Schools, hospitals, government
+  INFRASTRUCTURE // Roads, bridges, utilities
+  RENOVATION    // Renovation projects
+  LAND_DEVELOPMENT // Land development projects
+}
+
+// COMPREHENSIVE CLIENT MODEL
+// ==========================
+model Client {
+  id                String       @id @default(cuid())
+
+  // Basic Information
+  clientType        ClientType   @default(INDIVIDUAL)
+  category          ClientCategory @default(RESIDENTIAL)
+  status            ClientStatus @default(ACTIVE)
+
+  // Company Information (for company clients)
+  companyName       String?
+  companyType       String?      // PT, CV, UD, etc.
+  businessLicense   String?      // NPWP, SIUP, TDP
+  taxId             String?      // NPWP number
+  companyEmail      String?
+  companyPhone      String?
+  website           String?
+
+  // Representative Information
+  contactPerson     String       // Primary contact person
+  contactTitle      String?      // Job title/position
+  contactEmail      String
+  contactPhone      String
+  contactPhone2     String?      // Secondary phone
+
+  // Address Information
+  address           String
+  city              String
+  province          String
+  postalCode        String?
+  country           String       @default("Indonesia")
+
+  // Business Information
+  industry          String?      // Construction, Real Estate, etc.
+  companySize       String?      // Small, Medium, Large
+  annualRevenue     Decimal?     // Annual revenue in IDR
+  creditLimit       Decimal?     // Credit limit for projects
+  paymentTerms      String?      // "30 days", "Net 15", etc.
+
+  // Project History
+  totalProjects     Int          @default(0)
+  activeProjects    Int          @default(0)
+  completedProjects Int          @default(0)
+  totalContractValue Decimal     @default(0)
+
+  // Financial Information
+  outstandingBalance Decimal     @default(0)
+  lastPaymentDate   DateTime?
+  paymentHistory    Json?        // Payment history records
+
+  // Preferences & Notes
+  preferences       Json?        // Client preferences (communication, etc.)
+  specialNotes      String?      // Important notes about client
+  contractTerms     String?      // Standard contract terms
+
+  // System Information
+  source            String?      // How client was acquired
+  referralSource    String?      // Who referred this client
+  marketingConsent  Boolean      @default(false)
+  dataConsent       Boolean      @default(false)
+
+  // Relations
+  projects          Project[]    // Projects associated with this client
+
+  // Audit Fields
+  createdBy         String?      // User ID who created this record
+  updatedBy         String?      // User ID who last updated
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Indexes for performance
+  @@index([companyName])
+  @@index([contactEmail])
+  @@index([contactPhone])
+  @@index([status])
+  @@index([category])
+  @@index([clientType])
+  @@index([city])
+  @@index([province])
+}
+
+// LEVEL 1: ITEM / MATERIAL
+// Ini adalah bahan baku mentah atau upah dasar
+model Material {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @unique // Nama material harus unik
+  partNumber           String?  // Nomor part dari manufacturer
+  manufacturer         String?  // Nama manufacturer/pemasok
+  unit                 String   // Contoh: "kg", "pcs", "jam", "sak"
+  price                Decimal  @default(0) // Harga satuan dasar
+
+  // Field tambahan untuk enhanced material management
+  purchaseUrl          String?  // Link untuk pembelian online
+  datasheetFile        String?  // Path file datasheet yang diupload
+
+  // Relasi: Material ini dipakai di Assembly apa saja?
+  assemblies           AssemblyMaterial[]
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// LEVEL 2: GROUP / ASSEMBLY
+// Contoh: "Pemasangan Dinding Bata Merah per m2"
+model Assembly {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Nama assembly harus unik
+  description String?
+
+  // Relasi ke bawah: Assembly ini butuh Material apa saja?
+  materials   AssemblyMaterial[]
+
+  // Relasi ke atas: Assembly ini dipakai di Template apa saja?
+  templates   TemplateAssembly[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// TABEL PENGHUBUNG (LEVEL 1 ke 2)
+// Menyimpan "Resep": Berapa banyak Material X untuk bikin 1 Assembly Y
+model AssemblyMaterial {
+  assemblyId Int
+  materialId Int
+
+  // KOEFISIEN PENTING
+  // Contoh: Untuk 1m2 dinding, butuh 70 buah bata (quantity = 70)
+  quantity   Decimal
+
+  assembly   Assembly @relation(fields: [assemblyId], references: [id])
+  material   Material @relation(fields: [materialId], references: [id])
+
+  @@id([assemblyId, materialId]) // Composite Key
+}
+
+// LEVEL 3: SET / TEMPLATE
+// Contoh: "Paket Renovasi Kamar Mandi A"
+model Template {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Nama template harus unik
+  description String?
+
+  // Relasi ke bawah: Template ini butuh Assembly apa saja?
+  assemblies  TemplateAssembly[]
+
+  // Jika user memilih template ini untuk dibuat jadi real project
+  projects    Project[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// TABEL PENGHUBUNG (LEVEL 2 ke 3)
+// Menyimpan komposisi: Berapa luas/banyak Assembly Y di Template Z
+model TemplateAssembly {
+  templateId Int
+  assemblyId Int
+
+  // VOLUME PEKERJAAN
+  // Contoh: Di template Kamar Mandi, butuh Dinding seluas 12m2 (quantity = 12)
+  quantity   Decimal
+
+  template   Template @relation(fields: [templateId], references: [id])
+  assembly   Assembly @relation(fields: [assemblyId], references: [id])
+
+  @@id([templateId, assemblyId])
+}
+
+// PROJECT MODEL - HASIL AKHIR (PROJECT NYATA)
+// Ketika user sudah "Pilih-Pilih" dan klik SAVE, data masuk sini
+model Project {
+  id         Int      @id @default(autoincrement())
+  name       String
+  description String?
+
+  // Client relationship
+  clientId   String?
+  client     Client?  @relation(fields: [clientId], references: [id])
+
+  // Project details
+  projectType String? // Residential, Commercial, Infrastructure, etc.
+  location    String? // Project location address
+  area        Decimal? // Project area in m²
+  budget      Decimal? // Approved budget
+  totalPrice  Decimal  @default(0) // Calculated total from assemblies
+
+  // Project timeline
+  startDate   DateTime?
+  endDate     DateTime?
+  actualStart DateTime?
+  actualEnd   DateTime?
+
+  // Status and progress
+  status      ProjectStatus @default(PLANNING)
+  progress    Decimal @default(0) // 0-100 percentage
+  priority    ProjectPriority @default(MEDIUM)
+
+  // File uploads
+  schematicDocs   String?  // Path/URL for schematic documents
+  qualityCheckDocs String? // Path/URL for quality check documents
+
+  // Mengambil referensi dari Template mana (opsional)
+  fromTemplateId Int?
+  template       Template? @relation(fields: [fromTemplateId], references: [id])
+
+  // User relationships
+  createdBy   String
+  creator     User     @relation(fields: [createdBy], references: [id])
+  assignedUsers String[] // Array of user IDs assigned to project
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Timeline integration
+  timeline    ProjectTimeline?
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([startDate, endDate])
+}
+
+// PROJECT TIMELINE PLANNING MANAGEMENT SYSTEM
+// =============================================
+
+// 1. PROJECT TIMELINE - Main timeline container
+model ProjectTimeline {
+  id            String   @id @default(cuid())
+  projectId     Int
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Timeline settings
+  startDate     DateTime
+  endDate       DateTime?
+  duration      Int?     // Calculated duration in days
+  workingDays   Json?    // Working days configuration (Mon-Fri, etc.)
+  holidays      Json?    // Holiday dates
+
+  // Progress tracking
+  progress      Decimal  @default(0)  // 0-100 percentage
+  status        TimelineStatus @default(PLANNING)
+
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  milestones    ProjectMilestone[]
+  tasks         ProjectTask[]
+
+  @@index([projectId])
+  @@unique([projectId]) // One timeline per project
+}
+
+// 2. PROJECT MILESTONES - Key project milestones
+model ProjectMilestone {
+  id            String   @id @default(cuid())
+  timelineId    String
+  timeline      ProjectTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  dueDate       DateTime
+  actualDate    DateTime?
+
+  // Status and progress
+  status        MilestoneStatus @default(PENDING)
+  progress      Decimal @default(0)  // 0-100 percentage
+
+  // Dependencies
+  dependsOn     String?  // Milestone ID this depends on
+
+  // Relations
+  tasks         ProjectTask[]
+
+  @@index([timelineId])
+  @@index([dueDate])
+}
+
+// 3. PROJECT TASKS - Individual tasks within timeline
+model ProjectTask {
+  id            String   @id @default(cuid())
+  timelineId    String
+  timeline      ProjectTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+
+  milestoneId   String?
+  milestone     ProjectMilestone? @relation(fields: [milestoneId], references: [id])
+
+  name          String
+  description   String?
+  taskType      TaskType @default(CONSTRUCTION)
+
+  // Time management
+  plannedStart  DateTime
+  plannedEnd    DateTime
+  actualStart   DateTime?
+  actualEnd     DateTime?
+
+  // Duration and effort
+  duration      Int      // In days
+  effortHours   Decimal? // Estimated hours
+  actualHours   Decimal? // Actual hours worked
+
+  // Progress and status
+  progress      Decimal  @default(0)  // 0-100 percentage
+  status        TaskStatus @default(NOT_STARTED)
+  priority      TaskPriority @default(MEDIUM)
+
+  // Resource allocation (JSON for flexibility)
+  assignedUsersJson Json?    // Array of user IDs (for backward compatibility)
+  resources     Json?    // Required materials/equipment
+
+  // Cost tracking
+  estimatedCost Decimal? // From assembly materials
+  actualCost    Decimal? // Real costs incurred
+
+  // Relations
+  assignedUsers User[] // Many-to-many with User (implicit)
+  dependencies  TaskDependency[] @relation("TaskDependencies")
+  dependents    TaskDependency[] @relation("DependentTasks")
+
+  @@index([timelineId])
+  @@index([milestoneId])
+  @@index([plannedStart, plannedEnd])
+  @@index([status])
+}
+
+// 4. TASK DEPENDENCIES - Relationships between tasks
+model TaskDependency {
+  id            String   @id @default(cuid())
+
+  // The task that depends on another
+  taskId        String
+  task          ProjectTask @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+
+  // The task being depended upon
+  dependsOnTaskId String
+  dependsOnTask   ProjectTask @relation("DependentTasks", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  // Dependency type
+  dependencyType DependencyType @default(FS)  // Finish to Start
+
+  // Lag time (in days)
+  lagDays       Int @default(0)
+
+  @@unique([taskId, dependsOnTaskId])
+}
+
+// ENUMS FOR TIMELINE SYSTEM
+// =========================
+
+enum TimelineStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum TaskType {
+  PLANNING
+  MATERIAL_PROCUREMENT
+  SITE_PREPARATION
+  CONSTRUCTION
+  QUALITY_CHECK
+  DOCUMENTATION
+  CLIENT_APPROVAL
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  DELAYED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DependencyType {
+  FS  // Finish to Start
+  SS  // Start to Start
+  FF  // Finish to Finish
+  SF  // Start to Finish
+}
+
+// PROJECT MANAGEMENT ENUMS
+// ========================
+
+enum ProjectStatus {
+  PLANNING
+  APPROVED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  DELAYED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

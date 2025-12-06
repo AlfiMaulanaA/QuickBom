@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GEAR BOX HOUSING -->
+  <g transform="translate(100, 90)">
+    
+    <!-- Main housing -->
+    <rect x="-60" y="-40" width="120" height="80" fill="#666" stroke="#333" stroke-width="2"/>
+    
+    <!-- Top cover -->
+    <rect x="-55" y="-45" width="110" height="10" fill="#888" stroke="#666" stroke-width="1"/>
+    
+    <!-- Mounting flanges -->
+    <rect x="-70" y="-35" width="10" height="20" fill="#555" stroke="#333" stroke-width="1"/>
+    <rect x="-70" y="15" width="10" height="20" fill="#555" stroke="#333" stroke-width="1"/>
+    <rect x="60" y="-35" width="10" height="20" fill="#555" stroke="#333" stroke-width="1"/>
+    <rect x="60" y="15" width="10" height="20" fill="#555" stroke="#333" stroke-width="1"/>
+    
+    <!-- Mounting holes -->
+    <circle cx="-65" cy="-25" r="2" fill="#333"/>
+    <circle cx="-65" cy="25" r="2" fill="#333"/>
+    <circle cx="65" cy="-25" r="2" fill="#333"/>
+    <circle cx="65" cy="25" r="2" fill="#333"/>
+    
+  </g>
+
+  <!-- GEARS INSIDE -->
+  <g transform="translate(100, 90)">
+    
+    <!-- Large drive gear (input) -->
+    <circle cx="-25" cy="0" r="22" fill="#333" stroke="#666" stroke-width="2"/>
+    <circle cx="-25" cy="0" r="15" fill="#555"/>
+    
+    <!-- Gear teeth (drive) -->
+    <polygon points="-46,-3 -42,-8 -38,-3" fill="#888"/>
+    <polygon points="-47,0 -42,-3 -38,4" fill="#888"/>
+    <polygon points="-47,3 -42,8 -38,3" fill="#888"/>
+    <polygon points="-46,6 -42,9 -38,12" fill="#888"/>
+    <polygon points="-43,9 -38,12 -35,6" fill="#888"/>
+    <polygon points="-40,12 -35,9 -32,12" fill="#888"/>
+    <polygon points="-37,9 -32,12 -29,6" fill="#888"/>
+    <polygon points="-36,6 -29,3 -25,6" fill="#888"/>
+    <polygon points="-35,3 -29,-3 -25,0" fill="#888"/>
+    <polygon points="-36,-3 -29,-8 -25,-6" fill="#888"/>
+    <polygon points="-40,-12 -35,-9 -32,-12" fill="#888"/>
+    <polygon points="-43,-9 -38,-12 -35,-6" fill="#888"/>
+    <polygon points="-46,-6 -42,-9 -38,-12" fill="#888"/>
+    <polygon points="-47,-3 -42,0 -46,0" fill="#888"/>
+    <polygon points="-47,-6 -42,-3 -46,-3" fill="#888"/>
+    <polygon points="-47,6 -42,3 -46,3" fill="#888"/>
+    
+    <!-- Small driven gear (output) -->
+    <circle cx="25" cy="0" r="15" fill="#333" stroke="#666" stroke-width="2"/>
+    <circle cx="25" cy="0" r="8" fill="#555"/>
+    
+    <!-- Gear teeth (driven) -->
+    <polygon points="40,-5 38,-9 42,-5" fill="#888"/>
+    <polygon points="41,-2 38,-5 42,0" fill="#888"/>
+    <polygon points="41,2 38,5 42,2" fill="#888"/>
+    <polygon points="40,5 38,9 42,5" fill="#888"/>
+    <polygon points="37,7 34,9 38,5" fill="#888"/>
+    <polygon points="34,9 31,7 35,5" fill="#888"/>
+    <polygon points="31,5 28,9 32,7" fill="#888"/>
+    <polygon points="29,2 26,5 30,2" fill="#888"/>
+    <polygon points="28,-2 26,-5 30,-2" fill="#888"/>
+    <polygon points="29,-5 26,-9 30,-5" fill="#888"/>
+    <polygon points="31,-7 28,-9 32,-5" fill="#888"/>
+    <polygon points="34,-9 31,-7 35,-5" fill="#888"/>
+    <polygon points="37,-7 34,-9 38,-5" fill="#888"/>
+    <polygon points="40,-2 38,0 41,-2" fill="#888"/>
+    <polygon points="40,5 38,2 41,2" fill="#888"/>
+    <polygon points="40,-5 38,-2 41,-2" fill="#888"/>
+    
+    <!-- Gear center holes -->
+    <circle cx="-25" cy="0" r="3" fill="#666"/>
+    <circle cx="25" cy="0" r="3" fill="#666"/>
+    
+  </g>
+
+  <!-- SHAFT EXTENSIONS -->
+  <g transform="translate(100, 90)">
+    
+    <!-- Input shaft (left) -->
+    <rect x="-80" y="-3" width="20" height="6" fill="#333" stroke="#666" stroke-width="1"/>
+    <circle cx="-80" cy="0" r="3" fill="#666"/>
+    
+    <!-- Output shaft (right) -->
+    <rect x="60" y="-3" width="20" height="6" fill="#333" stroke="#666" stroke-width="1"/>
+    <circle cx="80" cy="0" r="3" fill="#666"/>
+    
+  </g>
+
+  <!-- OIL LEVEL GAUGE -->
+  <g transform="translate(50, 90)">
+    
+    <!-- Sight glass housing -->
+    <rect x="-10" y="-25" width="20" height="30" fill="#666" stroke="#333" stroke-width="1"/>
+    
+    <!-- Glass face -->
+    <rect x="-6" y="-21" width="12" height="22" fill="#FFFFFF" stroke="#4682B4" stroke-width="1"/>
+    
+    <!-- Oil level -->
+    <rect x="-6" y="-15" width="12" height="14" fill="#FFD700"/>
+    
+  </g>
+
+  <!-- CONTROL PANEL -->
+  <g transform="translate(60, 50)">
+    
+    <!-- Small control box -->
+    <rect x="0" y="0" width="20" height="15" fill="#1A252F" stroke="#343A40" stroke-width="1"/>
+    
+    <!-- Speed indicator LED -->
+    <circle cx="5" cy="7" r="1.5" fill="#00FF41"/>
+    <text x="8" y="8" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="6" fill="#00FF41">RPM</text>
+    
+    <!-- Temperature LED -->
+    <circle cx="5" cy="12" r="1.5" fill="#27AE60"/>
+    <text x="8" y="13" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="6" fill="#27AE60">TEMP</text>
+    
+  </g>
+
+  <!-- LABELS -->
+  <text x="100" y="25" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#2C3E50">GEAR BOX</text>
+  <text x="10" y="40" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="8" fill="#666">Reduction Ratio: 1:4 • 2HP Motor</text>
+
+  <!-- ROTATION INDICATORS -->
+  <circle cx="45" cy="90" r="8" fill="none" stroke="#666" stroke-width="2"/>
+  <path d="M 42,88 L 45,92 L 48,88" stroke="#E74C3C" stroke-width="2" fill="none"/>
+  
+  <circle cx="155" cy="90" r="8" fill="none" stroke="#666" stroke-width="2"/>
+  <path d="M 152,92 L 155,88 L 158,92" stroke="#E74C3C" stroke-width="2" fill="none"/>
+
+</svg>

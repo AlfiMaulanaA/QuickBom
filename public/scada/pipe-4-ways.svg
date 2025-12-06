@@ -1,0 +1,26 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GROUP: PIPE 4 WAYS -->
+  <g id="pipe_4_ways">
+
+    <!-- HORIZONTAL PIPE -->
+    <rect x="161.5" y="182.5" width="79" height="23" fill="#D9D9D9"/>
+    <rect x="158.5" y="177.5" width="3" height="33" fill="#D9D9D9"/>
+    <rect x="238.5" y="177.5" width="3" height="33" fill="#D9D9D9"/>
+
+    <!-- VERTICAL PIPE DOWN -->
+    <rect x="189.5" y="205.5" width="23" height="25" fill="#D9D9D9"/>
+    <rect x="184.5" y="230.5" width="33" height="3" fill="#D9D9D9"/>
+
+    <!-- VERTICAL PIPE UP -->
+    <rect x="189.5" y="157.5" width="23" height="25" fill="#D9D9D9"/>
+    <rect x="184.5" y="154.5" width="33" height="3" fill="#D9D9D9"/>
+
+    <!-- CROSS / INDICATOR -->
+    <line x1="189.354" y1="182.646" x2="212.354" y2="205.646" stroke="#000000"/>
+    <line x1="189.646" y1="205.646" x2="212.646" y2="182.646" stroke="#000000"/>
+
+  </g>
+
+</svg>

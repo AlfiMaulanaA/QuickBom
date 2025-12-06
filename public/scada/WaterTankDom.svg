@@ -1,0 +1,25 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- BODY -->
+  <g id="body">
+    <rect x="310" y="119.506" width="230.493" height="204" transform="rotate(90 310 119.506)" fill="#D9D9D9" stroke="black"/>
+  </g>
+
+  <!-- DOM -->
+  <g id="dom">
+    <path d="M211 73.503C273.8 73.8603 305.167 104.465 310.5 119.5L252 119.5L106.5 119.5C116 104.168 148.2 73.1458 211 73.503Z" 
+      fill="#D9D9D9" stroke="black"/>
+  </g>
+
+  <!-- VALVE -->
+  <g id="valve">
+    <rect x="221" y="52" width="21" height="23" transform="rotate(90 221 52)" fill="#D9D9D9" stroke="black"/>
+    <rect x="226" y="49" width="3" height="33" transform="rotate(90 226 49)" fill="#D9D9D9" stroke="black"/>
+  </g>
+
+  <!-- WATER -->
+  <g id="water">
+    <rect x="296" y="130" width="205" height="176" transform="rotate(90 296 130)" fill="#898686" stroke="black"/>
+  </g>
+
+</svg>

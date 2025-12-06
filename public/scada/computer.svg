@@ -1,0 +1,27 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- TANK BODY -->
+  <g id="tank-body">
+    <rect x="18.5" y="81.5" width="362" height="191" rx="3.5" fill="#D9D9D9" stroke="#B9B9B9"/>
+    <rect x="28" y="91" width="344" height="167" rx="4" fill="#8D8D8D"/>
+  </g>
+
+  <!-- BOTTOM BASE -->
+  <g id="tank-base">
+    <rect x="180" y="273" width="40" height="18" fill="#D9D9D9"/>
+    <rect x="72.5" y="291.5" width="254" height="17" fill="#D9D9D9" stroke="#BCB8B8"/>
+  </g>
+
+  <!-- INDICATOR -->
+  <g id="indicator">
+    <circle cx="366" cy="264" r="4" fill="#F80000"/>
+  </g>
+
+  <!-- CROSS-LINES -->
+  <g id="cross-lines" stroke="white" stroke-width="2">
+    <path d="M173.233 202L225.233 146"/>
+    <path d="M146.5 202L198.5 146"/>
+    <path d="M200.733 202L252.733 146"/>
+  </g>
+
+</svg>

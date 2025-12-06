@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- MAIN ENCLOSURE -->
+  <g transform="translate(150, 120)">
+    
+    <!-- Metal box frame -->
+    <rect x="-120" y="-80" width="240" height="160" fill="#4A4A4A" stroke="#333" stroke-width="3"/>
+    
+    <!-- Door panel -->
+    <rect x="-115" y="-75" width="230" height="150" fill="#2C3E50" stroke="#34495E" stroke-width="2"/>
+    
+    <!-- Reinforcing frame -->
+    <rect x="-110" y="-70" width="220" height="140" fill="none" stroke="#7F8C8D" stroke-width="1"/>
+    
+    <!-- Vertical divider -->
+    <line x1="0" y1="-70" x2="0" y2="70" stroke="#7F8C8D" stroke-width="2"/>
+    
+    <!-- Horizontal dividers for breaker rows -->
+    <line x1="-110" y1="-40" x2="110" y2="-40" stroke="#7F8C8D" stroke-width="1"/>
+    <line x1="-110" y1="-10" x2="110" y2="-10" stroke="#7F8C8D" stroke-width="1"/>
+    <line x1="-110" y1="20" x2="110" y2="20" stroke="#7F8C8D" stroke-width="1"/>
+    <line x1="-110" y1="50" x2="110" y2="50" stroke="#7F8C8D" stroke-width="1"/>
+    
+  </g>
+
+  <!-- CIRCUIT BREAKERS -->
+  <g transform="translate(150, 120)">
+    
+    <!-- ROW 1 - LEFT SIDE (Single pole) -->
+    <rect x="-105" y="-65" width="15" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    <rect x="-85" y="-65" width="15" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    <rect x="-65" y="-65" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 2 - LEFT SIDE -->
+    <rect x="-105" y="-35" width="15" height="25" fill="#E74C3C" stroke="#C0392B" stroke-width="1" rx="2"/>
+    <rect x="-85" y="-35" width="15" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    <rect x="-65" y="-35" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 3 - LEFT SIDE -->
+    <rect x="-105" y="-5" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    <rect x="-85" y="-5" width="15" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    <rect x="-65" y="-5" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 4 - LEFT SIDE -->
+    <rect x="-105" y="25" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    <rect x="-85" y="25" width="15" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    <rect x="-65" y="25" width="15" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 1 - RIGHT SIDE (Double pole) -->
+    <rect x="15" y="-65" width="30" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    <rect x="50" y="-65" width="30" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 2 - RIGHT SIDE -->
+    <rect x="15" y="-35" width="30" height="25" fill="#E74C3C" stroke="#C0392B" stroke-width="1" rx="2"/>
+    <rect x="50" y="-35" width="30" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 3 - RIGHT SIDE -->
+    <rect x="15" y="-5" width="30" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    <rect x="50" y="-5" width="30" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    
+    <!-- ROW 4 - RIGHT SIDE -->
+    <rect x="15" y="25" width="30" height="25" fill="#27AE60" stroke="#229954" stroke-width="1" rx="2"/>
+    <rect x="50" y="25" width="30" height="25" fill="#F39C12" stroke="#E67E22" stroke-width="1" rx="2"/>
+    
+  </g>
+
+  <!-- BREAKER IDENTIFIERS -->
+  <g transform="translate(150, 120)">
+    
+    <!-- Left side labels -->
+    <text x="-97" y="-72" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">15A</text>
+    <text x="-77" y="-72" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">20A</text>
+    <text x="-57" y="-72" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">10A</text>
+    
+    <text x="-97" y="-42" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">30A</text>
+    <text x="-77" y="-42" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">25A</text>
+    <text x="-57" y="-42" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="6" font-weight="bold" fill="#FFF">15A</text>
+    
+    <!-- Right side labels (double pole) -->
+    <text x="30" y="-72" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="5" font-weight="bold" fill="#FFF">40A</text>
+    <text x="30" y="-78" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="5" font-weight="bold" fill="#FFF">240V</text>
+    
+    <text x="65" y="-72" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="5" font-weight="bold" fill="#FFF">30A</text>
+    <text x="65" y="-78" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="5" font-weight="bold" fill="#FFF">240V</text>
+    
+  </g>
+
+  <!-- STATUS INDICATORS -->
+  <g transform="translate(150, 120)">
+    
+    <!-- Top status bar -->
+    <rect x="-110" y="-95" width="220" height="12" fill="#1A252F" stroke="#343A40" stroke-width="1"/>
+    
+    <!-- Master breaker toggle -->
+    <circle cx="-85" cy="-89" r="4" fill="#666"/>
+    <rect x="-87" y="-91" width="4" height="2" fill="#999"/>
+    <text x="-77" y="-87" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="6" fill="#FFF">MAIN</text>
+    
+    <!-- Voltage indicator -->
+    <text x="60" y="-87" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="8" font-weight="bold" fill="#00FF41">246V</text>
+    
+    <!-- Status LEDs -->
+    <circle cx="85" cy="-89" r="3" fill="#27AE60"/>
+    <circle cx="95" cy="-89" r="3" fill="#27AE60"/>
+    <circle cx="105" cy="-89" r="3" fill="#E74C3C"/>
+    
+  </g>
+
+  <!-- POWER FEED CONNECTIONS -->
+  <g transform="translate(150, 120)">
+    
+    <!-- Main power feed (top) -->
+    <line x1="-140" y1="-100" x2="-120" y2="-100" stroke="#F39C12" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="-142" cy="-100" r="4" fill="#F39C12"/>
+    
+    <!-- Ground connection -->
+    <line x1="-140" y1="100" x2="-120" y2="100" stroke="#27AE60" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="-142" cy="100" r="3" fill="#27AE60"/>
+    
+    <!-- Distribution lines (simplified) -->
+    <path d="M -110,-40 Q -130,-40 -130,-60" fill="none" stroke="#BDC3C7" stroke-width="2" opacity="0.6"/>
+    <path d="M -110,-10 Q -130,-10 -130,-30" fill="none" stroke="#BDC3C7" stroke-width="2" opacity="0.6"/>
+    <path d="M 0,70 Q 0,90 20,90" fill="none" stroke="#BDC3C7" stroke-width="2" opacity="0.6"/>
+    <path d="M 110,40 Q 130,40 130,20" fill="none" stroke="#BDC3C7" stroke-width="2" opacity="0.6"/>
+    
+  </g>
+
+  <!-- LABELS AND IDENTIFIERS -->
+  <text x="150" y="15" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#2C3E50">CIRCUIT BREAKER PANEL</text>
+  <text x="20" y="35" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#666">Main: 200A • Voltage: 240/120V • Phase: 3Ø</text>
+  
+  <!-- Breaker status key -->
+  <g transform="translate(20, 170)">
+    <rect x="0" y="0" width="15" height="15" fill="#27AE60" rx="2"/>
+    <text x="20" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">=</text>
+    <text x="30" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">ON (Normal)</text>
+    
+    <rect x="110" y="0" width="15" height="15" fill="#F39C12" rx="2"/>
+    <text x="130" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">=</text>
+    <text x="140" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">TRIPPED</text>
+    
+    <rect x="200" y="0" width="15" height="15" fill="#E74C3C" rx="2"/>
+    <text x="220" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">=</text>
+    <text x="230" y="10" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="9" fill="#666">FAULT</text>
+  </g>
+
+</svg>

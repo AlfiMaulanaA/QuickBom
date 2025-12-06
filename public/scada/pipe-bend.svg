@@ -1,0 +1,20 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GROUP: PIPE BEND -->
+  <g id="pipe_bend">
+
+    <!-- VERTICAL PART -->
+    <rect x="170.5" y="180.5" width="25" height="23" fill="#D9D9D9"/>
+    <rect x="167.5" y="175.5" width="3" height="33" fill="#D9D9D9"/>
+
+    <!-- HORIZONTAL PART -->
+    <rect x="203.5" y="214.5" width="23" height="25" fill="#D9D9D9"/>
+    <rect x="198.5" y="239.5" width="33" height="3" fill="#D9D9D9"/>
+
+    <!-- BEND CURVE -->
+    <path d="M226.5 214.5C227.3 186.9 206.5 180.333 196 180.5H195.5V203.5C202.7 203.5 203.833 210.833 203.5 214.5H226.5Z" fill="#D9D9D9"/>
+
+  </g>
+
+</svg>

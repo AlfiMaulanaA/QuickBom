@@ -1,0 +1,18 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none"
+  xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GROUP: PIPE LONG -->
+  <g id="pipe_long">
+
+    <!-- BODY (PIPA PANJANG) -->
+    <rect x="96.5" y="188.5" width="208" height="23" fill="#D9D9D9"/>
+
+    <!-- LEFT CAP -->
+    <rect x="93.5" y="183.5" width="3" height="33" fill="#D9D9D9"/>
+
+    <!-- RIGHT CAP -->
+    <rect x="303.5" y="183.5" width="3" height="33" fill="#D9D9D9"/>
+
+  </g>
+
+</svg>

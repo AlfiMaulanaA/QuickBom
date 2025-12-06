@@ -1,0 +1,30 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ===== GROUP UTAMA TANGKI AIR ===== -->
+  <g id="water-tank">
+
+    <!-- BASE / BODY TANK -->
+    <g id="tank-body">
+      <rect x="100" y="86" width="199" height="205" fill="#D9D9D9"/>
+      <ellipse cx="200" cy="85" rx="99" ry="17" fill="#D9D9D9"/>
+      <ellipse cx="199" cy="112" rx="99" ry="17" fill="#D9D9D9"/>
+      <ellipse cx="200" cy="291" rx="99" ry="17" fill="#D9D9D9"/>
+      <ellipse cx="199.5" cy="274" rx="86.5" ry="17" fill="#898686"/>
+      <rect x="113" y="121" width="173" height="153" fill="#898686"/>
+    </g>
+
+    <!-- WATER LEVEL (Bisa dianimasikan) -->
+    <g id="water-level">
+      <rect x="113" y="200" width="173" height="74" fill="#4DA6FF"/> <!-- air biru -->
+      <ellipse cx="199.5" cy="274" rx="86.5" ry="17" fill="#3399FF"/>
+    </g>
+
+    <!-- VALVE / OUTLET -->
+    <g id="tank-valve">
+      <path d="M199 318.5C204.197 318.5 208.878 319.388 212.241 320.804C213.924 321.512 215.253 322.343 216.154 323.24C217.054 324.135 217.5 325.068 217.5 326C217.5 326.932 217.054 327.865 216.154 328.76C215.253 329.657 213.924 330.488 212.241 331.196C208.878 332.612 204.197 333.5 199 333.5C193.803 333.5 189.122 332.612 185.759 331.196C184.076 330.488 182.747 329.657 181.846 328.76C180.946 327.865 180.5 326.932 180.5 326C180.5 325.068 180.946 324.135 181.846 323.24C182.747 322.343 184.076 321.512 185.759 320.804C189.122 319.388 193.803 318.5 199 318.5Z" fill="#D9D9D9" stroke="black"/>
+      <rect x="180" y="308" width="38" height="18" fill="#D9D9D9"/>
+    </g>
+
+  </g>
+
+</svg>

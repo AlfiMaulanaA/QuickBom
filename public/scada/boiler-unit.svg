@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="180" viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- BOILER BODY -->
+  <g transform="translate(100, 140)">
+    
+    <!-- Main cylindrical boiler body -->
+    <ellipse cx="0" cy="0" rx="70" ry="12" fill="#666" stroke="#333" stroke-width="2"/>
+    <rect x="-70" y="-15" width="140" height="30" fill="#666" stroke="#333" stroke-width="2"/>
+    <ellipse cx="0" cy="15" rx="70" ry="12" fill="#666" stroke="#333" stroke-width="2"/>
+    
+    <!-- Steel reinforcing bands -->
+    <circle cx="0" cy="0" r="72" fill="none" stroke="#888" stroke-width="1"/>
+    <circle cx="0" cy="-5" r="72" fill="none" stroke="#888" stroke-width="1"/>
+    <circle cx="0" cy="5" r="72" fill="none" stroke="#888" stroke-width="1"/>
+    
+    <!-- Top dome -->
+    <ellipse cx="0" cy="-15" rx="70" ry="10" fill="#888" stroke="#333" stroke-width="2"/>
+    
+    <!-- Water level gauge glass -->
+    <rect x="75" y="-25" width="15" height="50" fill="#87CEEB" stroke="#4682B4" stroke-width="1"/>
+    <rect x="78" y="-20" width="9" height="35" fill="#FFFFFF"/>
+    <rect x="78" y="-10" width="9" height="15" fill="#4169E1"/>
+    
+    <!-- Inspect port on top -->
+    <circle cx="-30" cy="-20" r="8" fill="#333" stroke="#666" stroke-width="1"/>
+    
+    <!-- Safety valve -->
+    <rect x="25" y="-35" width="8" height="15" fill="#2C3E50"/>
+    <rect x="23" y="-35" width="12" height="4" fill="#666"/>
+    <line x1="26" y1="-32" x2="34" y2="-26" stroke="#E74C3C" stroke-width="2"/>
+    
+    <!-- Pressure gauge connection -->
+    <circle cx="-40" cy="-5" r="4" fill="#666"/>
+    <line x1="-40" y1="-5" x2="-30" y2="-10" stroke="#666" stroke-width="2"/>
+    
+    <!-- LEVEL MARKERS -->
+    <text x="92" y="-20" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="8" fill="#2C3E50">H</text>
+    <text x="92" y="0" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="8" fill="#2C3E50">L</text>
+    
+  </g>
+
+  <!-- STEAM OUTPUT PIPE -->
+  <g transform="translate(100, 125)">
+    <!-- Horizontal pipe to chimney -->
+    <rect x="-60" y="-25" width="15" height="8" fill="#666" stroke="#333" stroke-width="1"/>
+    <rect x="-45" y="-25" width="15" height="8" fill="#666" stroke="#333" stroke-width="1"/>
+    <rect x="-30" y="-25" width="15" height="8" fill="#666" stroke="#333" stroke-width="1"/>
+    
+    <!-- Elbow up -->
+    <rect x="-15" y="-25" width="8" height="15" fill="#666" stroke="#333" stroke-width="1"/>
+    <rect x="-15" y="-35" width="8" height="15" fill="#666" stroke="#333" stroke-width="1"/>
+    
+    <!-- Chimney -->
+    <rect x="-17" y="-55" width="12" height="20" fill="#333" stroke="#222" stroke-width="1"/>
+    
+    <!-- Steam puffs -->
+    <circle cx="-8" cy="-60" r="2" fill="#FFFFFF" opacity="0.7"/>
+    <circle cx="-5" cy="-65" r="2" fill="#FFFFFF" opacity="0.7"/>
+    <circle cx="2" cy="-58" r="2" fill="#FFFFFF" opacity="0.7"/>
+  </g>
+
+  <!-- BURNER ASSEMBLY -->
+  <g transform="translate(100, 165)">
+    <!-- Burner front -->
+    <rect x="-8" y="0" width="16" height="12" fill="#E74C3C" stroke="#C0392B" stroke-width="1"/>
+    
+    <!-- Flame effect -->
+    <path d="M -4,8 Q -2,2 0,8 Q 2,2 4,8" fill="#F39C12" opacity="0.8"/>
+    <path d="M -3,8 Q -1,3 0,8 Q 1,3 3,8" fill="#E67E22" opacity="0.6"/>
+    
+    <!-- Burner housing -->
+    <rect x="-12" y="12" width="24" height="8" fill="#666" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- CONTROLS PANEL -->
+  <g transform="translate(180, 80)">
+    <!-- Control panel housing -->
+    <rect x="0" y="0" width="25" height="35" fill="#1A252F" stroke="#343A40" stroke-width="1"/>
+    
+    <!-- Control knobs -->
+    <circle cx="12.5" cy="12" r="4" fill="#666"/>
+    <circle cx="12.5" cy="12" r="2" fill="#999"/>
+    
+    <circle cx="12.5" cy="25" r="4" fill="#666"/>
+    <circle cx="12.5" cy="25" r="2" fill="#999"/>
+    
+    <!-- LEDs -->
+    <circle cx="7" cy="8" r="1.5" fill="#FF0000"/>
+    <circle cx="18" cy="8" r="1.5" fill="#00FF00"/>
+  </g>
+
+  <!-- LEGEND/LABELS -->
+  <text x="100" y="15" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#2C3E50">BOILER UNIT</text>
+  <text x="10" y="40" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#666">Steam Driven • High Pressure</text>
+
+</svg>

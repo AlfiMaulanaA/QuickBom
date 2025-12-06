@@ -1,0 +1,28 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ===== GROUP UTAMA VALVE 1-WAY ===== -->
+  <g id="valve-1way">
+
+    <!-- BODY VALVE -->
+    <g id="valve-body">
+      <rect x="172.5" y="178.5" width="48" height="23" fill="#D9D9D9" stroke="black"/>
+      <path d="M172 169.5V154L201.5 161.75L231 154V169.5L201.5 161.75L172 169.5Z" fill="#D9D9D9"/>
+      <path d="M172 169.5V154L231 169.5V154L172 169.5Z" stroke="black"/>
+    </g>
+
+    <!-- ACTUATOR / STEM -->
+    <g id="valve-actuator">
+      <rect x="200.5" y="158.5" width="3" height="20" fill="#D9D9D9" stroke="black"/>
+      <rect x="169.5" y="174.5" width="3" height="33" fill="#D9D9D9" stroke="black"/>
+      <rect x="223.5" y="212.5" width="33" height="3" fill="#D9D9D9" stroke="black"/>
+      <path d="M251.978 212C252.777 185.214 231.992 178.841 221.5 179.003H221V201.324C228.195 201.324 229.327 208.441 228.994 212H251.978Z" fill="#D9D9D9" stroke="black"/>
+    </g>
+
+    <!-- INDICATOR VALVE -->
+    <g id="valve-indicator">
+      <rect x="194" y="181" width="17" height="17" rx="4" fill="#FF0000"/>
+    </g>
+
+  </g>
+
+</svg>

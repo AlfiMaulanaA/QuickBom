@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="150" height="200" viewBox="0 0 150 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- THERMOMETER GLASS -->
+  <g transform="translate(75, 150)">
+    
+    <!-- Glass tube -->
+    <rect x="-15" y="-90" width="30" height="120" fill="#87CEEB" stroke="#4682B4" stroke-width="2"/>
+    
+    <!-- Internal mercury/reserve space -->
+    <rect x="-10" y="-85" width="20" height="110" fill="#E8F4F8" stroke="#B0E0E6" stroke-width="1"/>
+    
+    <!-- MERCURY LEVEL (top-up fill) -->
+    <rect x="-10" y="-60" width="20" height="75" fill="#FF4500"/>
+    
+    <!-- Bulb at bottom -->
+    <ellipse cx="0" cy="35" rx="18" ry="10" fill="#87CEEB"/>
+    <ellipse cx="0" cy="35" rx="13" ry="8" fill="#E8F4F8"/>
+    <ellipse cx="0" cy="35" rx="8" ry="5" fill="#FF4500"/>
+    
+    <!-- SCALE MARKS (every 10 degrees) -->
+    <line x1="-25" y1="-80" x2="-20" y2="-80" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-70" x2="-20" y2="-70" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-60" x2="-20" y2="-60" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-50" x2="-20" y2="-50" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-40" x2="-20" y2="-40" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-30" x2="-20" y2="-30" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-20" x2="-20" y2="-20" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="-10" x2="-20" y2="-10" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="0" x2="-20" y2="0" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="10" x2="-20" y2="10" stroke="#2C3E50" stroke-width="1"/>
+    <line x1="-25" y1="20" x2="-20" y2="20" stroke="#2C3E50" stroke-width="1"/>
+    
+    <!-- SCALE VALUES (two sides) -->
+    <text x="-35" y="-80" text-anchor="end" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">200°</text>
+    <text x="-35" y="-40" text-anchor="end" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">100°</text>
+    <text x="-35" y="0" text-anchor="end" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">0°</text>
+    
+    <text x="35" y="-80" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">200°</text>
+    <text x="35" y="-40" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">100°</text>
+    <text x="35" y="0" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#2C3E50">0°</text>
+    
+    <!-- SCALE LABEL -->
+    <text x="0" y="-110" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#2C3E50">TEMPERATURE</text>
+    <text x="0" y="60" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="10" fill="#666">°C</text>
+    
+  </g>
+
+  <!-- DIGITAL DISPLAY PANEL -->
+  <g transform="translate(75, 50)">
+    <!-- Display housing -->
+    <rect x="-35" y="-15" width="70" height="25" fill="#1A252F" stroke="#343A40" stroke-width="1" rx="3"/>
+    
+    <!-- Digital temperature reading -->
+    <text x="0" y="-2" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#00FF41">142°C</text>
+    
+    <!-- Units indicator -->
+    <text x="30" y="-2" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="8" fill="#888">CEL</text>
+  </g>
+
+  <!-- STATUS INDICATOR -->
+  <circle cx="120" cy="30" r="6" fill="#27AE60" stroke="#1A252F" stroke-width="1"/>
+  <text x="135" y="35" text-anchor="start" dominant-baseline="middle" font-family="Arial" font-size="8" fill="#2C3E50">NORMAL</text>
+
+</svg>
