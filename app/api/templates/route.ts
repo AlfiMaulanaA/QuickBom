@@ -22,10 +22,37 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Ensure we return an array even if database is empty
+    if (!templates) {
+      return NextResponse.json([]);
+    }
+
     return NextResponse.json(templates);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Error [GET /api/templates]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch templates" },
+      {
+        error: "Failed to fetch templates",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -46,13 +73,15 @@ export async function POST(request: NextRequest) {
     const template = await prisma.template.create({
       data: {
         name,
-        description,
-        assemblies: assemblies ? {
-          create: assemblies.map((a: any) => ({
-            assemblyId: a.assemblyId,
-            quantity: a.quantity
-          }))
-        } : undefined
+        description: description || null,
+        ...(assemblies && assemblies.length > 0 ? {
+          assemblies: {
+            create: assemblies.map((a: any) => ({
+              assemblyId: a.assemblyId,
+              quantity: a.quantity
+            }))
+          }
+        } : {})
       },
       include: {
         assemblies: {

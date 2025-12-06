@@ -14,7 +14,9 @@
     "db:seed": "node data/seeds/index.js",
     "db:clear": "./clear-database.sh",
     "db:clear:supabase": "node clear-supabase.js",
-    "db:clear:supabase:confirm": "CONFIRM_DELETE=yes NODE_ENV=production node clear-supabase.js"
+    "db:clear:supabase:confirm": "CONFIRM_DELETE=yes NODE_ENV=production node clear-supabase.js",
+    "deploy:check": "NODE_ENV=production node -e \"require('./lib/prisma').checkDatabaseConnection().then(r => console.log(r.connected ? '✅ DB Connected' : '❌ DB Failed')).catch(console.error)\"",
+    "vercel:build": "NODE_ENV=production npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

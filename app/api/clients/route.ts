@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET /api/clients - Get all clients with optional filtering
 export async function GET(request: NextRequest) {
@@ -56,11 +54,36 @@ export async function GET(request: NextRequest) {
       completedProjects: client.projects.filter((p: any) => p.status === 'COMPLETED').length,
     }));
 
+    // Ensure we return an array even if database is empty
+    if (!transformedClients) {
+      return NextResponse.json([]);
+    }
+
     return NextResponse.json(transformedClients);
-  } catch (error) {
-    console.error("Error fetching clients:", error);
+  } catch (error: any) {
+    console.error('API Error [GET /api/clients]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch clients" },
+      {
+        error: "Failed to fetch clients",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

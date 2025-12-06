@@ -28,10 +28,37 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Ensure we return an array even if database is empty
+    if (!projects) {
+      return NextResponse.json([]);
+    }
+
     return NextResponse.json(projects);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Error [GET /api/projects]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch projects" },
+      {
+        error: "Failed to fetch projects",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

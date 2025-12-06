@@ -2,79 +2,25 @@ import { PrismaClient } from "@prisma/client";
 
 // Get the appropriate database URL based on environment
 const getDatabaseUrl = () => {
-  const isProduction = process.env.NODE_ENV === "production";
+  // For Vercel deployment, prioritize DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL;
 
-  if (isProduction) {
-    // In production, use Supabase database URL
-    const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error("SUPABASE_DATABASE_URL environment variable is required in production");
-    }
-    return supabaseUrl;
-  } else {
-    // In development, use local PostgreSQL
-    const localUrl = process.env.DATABASE_URL;
-    if (!localUrl) {
-      throw new Error("DATABASE_URL environment variable is required in development");
-    }
-    return localUrl;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is required");
   }
+
+  return databaseUrl;
 };
 
-// Connection pool configuration based on environment
-const getConnectionConfig = () => {
-  const isProduction = process.env.NODE_ENV === "production";
-  const databaseUrl = getDatabaseUrl();
-
-  return {
-    // Connection pool settings - adjusted for Supabase in production
-    connection_limit: isProduction ? 10 : 5, // Supabase has connection limits
-    pool_timeout: isProduction ? 30 : 20, // Longer timeout for Supabase
-    connection_timeout: isProduction ? 20 : 10, // Longer connection timeout
-
-    // Additional PostgreSQL-specific settings
-    max_wait: isProduction ? 10000 : 5000, // Longer wait time for production
-    max_idle: isProduction ? 30000 : 10000, // Longer idle time
-    max_lifetime: isProduction ? 300000 : 600000, // Shorter lifetime for Supabase
-
-    // SSL settings - always enable for Supabase
-    ssl: { rejectUnauthorized: false },
-  };
-};
-
-// Create optimized Prisma client with connection pooling
+// Create Prisma client optimized for Vercel
 const createPrismaClient = () => {
-  const connectionConfig = getConnectionConfig();
   const databaseUrl = getDatabaseUrl();
 
-  // Build connection string with pool parameters
-  const baseUrl = databaseUrl.split('?')[0];
-  const poolParams = new URLSearchParams();
-
-  // Only add numeric and boolean parameters to URL
-  if (connectionConfig.connection_limit) {
-    poolParams.append('connection_limit', connectionConfig.connection_limit.toString());
-  }
-  if (connectionConfig.pool_timeout) {
-    poolParams.append('pool_timeout', connectionConfig.pool_timeout.toString());
-  }
-  if (connectionConfig.connection_timeout) {
-    poolParams.append('connection_timeout', connectionConfig.connection_timeout.toString());
-  }
-  if (connectionConfig.max_wait) {
-    poolParams.append('max_wait', connectionConfig.max_wait.toString());
-  }
-  if (connectionConfig.max_idle) {
-    poolParams.append('max_idle', connectionConfig.max_idle.toString());
-  }
-  if (connectionConfig.max_lifetime) {
-    poolParams.append('max_lifetime', connectionConfig.max_lifetime.toString());
-  }
-
-  const optimizedDatabaseUrl = `${baseUrl}?${poolParams.toString()}`;
-
+  // For Vercel, use simpler configuration without complex connection pooling
   const client = new PrismaClient({
-    datasourceUrl: optimizedDatabaseUrl,
+    datasourceUrl: databaseUrl,
+    // Disable logging in production to reduce function execution time
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
   return client;

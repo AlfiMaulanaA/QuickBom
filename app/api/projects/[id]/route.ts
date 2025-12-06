@@ -24,9 +24,30 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(project);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Error [GET /api/projects/[id]]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch project" },
+      {
+        error: "Failed to fetch project",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -98,14 +119,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(project);
   } catch (error: any) {
+    console.error('API Error [PUT /api/projects/[id]]:', error);
+
     if (error.code === 'P2025') {
       return NextResponse.json(
         { error: "Project not found" },
         { status: 404 }
       );
     }
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to update project" },
+      {
+        error: "Failed to update project",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -147,9 +190,31 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    console.error('API Error [DELETE /api/projects/[id]]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
     console.error('Unexpected error deleting project:', error);
     return NextResponse.json(
-      { error: "Failed to delete project", message: error.message, code: error.code },
+      {
+        error: "Failed to delete project",
+        message: error.message,
+        code: error.code,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

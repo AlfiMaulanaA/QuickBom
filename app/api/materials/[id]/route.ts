@@ -21,9 +21,30 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(material);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Error [GET /api/materials/[id]]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to fetch material" },
+      {
+        error: "Failed to fetch material",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -54,6 +75,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(material);
   } catch (error: any) {
+    console.error('API Error [PUT /api/materials/[id]]:', error);
+
     if (error.code === 'P2025') {
       return NextResponse.json(
         { error: "Material not found" },
@@ -66,8 +89,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { status: 409 }
       );
     }
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { error: "Failed to update material" },
+      {
+        error: "Failed to update material",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -105,7 +148,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     console.log(`Successfully deleted material ${materialId}`);
     return NextResponse.json({ message: "Material deleted successfully" });
   } catch (error: any) {
-    console.error(`Error deleting material ${materialId}:`, error);
+    console.error(`API Error [DELETE /api/materials/[id]] for material ${materialId}:`, error);
 
     if (error.code === 'P2025') {
       console.log(`Material ${materialId} not found`);
@@ -125,9 +168,29 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { error: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
     console.error('Unexpected error deleting material:', error);
     return NextResponse.json(
-      { error: "Failed to delete material", message: error.message, code: error.code },
+      {
+        error: "Failed to delete material",
+        message: error.message,
+        code: error.code,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
