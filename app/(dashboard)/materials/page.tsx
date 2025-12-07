@@ -870,19 +870,25 @@ export default function MaterialsPage() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="truncate max-w-32">
-                            {material.partNumber || "-"}
-                          </span>
-                          {material.partNumber && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 hover:bg-gray-100"
-                              onClick={() => copyToClipboard(material.partNumber!, material.partNumber!, 'part number')}
-                              title="Copy part number"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                          {material.partNumber ? (
+                            <>
+                              <span className="truncate max-w-32">
+                                {material.partNumber}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                onClick={() => copyToClipboard(material.partNumber!, material.partNumber!, 'part number')}
+                                title="Copy part number"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+                              No PN
+                            </Badge>
                           )}
                         </div>
                       </TableCell>
