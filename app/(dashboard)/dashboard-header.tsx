@@ -24,51 +24,69 @@ const RealtimeClockWithRefresh = dynamic(
 
 function generateTitleFromPathname(pathname: string): string {
   // Handle root dashboard
-  if (pathname === "/") return "Main Dashboard";
+  if (pathname === "/" || pathname === "/dashboard") return "QuickBom Dashboard";
 
-  // Handle QuickBom specific routes
+  // Handle QuickBom specific routes with better coverage
   const quickbomRoutes: Record<string, string> = {
     "/materials": "Materials Management",
     "/assemblies": "Assemblies Management",
     "/templates": "Templates Management",
     "/projects": "Projects Management",
+    "/users": "User Management",
+    "/clients": "Client Management",
+    "/whatsapp": "WhatsApp Integration",
+    "/gantt": "Global Gantt Chart",
   };
 
-  // Check if it's a QuickBom route
+  // Check if it's a direct QuickBom route
   if (quickbomRoutes[pathname]) {
     return quickbomRoutes[pathname];
   }
 
-  // Fallback for other routes
+  // Handle dynamic routes
   const segments = pathname.split("/").filter(Boolean);
-  const lastSegment = segments[segments.length - 1];
 
-  // Legacy route map for other systems
-  const routeMap: Record<string, string> = {
-    "alarms": "Alarms",
-    "analytics": "Analytics",
-    "control": "Control Panel",
-    "devices": "Devices",
-    "info": "Information",
-    "layout2d": "2D Layout",
-    "lorawan": "LoRaWAN",
-    "maintenance": "Maintenance",
-    "manage-dashboard": "Manage Dashboards",
-    "manage-menu": "Menu Management",
-    "backup-management": "Backup Management",
-    "network": "Network",
-    "payload": "Payload Data",
-    "racks": "Racks",
-    "security-access": "Security Access",
-    "snmp-data-get": "SNMP Data",
-    "system-config": "System Configuration",
-    "test": "Test Panel",
-    "view-dashboard": "Dashboard View",
-    "whatsapp-test": "WhatsApp Test",
-    "monitoring": "Monitoring",
+  // Handle project-specific routes
+  if (segments[0] === "projects" && segments.length > 1) {
+    if (segments.length === 2 && /^\d+$/.test(segments[1])) {
+      return `Project #${segments[1]}`;
+    }
+    if (segments[2] === "timeline") {
+      if (segments[3] === "gantt") {
+        return `Project #${segments[1]} - Gantt Chart`;
+      }
+      return `Project #${segments[1]} - Timeline`;
+    }
+  }
+
+  // Handle dashboard routes
+  if (segments[0] === "dashboard") {
+    if (segments.length === 1) return "QuickBom Dashboard";
+    if (segments[1] === "projects") return "Projects Management";
+    if (segments[1] === "materials") return "Materials Management";
+    if (segments[1] === "assemblies") return "Assemblies Management";
+    if (segments[1] === "templates") return "Templates Management";
+    if (segments[1] === "users") return "User Management";
+    if (segments[1] === "clients") return "Client Management";
+  }
+
+  // Handle remaining QuickBom routes
+  const lastSegment = segments[segments.length - 1];
+  const quickbomFallbackRoutes: Record<string, string> = {
+    "login": "Login",
+    "register": "Register",
+    "unauthorized": "Access Denied",
+    "not-found": "Page Not Found",
+    "test-db": "Database Test",
+    "timeline": "Project Timeline",
+    "gantt": "Gantt Chart",
+    "whatsapp": "WhatsApp Integration",
+    "auth": "Authentication",
+    "api": "API Routes",
   };
 
-  return routeMap[lastSegment] || lastSegment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return quickbomFallbackRoutes[lastSegment] ||
+         lastSegment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export default function DashboardHeader() {
@@ -137,30 +155,7 @@ export default function DashboardHeader() {
         <Button variant="ghost" size="icon" onClick={handleZoomIn} title="Zoom In">
           <ZoomIn className="h-4 w-4" />
         </Button>
-        {pathname === "/" && (
-          <Link href="/manage-dashboard">
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Manage
-            </Button>
-          </Link>
-        )}
-        {pathname === "/node-dashboard" && (
-          <Link href="/node-dashboards-list">
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Manage
-            </Button>
-          </Link>
-        )}
-         {pathname === "/layout2d/list" && (
-          <Link href="/layout2d/list">
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Manage
-            </Button>
-          </Link>
-        )}
+       
         <Button variant="ghost" size="icon" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4" />
         </Button>
