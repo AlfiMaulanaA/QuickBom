@@ -48,10 +48,37 @@ export async function POST(request: Request) {
       { message: "User created successfully. Please login." },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Registration error:", error);
+  } catch (error: any) {
+    console.error('API Error [POST /api/auth/register]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { message: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { message: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { message: "Email already exists" },
+        { status: 409 }
+      );
+    }
+
+    // Generic error response
     return NextResponse.json(
-      { message: "An error occurred during registration." },
+      {
+        message: "An error occurred during registration",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

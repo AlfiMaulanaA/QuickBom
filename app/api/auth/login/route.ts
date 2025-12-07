@@ -80,20 +80,32 @@ export async function POST(request: Request) {
         headers: { "Set-Cookie": serializedCookie },
       }
     );
-  } catch (error) {
-    console.error('Login error - Full error details:', error);
-    console.error('Login error - Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+  } catch (error: any) {
+    console.error('API Error [POST /api/auth/login]:', error);
 
-    // Return JSON error response
-    return new Response(
-      JSON.stringify({
-        message: "An error occurred during login",
-        error: error instanceof Error ? error.message : "Unknown error"
-      }),
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { message: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { message: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // Generic error response
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        message: "An error occurred during login",
+        error: error.message || "Unknown error",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
     );
   }
 }

@@ -35,9 +35,32 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ message: "Invalid token payload" }, { status: 401 });
-  } catch (error) {
-    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-  } finally {
-    await prisma.$disconnect();
+  } catch (error: any) {
+    console.error('API Error [GET /api/auth/me]:', error);
+
+    // Handle specific Prisma errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { message: "Database server unreachable", details: "Please check database connection" },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P2028') {
+      return NextResponse.json(
+        { message: "Database operation timeout", details: "Request took too long to process" },
+        { status: 504 }
+      );
+    }
+
+    // JWT errors or other issues
+    return NextResponse.json(
+      {
+        message: "Authentication error",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 401 }
+    );
   }
+  // Removed prisma.$disconnect() - not needed in Vercel serverless functions
 }
