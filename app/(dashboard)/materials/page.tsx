@@ -849,7 +849,7 @@ export default function MaterialsPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <span className="truncate max-w-96 text-green" title={material.name}>
+                          <span className="truncate max-w-96" title={material.name}>
                             {material.name}
                           </span>
                           <Button
@@ -896,7 +896,7 @@ export default function MaterialsPage() {
                       <TableCell>
                         <Badge variant="secondary">{material.unit}</Badge>
                       </TableCell>
-                      <TableCell>{formatCurrency(material.price)}</TableCell>
+                      <TableCell className="text-green-600 font-medium">{formatCurrency(material.price)}</TableCell>
                       <TableCell>
                         {new Date(material.createdAt).toLocaleDateString()}
                       </TableCell>
