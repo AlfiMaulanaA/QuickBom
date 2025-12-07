@@ -95,10 +95,10 @@ interface Alert {
 
 export default function MainDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
-    materials: { total: 0, totalValue: 0, topExpensive: [], recentCount: 0 },
+    materials: { total: 0, totalValue: 0, topExpensive: [], recentCount: 0, withPrices: 0, withoutPrices: 0, manufacturersCount: 0, unitTypesCount: 0, categoriesCount: 0 },
     assemblies: { total: 0, totalValue: 0, avgComplexity: 0, topUsed: [] },
     templates: { total: 0, activeProjects: 0, avgAssemblies: 0, mostPopular: [] },
-    projects: { total: 0, totalValue: 0, avgValue: 0, statusBreakdown: { completed: 0, inProgress: 0, planning: 0 }, monthlyGrowth: [] }
+    projects: { total: 0, totalValue: 0, avgValue: 0, statusBreakdown: { completed: 0, inProgress: 0, planning: 0, cancelled: 0, delayed: 0 }, monthlyGrowth: [] }
   });
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -200,10 +200,26 @@ export default function MainDashboardPage() {
       console.error('Failed to fetch dashboard data:', error);
       // Fallback to basic stats if analytics API fails
       setStats({
-        materials: { total: 0, totalValue: 0, topExpensive: [], recentCount: 0 },
+        materials: {
+          total: 0,
+          totalValue: 0,
+          topExpensive: [],
+          recentCount: 0,
+          withPrices: 0,
+          withoutPrices: 0,
+          manufacturersCount: 0,
+          unitTypesCount: 0,
+          categoriesCount: 0
+        },
         assemblies: { total: 0, totalValue: 0, avgComplexity: 0, topUsed: [] },
         templates: { total: 0, activeProjects: 0, avgAssemblies: 0, mostPopular: [] },
-        projects: { total: 0, totalValue: 0, avgValue: 0, statusBreakdown: { completed: 0, inProgress: 0, planning: 0 }, monthlyGrowth: [] }
+        projects: {
+          total: 0,
+          totalValue: 0,
+          avgValue: 0,
+          statusBreakdown: { completed: 0, inProgress: 0, planning: 0, cancelled: 0, delayed: 0 },
+          monthlyGrowth: []
+        }
       });
     } finally {
       setLoading(false);
