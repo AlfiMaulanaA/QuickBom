@@ -2,11 +2,21 @@ import { PrismaClient } from "@prisma/client";
 
 // Get the appropriate database URL based on environment
 const getDatabaseUrl = () => {
-  // For Vercel deployment, prioritize DATABASE_URL
-  const databaseUrl = process.env.DATABASE_URL;
+  const isProduction = process.env.NODE_ENV === 'production';
 
+  // In production, use SUPABASE_DATABASE_URL if available, otherwise DATABASE_URL
+  if (isProduction) {
+    const supabaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error("SUPABASE_DATABASE_URL or DATABASE_URL environment variable is required in production");
+    }
+    return supabaseUrl;
+  }
+
+  // In development, use DATABASE_URL (local PostgreSQL)
+  const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required");
+    throw new Error("DATABASE_URL environment variable is required in development");
   }
 
   return databaseUrl;
