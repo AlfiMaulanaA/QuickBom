@@ -227,46 +227,84 @@ export default function MainDashboardPage() {
   };
 
   const fetchRecentActivities = async () => {
-    // Mock data - in real app, this would come from an activities API
-    const activities: RecentActivity[] = [
-      {
-        id: '1',
-        type: 'create',
-        entity: 'project',
-        name: 'Renovasi Rumah Pak Ahmad',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        user: 'admin',
-        impact: 'high'
-      },
-      {
-        id: '2',
-        type: 'update',
-        entity: 'assembly',
-        name: 'Pemasangan Dinding Bata Merah',
-        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        user: 'manager',
-        impact: 'medium'
-      },
-      {
-        id: '3',
-        type: 'create',
-        entity: 'template',
-        name: 'Paket Renovasi Kamar Mandi Standard',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        user: 'admin',
-        impact: 'high'
-      },
-      {
-        id: '4',
-        type: 'update',
-        entity: 'material',
-        name: 'Bata Merah',
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-        user: 'procurement',
-        impact: 'low'
-      }
-    ];
-    setRecentActivities(activities);
+    try {
+      // Fetch recent items from different tables to create real-time activities
+      const [
+        recentMaterials,
+        recentProjects,
+        recentAssemblies,
+        recentTemplates
+      ] = await Promise.all([
+        fetch('/api/materials?limit=3').then(res => res.json()).catch(() => []),
+        fetch('/api/projects?limit=2').then(res => res.json()).catch(() => []),
+        fetch('/api/assemblies?limit=2').then(res => res.json()).catch(() => []),
+        fetch('/api/templates?limit=2').then(res => res.json()).catch(() => [])
+      ]);
+
+      // Transform database records into activity format
+      const activities: RecentActivity[] = [];
+
+      // Add recent materials as activities
+      recentMaterials.slice(0, 3).forEach((material: any, index: number) => {
+        activities.push({
+          id: `material-${material.id}`,
+          type: 'create' as const,
+          entity: 'material' as const,
+          name: material.name,
+          timestamp: material.createdAt,
+          user: 'System',
+          impact: index === 0 ? 'high' as const : 'medium' as const
+        });
+      });
+
+      // Add recent projects as activities
+      recentProjects.slice(0, 2).forEach((project: any) => {
+        activities.push({
+          id: `project-${project.id}`,
+          type: 'create' as const,
+          entity: 'project' as const,
+          name: project.name,
+          timestamp: project.createdAt,
+          user: 'System',
+          impact: 'high' as const
+        });
+      });
+
+      // Add recent assemblies as activities
+      recentAssemblies.slice(0, 2).forEach((assembly: any) => {
+        activities.push({
+          id: `assembly-${assembly.id}`,
+          type: 'create' as const,
+          entity: 'assembly' as const,
+          name: assembly.name,
+          timestamp: assembly.createdAt,
+          user: 'System',
+          impact: 'medium' as const
+        });
+      });
+
+      // Add recent templates as activities
+      recentTemplates.slice(0, 2).forEach((template: any) => {
+        activities.push({
+          id: `template-${template.id}`,
+          type: 'create' as const,
+          entity: 'template' as const,
+          name: template.name,
+          timestamp: template.createdAt,
+          user: 'System',
+          impact: 'high' as const
+        });
+      });
+
+      // Sort by timestamp (most recent first) and limit to 6 activities
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setRecentActivities(activities.slice(0, 6));
+
+    } catch (error) {
+      console.error('Failed to fetch recent activities:', error);
+      // Fallback to empty activities if API fails
+      setRecentActivities([]);
+    }
   };
 
 
