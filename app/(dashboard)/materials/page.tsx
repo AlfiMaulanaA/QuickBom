@@ -451,12 +451,12 @@ export default function MaterialsPage() {
     }
   };
 
-  const copyToClipboard = async (text: string, partNumber: string) => {
+  const copyToClipboard = async (text: string, label: string, itemType: 'name' | 'part number' = 'part number') => {
     try {
       await navigator.clipboard.writeText(text);
       toast({
         title: "Copied to clipboard",
-        description: `Part number "${text}" has been copied successfully.`,
+        description: `${itemType === 'name' ? 'Material name' : 'Part number'} "${text}" has been copied successfully.`,
       });
     } catch (err) {
       toast({
@@ -840,14 +840,29 @@ export default function MaterialsPage() {
                 </TableHeader>
                 <TableBody>
                   {processedMaterials.slice(0, displayMode === 'lazy' ? visibleItemsCount : (currentPage - 1) * pageSize + pageSize).map((material) => (
-                    <TableRow key={material.id}>
+                    <TableRow key={material.id} className="group">
                       <TableCell>
                         <Checkbox
                           checked={selectedMaterials.includes(material.id)}
                           onCheckedChange={(checked) => handleSelectMaterial(material.id, checked as boolean)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{material.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-48" title={material.name}>
+                            {material.name}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => copyToClipboard(material.name, material.name, 'name')}
+                            title="Copy material name"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         <div className="flex items-center gap-2">
                           <span className="truncate max-w-32">
@@ -858,7 +873,7 @@ export default function MaterialsPage() {
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 hover:bg-gray-100"
-                              onClick={() => copyToClipboard(material.partNumber!, material.partNumber!)}
+                              onClick={() => copyToClipboard(material.partNumber!, material.partNumber!, 'part number')}
                               title="Copy part number"
                             >
                               <Copy className="h-3 w-3" />
