@@ -849,7 +849,7 @@ export default function MaterialsPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <span className="truncate max-w-48" title={material.name}>
+                          <span className="truncate max-w-96" title={material.name}>
                             {material.name}
                           </span>
                           <Button
