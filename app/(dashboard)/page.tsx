@@ -47,6 +47,11 @@ interface DashboardStats {
     totalValue: number;
     topExpensive: Array<{ name: string; price: number }>;
     recentCount: number;
+    withPrices: number;
+    withoutPrices: number;
+    manufacturersCount: number;
+    unitTypesCount: number;
+    categoriesCount: number;
   };
   assemblies: {
     total: number;
@@ -64,7 +69,7 @@ interface DashboardStats {
     total: number;
     totalValue: number;
     avgValue: number;
-    statusBreakdown: { completed: number; inProgress: number; planning: number };
+    statusBreakdown: { completed: number; inProgress: number; planning: number; cancelled: number; delayed: number };
     monthlyGrowth: Array<{ month: string; count: number; value: number }>;
   };
 }
@@ -142,73 +147,64 @@ export default function MainDashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch all data in parallel
-      const [materialsRes, assembliesRes, templatesRes, projectsRes] = await Promise.all([
-        fetch('/api/materials'),
-        fetch('/api/assemblies'),
-        fetch('/api/templates'),
-        fetch('/api/projects')
-      ]);
+      // Fetch analytics data from the new endpoint
+      const analyticsRes = await fetch('/api/dashboard-analytics');
 
-      const [materials, assemblies, templates, projects] = await Promise.all([
-        materialsRes.json(),
-        assembliesRes.json(),
-        templatesRes.json(),
-        projectsRes.json()
-      ]);
+      if (!analyticsRes.ok) {
+        throw new Error(`Failed to fetch analytics: ${analyticsRes.status}`);
+      }
 
-      // Enhanced statistics calculation
-      const materialsTotal = materials.length;
-      const materialsValue = materials.reduce((sum: number, m: any) => sum + Number(m.price), 0);
-      const topExpensive = materials
-        .sort((a: any, b: any) => Number(b.price) - Number(a.price))
-        .slice(0, 5)
-        .map((m: any) => ({ name: m.name, price: Number(m.price) }));
+      const analytics = await analyticsRes.json();
 
-      // Calculate materials with prices vs without
-      const materialsWithPrices = materials.filter((m: any) => Number(m.price) > 0).length;
-      const materialsWithoutPrices = materialsTotal - materialsWithPrices;
-
-      // Calculate manufacturers count
-      const uniqueManufacturers = [...new Set(materials.map((m: any) => m.manufacturer).filter(Boolean))].length;
-
-      // Calculate unit types
-      const uniqueUnits = [...new Set(materials.map((m: any) => m.unit))].length;
-
-      const assembliesTotal = assemblies.length;
-      const assembliesValue = assemblies.reduce((sum: number, a: any) =>
-        sum + a.materials.reduce((mSum: number, m: any) => mSum + (Number(m.material.price) * Number(m.quantity)), 0), 0);
-      const avgComplexity = assemblies.length > 0 ?
-        assemblies.reduce((sum: number, a: any) => sum + a.materials.length, 0) / assemblies.length : 0;
-
-      const templatesTotal = templates.length;
-      const activeProjects = templates.reduce((sum: number, t: any) => sum + t.projects.length, 0);
-      const avgAssemblies = templates.length > 0 ?
-        templates.reduce((sum: number, t: any) => sum + t.assemblies.length, 0) / templates.length : 0;
-
-      const projectsTotal = projects.length;
-      const projectsValue = projects.reduce((sum: number, p: any) => sum + Number(p.totalPrice), 0);
-      const avgProjectValue = projectsTotal > 0 ? projectsValue / projectsTotal : 0;
-
-      // Mock monthly growth data (in real app, this would come from database)
-      const monthlyGrowth = [
-        { month: 'Jan', count: 12, value: 150000000 },
-        { month: 'Feb', count: 18, value: 220000000 },
-        { month: 'Mar', count: 15, value: 180000000 },
-        { month: 'Apr', count: 22, value: 280000000 },
-        { month: 'May', count: 25, value: 320000000 },
-        { month: 'Jun', count: 28, value: 350000000 },
-      ];
-
+      // Update stats with real data from analytics API
       setStats({
-        materials: { total: materialsTotal, totalValue: materialsValue, topExpensive, recentCount: materialsTotal },
-        assemblies: { total: assembliesTotal, totalValue: assembliesValue, avgComplexity, topUsed: [] },
-        templates: { total: templatesTotal, activeProjects, avgAssemblies, mostPopular: [] },
-        projects: { total: projectsTotal, totalValue: projectsValue, avgValue: avgProjectValue, statusBreakdown: { completed: Math.floor(projectsTotal * 0.7), inProgress: Math.floor(projectsTotal * 0.2), planning: Math.floor(projectsTotal * 0.1) }, monthlyGrowth }
+        materials: {
+          total: analytics.materials.total,
+          totalValue: analytics.materials.totalValue,
+          topExpensive: analytics.materials.topExpensive,
+          recentCount: analytics.materials.recentCount,
+          withPrices: analytics.materials.withPrices,
+          withoutPrices: analytics.materials.withoutPrices,
+          manufacturersCount: analytics.materials.manufacturersCount,
+          unitTypesCount: analytics.materials.unitTypesCount,
+          categoriesCount: analytics.materials.categoriesCount
+        },
+        assemblies: {
+          total: analytics.assemblies.total,
+          totalValue: analytics.assemblies.totalValue,
+          avgComplexity: analytics.assemblies.avgComplexity,
+          topUsed: analytics.assemblies.topUsed
+        },
+        templates: {
+          total: analytics.templates.total,
+          activeProjects: analytics.templates.activeProjects,
+          avgAssemblies: analytics.templates.avgAssemblies,
+          mostPopular: analytics.templates.mostPopular
+        },
+        projects: {
+          total: analytics.projects.total,
+          totalValue: analytics.projects.totalValue,
+          avgValue: analytics.projects.avgValue,
+          statusBreakdown: {
+            completed: analytics.projects.statusBreakdown.completed,
+            inProgress: analytics.projects.statusBreakdown.inProgress,
+            planning: analytics.projects.statusBreakdown.planning,
+            cancelled: analytics.projects.statusBreakdown.cancelled || 0,
+            delayed: analytics.projects.statusBreakdown.delayed || 0
+          },
+          monthlyGrowth: analytics.projects.monthlyGrowth
+        }
       });
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      // Fallback to basic stats if analytics API fails
+      setStats({
+        materials: { total: 0, totalValue: 0, topExpensive: [], recentCount: 0 },
+        assemblies: { total: 0, totalValue: 0, avgComplexity: 0, topUsed: [] },
+        templates: { total: 0, activeProjects: 0, avgAssemblies: 0, mostPopular: [] },
+        projects: { total: 0, totalValue: 0, avgValue: 0, statusBreakdown: { completed: 0, inProgress: 0, planning: 0 }, monthlyGrowth: [] }
+      });
     } finally {
       setLoading(false);
     }
@@ -482,9 +478,9 @@ export default function MainDashboardPage() {
                 <DollarSign className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">8</div>
+                <div className="text-2xl font-bold text-green-600">{stats.materials.withPrices}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.materials.total > 0 ? ((8 / stats.materials.total) * 100).toFixed(1) : 0}% of total materials
+                  {stats.materials.total > 0 ? ((stats.materials.withPrices / stats.materials.total) * 100).toFixed(1) : 0}% of total materials
                 </p>
                 <div className="flex items-center mt-2">
                   <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
@@ -499,7 +495,7 @@ export default function MainDashboardPage() {
                 <AlertTriangle className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{stats.materials.total - 8}</div>
+                <div className="text-2xl font-bold text-orange-600">{stats.materials.withoutPrices}</div>
                 <p className="text-xs text-muted-foreground">
                   Need price updates
                 </p>
@@ -516,13 +512,13 @@ export default function MainDashboardPage() {
                 <Building className="h-4 w-4 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-600">15+</div>
+                <div className="text-2xl font-bold text-purple-600">{stats.materials.manufacturersCount}</div>
                 <p className="text-xs text-muted-foreground">
                   Different suppliers
                 </p>
                 <div className="flex items-center mt-2">
                   <Users className="h-3 w-3 text-purple-500 mr-1" />
-                  <span className="text-xs text-purple-600">ABB, Schneider, Phoenix</span>
+                  <span className="text-xs text-purple-600">Active manufacturers</span>
                 </div>
               </CardContent>
             </Card>
@@ -562,7 +558,7 @@ export default function MainDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600 mb-1">
-                  5
+                  {stats.materials.unitTypesCount}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Different measurement units
@@ -570,7 +566,7 @@ export default function MainDashboardPage() {
                 <div className="mt-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center">
                     <Eye className="h-3 w-3 mr-1" />
-                    EACH, METER, PACK, ROLL, SET
+                    Active unit types in system
                   </span>
                 </div>
               </CardContent>
@@ -585,15 +581,15 @@ export default function MainDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-purple-600 mb-1">
-                  100%
+                  {stats.materials.total > 0 ? ((stats.materials.withPrices / stats.materials.total) * 100).toFixed(1) + '%' : '0%'}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Materials catalog complete
+                  Materials catalog completeness
                 </p>
                 <div className="mt-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center">
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    All items from BOQ imported
+                    {stats.materials.withPrices} of {stats.materials.total} materials priced
                   </span>
                 </div>
               </CardContent>
