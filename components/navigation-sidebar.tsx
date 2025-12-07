@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { LogOut, ChevronDown, ChevronRight, BlocksIcon, LayoutDashboard, Settings, Users, Database, Activity, Package, FileText, FolderOpen, BarChart3 } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, Package as PackageIcon, FileText, FolderOpen, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -186,15 +186,14 @@ export const NavigationSidebar = memo(function NavigationSidebar({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center border-gray-400 justify-center rounded-lg bg-primary text-primary-foreground">
-              <BlocksIcon className="h-5 w-5" />
+              <Package className="h-5 w-5" />
             </div>
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-sidebar-foreground">
                 QuickBom
               </h1>
               <p className="text-xs text-sidebar-foreground/70">{appName}</p>
-              
-            </div>
+              </div>
           </div>
           <ThemeToggle />
         </div>

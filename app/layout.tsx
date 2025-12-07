@@ -12,10 +12,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Quick Bom - Construction Project Management",
-  description: "Advanced construction project management platform with Gantt charts, timeline management, and resource allocation",
+  title: "QuickBom - BOM & Project Management",
+  description: "Advanced BOM and project management platform for manufacturing and construction with materials tracking, assembly planning, and team collaboration",
   icons: {
-    icon: "/blocks-icon.svg",
+    icon: "/package-icon.svg",
   },
 };
 

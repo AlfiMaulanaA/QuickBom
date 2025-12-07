@@ -886,8 +886,8 @@ export default function MaterialsPage() {
                               </Button>
                             </>
                           ) : (
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 font-medium">
-                              No PN
+                            <Badge variant="secondary" className="bg-orange-800 text-white-800 font-medium">
+                              No Part Number
                             </Badge>
                           )}
                         </div>

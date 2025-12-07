@@ -253,4 +253,33 @@
   .text-data-value {
     @apply text-muted-foreground;
   }
+
+  /* BOM Project specific styles */
+  .bom-card {
+    @apply bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .bom-card-header {
+    @apply px-6 py-4 border-b border-border;
+  }
+
+  .bom-card-content {
+    @apply px-6 py-4;
+  }
+
+  .bom-button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 py-2 rounded-md transition-colors;
+  }
+
+  .bom-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium px-4 py-2 rounded-md transition-colors;
+  }
+
+  .bom-input {
+    @apply bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  }
+
+  .bom-label {
+    @apply text-sm font-medium text-foreground mb-1 block;
+  }
 }

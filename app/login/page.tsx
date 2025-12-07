@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, LogIn, Eye, EyeOff, RefreshCw, Monitor, Blocks, BarChart3, Zap, Shield, Database, Wifi } from "lucide-react";
+import { Loader2, LogIn, Eye, EyeOff, RefreshCw, Monitor, Blocks, BarChart3, Zap, Shield, Database, Wifi, Package } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { showToast } from "@/lib/toast-utils";
 import { motion } from "framer-motion";
@@ -267,7 +267,7 @@ function LoginForm() {
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-                <Blocks className="w-7 h-7 text-primary-foreground" />
+                <Package className="w-7 h-7 text-primary-foreground" />
               </div>
               <div className="text-start">
                 <h1 className="text-4xl lg:text-5xl font-bold text-foreground">QuickBom</h1>
