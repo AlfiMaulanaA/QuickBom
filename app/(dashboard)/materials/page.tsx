@@ -856,8 +856,13 @@ export default function MaterialsPage() {
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => copyToClipboard(material.name, material.name, 'name')}
-                            title="Copy material name"
+                            onClick={() => {
+                              const textToCopy = material.manufacturer
+                                ? `${material.name} - ${material.manufacturer}`
+                                : material.name;
+                              copyToClipboard(textToCopy, material.name, 'name');
+                            }}
+                            title="Copy material name with manufacturer"
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
