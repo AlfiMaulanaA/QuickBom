@@ -837,7 +837,14 @@ export default function ProjectTimelinePage() {
           </Card>
 
           {/* Timeline Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(value) => {
+            if (value === "gantt") {
+              // Redirect to full screen Gantt chart instead of showing placeholder
+              router.push(`/projects/${projectId}/timeline/gantt`);
+              return;
+            }
+            setActiveTab(value);
+          }}>
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="gantt">Gantt Chart</TabsTrigger>
@@ -1158,14 +1165,13 @@ export default function ProjectTimelinePage() {
                                   <SelectValue placeholder="Select task type" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="PLANNING">Planning</SelectItem>
+                                  <SelectItem value="MATERIAL_PROCUREMENT">Material Procurement</SelectItem>
+                                  <SelectItem value="SITE_PREPARATION">Site Preparation</SelectItem>
                                   <SelectItem value="CONSTRUCTION">Construction</SelectItem>
-                                  <SelectItem value="ELECTRICAL">Electrical</SelectItem>
-                                  <SelectItem value="PLUMBING">Plumbing</SelectItem>
-                                  <SelectItem value="MECHANICAL">Mechanical</SelectItem>
-                                  <SelectItem value="DESIGN">Design</SelectItem>
-                                  <SelectItem value="PERMIT">Permit</SelectItem>
-                                  <SelectItem value="SUPERVISION">Supervision</SelectItem>
-                                  <SelectItem value="OTHER">Other</SelectItem>
+                                  <SelectItem value="QUALITY_CHECK">Quality Check</SelectItem>
+                                  <SelectItem value="DOCUMENTATION">Documentation</SelectItem>
+                                  <SelectItem value="CLIENT_APPROVAL">Client Approval</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1282,14 +1288,13 @@ export default function ProjectTimelinePage() {
                                   <SelectValue placeholder="Select task type" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="PLANNING">Planning</SelectItem>
+                                  <SelectItem value="MATERIAL_PROCUREMENT">Material Procurement</SelectItem>
+                                  <SelectItem value="SITE_PREPARATION">Site Preparation</SelectItem>
                                   <SelectItem value="CONSTRUCTION">Construction</SelectItem>
-                                  <SelectItem value="ELECTRICAL">Electrical</SelectItem>
-                                  <SelectItem value="PLUMBING">Plumbing</SelectItem>
-                                  <SelectItem value="MECHANICAL">Mechanical</SelectItem>
-                                  <SelectItem value="DESIGN">Design</SelectItem>
-                                  <SelectItem value="PERMIT">Permit</SelectItem>
-                                  <SelectItem value="SUPERVISION">Supervision</SelectItem>
-                                  <SelectItem value="OTHER">Other</SelectItem>
+                                  <SelectItem value="QUALITY_CHECK">Quality Check</SelectItem>
+                                  <SelectItem value="DOCUMENTATION">Documentation</SelectItem>
+                                  <SelectItem value="CLIENT_APPROVAL">Client Approval</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1549,12 +1554,12 @@ export default function ProjectTimelinePage() {
                           </div>
                           <div>
                             <Label htmlFor="milestone-dependsOn">Depends On (Optional)</Label>
-                            <Select value={milestoneForm.dependsOn} onValueChange={(value) => setMilestoneForm({ ...milestoneForm, dependsOn: value })}>
+                            <Select value={milestoneForm.dependsOn || "none"} onValueChange={(value) => setMilestoneForm({ ...milestoneForm, dependsOn: value === "none" ? "" : value })}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select dependency" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">No dependency</SelectItem>
+                                <SelectItem value="none">No dependency</SelectItem>
                                 {timeline?.milestones.map((milestone) => (
                                   <SelectItem key={milestone.id} value={milestone.id}>
                                     {milestone.name}

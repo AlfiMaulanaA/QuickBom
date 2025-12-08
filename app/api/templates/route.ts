@@ -61,7 +61,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, assemblies } = body;
+    const { name, description, docs, assemblies } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description: description || null,
+        docs: docs || null,
         ...(assemblies && assemblies.length > 0 ? {
           assemblies: {
             create: assemblies.map((a: any) => ({

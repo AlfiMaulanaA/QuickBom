@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
-    const { name, description, assemblies } = body;
+    const { name, description, docs, assemblies } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -65,7 +65,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Prepare update data
     const updateData: any = {
       name,
-      description
+      description,
+      docs: docs || null
     };
 
     // Add assemblies if provided

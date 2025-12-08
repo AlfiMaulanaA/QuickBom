@@ -29,7 +29,10 @@ import {
   AlertTriangle,
   ShoppingCart,
   Search,
-  X
+  X,
+  Upload,
+  File,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,6 +75,7 @@ export default function CreateTemplatePage() {
   // Form state
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [templateDocs, setTemplateDocs] = useState<any[]>([]);
   const [selectedAssemblies, setSelectedAssemblies] = useState<TemplateAssembly[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -79,6 +83,11 @@ export default function CreateTemplatePage() {
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("select");
+
+  // Search and sort for selected assemblies
+  const [assemblySearchTerm, setAssemblySearchTerm] = useState("");
+  const [assemblySortBy, setAssemblySortBy] = useState<"name" | "cost">("name");
+  const [assemblySortOrder, setAssemblySortOrder] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     fetchAssemblies();
@@ -231,6 +240,7 @@ export default function CreateTemplatePage() {
       const templateData = {
         name: templateName.trim(),
         description: templateDescription.trim() || null,
+        docs: templateDocs.length > 0 ? templateDocs : null,
         assemblies: selectedAssemblies.map(sa => ({
           assemblyId: sa.assemblyId,
           quantity: sa.quantity
@@ -466,18 +476,12 @@ export default function CreateTemplatePage() {
                         <span className="bg-primary-foreground text-primary px-1 rounded text-xs">
                           {sa.quantity}
                         </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeAssemblyFromTemplate(sa.assemblyId);
-                          }}
-                          className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
                       </Badge>
                     ))}
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Tip: Click assemblies again to increase quantity. You can adjust quantities in the next step.
+                  </p>
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Estimated Total Cost:</span>
@@ -514,81 +518,156 @@ export default function CreateTemplatePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Search and Sort Controls */}
+                {selectedAssemblies.length > 0 && (
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          placeholder="Search assemblies by name..."
+                          value={assemblySearchTerm}
+                          onChange={(e) => setAssemblySearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <select
+                        value={`${assemblySortBy}-${assemblySortOrder}`}
+                        onChange={(e) => {
+                          const [sortBy, sortOrder] = e.target.value.split('-') as [typeof assemblySortBy, typeof assemblySortOrder];
+                          setAssemblySortBy(sortBy);
+                          setAssemblySortOrder(sortOrder);
+                        }}
+                        className="px-3 py-2 border border-input bg-background rounded-md text-sm min-w-[140px]"
+                      >
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="cost-asc">Cost (Low-High)</option>
+                        <option value="cost-desc">Cost (High-Low)</option>
+                      </select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAssemblySearchTerm("");
+                          setAssemblySortBy("name");
+                          setAssemblySortOrder("asc");
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
-                  {selectedAssemblies.map((sa) => {
-                    const assembly = sa.assembly;
-                    const unitCost = calculateAssemblyCost(assembly);
+                  {(() => {
+                    // Filter and sort selected assemblies
+                    const filteredAndSortedAssemblies = selectedAssemblies
+                      .filter(sa =>
+                        sa.assembly.name.toLowerCase().includes(assemblySearchTerm.toLowerCase())
+                      )
+                      .sort((a, b) => {
+                        let aValue: any, bValue: any;
 
-                    return (
-                      <Card key={sa.assemblyId} className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{assembly.name}</h4>
-                            {assembly.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {assembly.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span>Unit Cost: {formatCurrency(unitCost)}</span>
-                              <span>Materials: {assembly.materials.length}</span>
+                        switch (assemblySortBy) {
+                          case "name":
+                            aValue = a.assembly.name.toLowerCase();
+                            bValue = b.assembly.name.toLowerCase();
+                            break;
+                          case "cost":
+                            aValue = a.estimatedCost;
+                            bValue = b.estimatedCost;
+                            break;
+                          default:
+                            return 0;
+                        }
+
+                        if (assemblySortOrder === "asc") {
+                          return aValue > bValue ? 1 : -1;
+                        } else {
+                          return aValue < bValue ? 1 : -1;
+                        }
+                      });
+
+                    return filteredAndSortedAssemblies.map((sa) => {
+                      const assembly = sa.assembly;
+                      const unitCost = calculateAssemblyCost(assembly);
+
+                      return (
+                        <Card key={sa.assemblyId} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{assembly.name}</h4>
+                              {assembly.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {assembly.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-4 mt-2 text-sm">
+                                <span>Unit Cost: {formatCurrency(unitCost)}</span>
+                                <span>Materials: {assembly.materials.length}</span>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateAssemblyQuantity(sa.assemblyId, sa.quantity - 1)}
-                                disabled={sa.quantity <= 1}
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateAssemblyQuantity(sa.assemblyId, sa.quantity - 1)}
+                                  disabled={sa.quantity <= 1}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
 
-                              <div className="w-16 text-center">
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={sa.quantity}
-                                  onChange={(e) => {
-                                    const value = parseInt(e.target.value) || 1;
-                                    updateAssemblyQuantity(sa.assemblyId, value);
-                                  }}
-                                  className="text-center"
-                                />
+                                <div className="w-16 text-center">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={sa.quantity}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 1;
+                                      updateAssemblyQuantity(sa.assemblyId, value);
+                                    }}
+                                    className="text-center"
+                                  />
+                                </div>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateAssemblyQuantity(sa.assemblyId, sa.quantity + 1)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="text-right min-w-[120px]">
+                                <div className="font-semibold text-green-600">
+                                  {formatCurrency(sa.estimatedCost)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Total
+                                </div>
                               </div>
 
                               <Button
-                                variant="outline"
+                                variant="destructive"
                                 size="sm"
-                                onClick={() => updateAssemblyQuantity(sa.assemblyId, sa.quantity + 1)}
+                                onClick={() => removeAssemblyFromTemplate(sa.assemblyId)}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
-
-                            <div className="text-right min-w-[120px]">
-                              <div className="font-semibold text-green-600">
-                                {formatCurrency(sa.estimatedCost)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Total
-                              </div>
-                            </div>
-
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeAssemblyFromTemplate(sa.assemblyId)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
+                        </Card>
+                      );
+                    });
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -605,6 +684,7 @@ export default function CreateTemplatePage() {
 
           {/* Step 3: Review & Save */}
           <TabsContent value="review" className="space-y-6">
+            {/* Template Information and Documents - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Template Information */}
               <Card>
@@ -639,47 +719,139 @@ export default function CreateTemplatePage() {
                 </CardContent>
               </Card>
 
-              {/* Template Statistics */}
+              {/* Documents Upload */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
-                    Template Statistics
+                    <File className="h-5 w-5" />
+                    Documents
                   </CardTitle>
+                  <CardDescription>
+                    Upload supporting documents for this template (PDF files only)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {templateStats.totalAssemblies}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Assemblies</div>
+                  <div className="space-y-4">
+                    {/* File Input */}
+                    <div>
+                      <input
+                        type="file"
+                        id="document-upload"
+                        className="hidden"
+                        accept=".pdf"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length === 0) return;
+
+                          // Process each file
+                          files.forEach(file => {
+                            const docObject = {
+                              name: file.name,
+                              url: `#temp-${Date.now()}-${file.name}`, // Temporary URL
+                              size: file.size,
+                              type: file.type || 'application/pdf',
+                              uploadedAt: new Date().toISOString(),
+                              file: file // Keep file reference for upload
+                            };
+                            setTemplateDocs(prev => [...prev, docObject]);
+                          });
+
+                          // Reset input
+                          e.target.value = '';
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => document.getElementById('document-upload')?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose PDF Files
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Select one or more PDF files to attach to this template
+                      </p>
                     </div>
 
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {templateStats.totalMaterials}
+                    {/* Documents List */}
+                    {templateDocs.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Selected Documents:</Label>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {templateDocs.map((doc, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{doc.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {(doc.size / 1024).toFixed(1)} KB
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setTemplateDocs(prev => prev.filter((_, i) => i !== index));
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Total Materials</div>
-                    </div>
-
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(templateStats.avgAssemblyCost)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Avg Assembly Cost</div>
-                    </div>
-
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {formatCurrency(templateStats.totalCost)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Cost</div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Template Statistics - Full Width (Outside Grid) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Template Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">
+                      {templateStats.totalAssemblies}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Assemblies</div>
+                  </div>
+
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {templateStats.totalMaterials}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Materials</div>
+                  </div>
+
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(templateStats.avgAssemblyCost)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Avg Assembly Cost</div>
+                  </div>
+
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {formatCurrency(templateStats.totalCost)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Cost</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Assemblies Breakdown */}
             <Card>

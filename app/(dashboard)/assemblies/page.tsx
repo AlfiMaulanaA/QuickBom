@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, DollarSign, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy } from "lucide-react";
+import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, DollarSign, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -32,10 +32,19 @@ interface AssemblyMaterial {
   material: Material;
 }
 
+interface DocumentFile {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+}
+
 interface Assembly {
   id: number;
   name: string;
   description: string | null;
+  docs: DocumentFile[] | null;
   materials: AssemblyMaterial[];
   createdAt: string;
   updatedAt: string;
@@ -732,6 +741,7 @@ export default function AssembliesPage() {
                     </TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Materials Count</TableHead>
+                    <TableHead>Documents</TableHead>
                     <TableHead>Total Cost</TableHead>
                     <TableHead>
                       <Button variant="ghost" onClick={() => handleSort("createdAt")} className="h-auto p-0 font-semibold">
@@ -758,6 +768,11 @@ export default function AssembliesPage() {
                       <TableCell>
                         <Badge variant="secondary">
                           {assembly.materials.length} materials
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {assembly.docs?.length || 0} docs
                         </Badge>
                       </TableCell>
                       <TableCell className="font-semibold text-green-600">
@@ -997,6 +1012,159 @@ export default function AssembliesPage() {
                   </TableBody>
                 </Table>
               </div>
+            </div>
+
+            {/* Documents Section */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-4 bg-muted/50 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <File className="h-4 w-4" />
+                    <span className="font-medium">Documents</span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedAssembly?.docs?.length || 0} files
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      id={`file-upload-${selectedAssembly?.id}`}
+                      className="hidden"
+                      accept=".pdf"
+                      multiple
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (!selectedAssembly || files.length === 0) return;
+
+                        for (const file of files) {
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          formData.append('assemblyId', selectedAssembly.id.toString());
+
+                          try {
+                            const response = await fetch('/api/assemblies/upload', {
+                              method: 'POST',
+                              body: formData,
+                            });
+
+                            if (response.ok) {
+                              toast({
+                                title: "Document uploaded",
+                                description: `"${file.name}" has been uploaded successfully`,
+                              });
+                              fetchAssemblies();
+                            } else {
+                              const error = await response.json();
+                              toast({
+                                title: "Upload failed",
+                                description: error.error || "Failed to upload document",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Upload failed",
+                              description: "Network error occurred",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                        // Reset input
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById(`file-upload-${selectedAssembly?.id}`)?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {selectedAssembly?.docs && selectedAssembly.docs.length > 0 ? (
+                <div className="divide-y">
+                  {selectedAssembly.docs.map((doc: DocumentFile, index: number) => (
+                    <div key={doc.url} className="p-3 flex items-center justify-between hover:bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <File className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium text-sm">{doc.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {(doc.size / 1024).toFixed(1)} KB • {doc.type} • Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = doc.url;
+                            link.download = doc.name;
+                            link.click();
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) return;
+
+                            try {
+                              const response = await fetch('/api/assemblies/upload', {
+                                method: 'DELETE',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  assemblyId: selectedAssembly.id,
+                                  fileUrl: doc.url,
+                                }),
+                              });
+
+                              if (response.ok) {
+                                toast({
+                                  title: "Document deleted",
+                                  description: `"${doc.name}" has been removed`,
+                                });
+                                fetchAssemblies();
+                              } else {
+                                const error = await response.json();
+                                toast({
+                                  title: "Delete failed",
+                                  description: error.error || "Failed to delete document",
+                                  variant: "destructive",
+                                });
+                              }
+                            } catch (error) {
+                              toast({
+                                title: "Delete failed",
+                                description: "Network error occurred",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <File className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click "Upload" to add documents to this assembly</p>
+                </div>
+              )}
             </div>
 
             {/* Summary Footer */}

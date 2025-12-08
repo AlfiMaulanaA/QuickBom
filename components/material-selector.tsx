@@ -152,8 +152,8 @@ export default function MaterialSelector({
 
   return (
     <div className="flex flex-col h-[90vh] max-h-[800px]">
-      {/* Header */}
-      <div className="p-6 border-b">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 p-6 border-b">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold">Select Materials</h2>
@@ -176,13 +176,14 @@ export default function MaterialSelector({
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      {/* Content Area - Scrollable */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Materials List */}
-        <div className="flex-1 border-r">
-          <div className="p-4 border-b bg-muted/50">
+        <div className="flex-1 border-r flex flex-col">
+          <div className="flex-shrink-0 p-4 border-b bg-muted/50">
             <h3 className="font-semibold">Available Materials ({filteredMaterials.length})</h3>
           </div>
-          <ScrollArea className="h-full">
+          <ScrollArea className="flex-1">
             <div className="p-4 space-y-2">
               {filteredMaterials.map((material) => {
                 const isSelected = isMaterialSelected(material.id);
@@ -260,11 +261,11 @@ export default function MaterialSelector({
         </div>
 
         {/* Selected Materials Summary */}
-        <div className="w-80">
-          <div className="p-4 border-b bg-muted/50">
+        <div className="w-80 flex flex-col">
+          <div className="flex-shrink-0 p-4 border-b bg-muted/50">
             <h3 className="font-semibold">Selected Materials ({selectedMaterials.length})</h3>
           </div>
-          <ScrollArea className="h-full">
+          <ScrollArea className="flex-1">
             <div className="p-4">
               {selectedMaterials.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -321,8 +322,8 @@ export default function MaterialSelector({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t bg-muted/50">
+      {/* Footer - Fixed */}
+      <div className="flex-shrink-0 p-4 border-t bg-muted/50">
         <div className="flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
             {selectedMaterials.length} material{selectedMaterials.length !== 1 ? 's' : ''} selected

@@ -1,7 +1,7 @@
 [
    {
       "id":11,
-      "name":"[ CAC ] Cold Aisle Containment - 2x10 Rows No Monitor, Manual Door",
+      "name":"[ CAC ] 2x10 Rows No Monitor, Manual Door",
       "description":"Feature :\n\n1.  Cold Aisle Containment 2x10 Racks\n2. Manual\n3. No Monitor\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "createdAt":"2025-12-06T12:47:34.325Z",
       "updatedAt":"2025-12-06T13:37:19.630Z",
@@ -1374,7 +1374,7 @@
    },
    {
       "id":10,
-      "name":"[ CAC ] Cold Aisle Containment - 2x10 Rows w Monitor, Automatic Door",
+      "name":"[ CAC ] 2x10 Rows w Monitor, Automatic Door",
       "description":"Feature :\n\n1.  Cold Aisle Containment 2x10 Racks\n2. Automatic Door via Access Control (PIN, CARD, Finger Print)\n3. Monitor 21'5 Inch Touchscreen\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base & Via Monitor\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "createdAt":"2025-12-06T12:47:27.010Z",
       "updatedAt":"2025-12-06T13:37:32.782Z",
@@ -2904,7 +2904,7 @@
    },
    {
       "id":9,
-      "name":"[ HAC ] Hot Aisle Containment - 2x10 Rows w Monitor, Automatic Door",
+      "name":"[ HAC ] 2x10 Rows w Monitor, Automatic Door",
       "description":"Feature :\n1.  Hot Aisle Containment 2x10 Racks\n2. Automatic Door via Access Control (PIN, CARD, Finger Print)\n3. Monitor 21'5 Inch Touchscreen\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base & Via Monitor\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "createdAt":"2025-12-06T12:46:17.120Z",
       "updatedAt":"2025-12-06T13:37:46.145Z",
@@ -4425,7 +4425,7 @@
    },
    {
       "id":8,
-      "name":"[ HAC ] Hot Aisle Containment - 2x10 Rows No Monitor, Manual Door",
+      "name":"[ HAC ] 2x10 Rows No Monitor, Manual Door",
       "description":"Feature :\n1.  Hot Aisle Containment 2x10 Racks\n2. Manual Door\n3. No Monitor\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "createdAt":"2025-12-06T12:41:48.103Z",
       "updatedAt":"2025-12-06T13:37:57.683Z",

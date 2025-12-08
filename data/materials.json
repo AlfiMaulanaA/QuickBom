@@ -11,6 +11,43 @@
       "createdAt":"2025-12-06T11:51:37.442Z",
       "updatedAt":"2025-12-06T11:51:37.442Z"
    },
+
+   {
+      "id":306,
+      "name":"STEKER 2 POLE + ARDE",
+      "partNumber":"403040002",
+      "manufacturer":"BROCO",
+      "unit":"EACH",
+      "price":"0",
+      "purchaseUrl":null,
+      "datasheetFile":null,
+      "createdAt":"2025-12-06T09:22:31.996Z",
+      "updatedAt":"2025-12-06T09:22:43.689Z"
+   },
+   {
+      "id":305,
+      "name":"LRS100-12; SWITCHING POWER SUPPLIES 102W 12V 8.5A",
+      "partNumber":"403040002",
+      "manufacturer":"MEAN WELL",
+      "unit":"EACH",
+      "price":"0",
+      "purchaseUrl":null,
+      "datasheetFile":null,
+      "createdAt":"2025-12-06T09:22:31.996Z",
+      "updatedAt":"2025-12-06T09:22:43.689Z"
+   },
+   {
+      "id":304,
+      "name":"CONVENTIONAL PHOTOELECTRIC SMOKE DETECTOR C/W BASE",
+      "partNumber":"403040002",
+      "manufacturer":"SIMPLEX",
+      "unit":"EACH",
+      "price":"0",
+      "purchaseUrl":null,
+      "datasheetFile":null,
+      "createdAt":"2025-12-06T09:22:31.996Z",
+      "updatedAt":"2025-12-06T09:22:43.689Z"
+   },
    {
       "id":303,
       "name":"Modular Drycontact",
@@ -50,8 +87,8 @@
    {
       "id":60,
       "name":"TEMPERATURE HUMIDITY SENSOR RS485 MODBUS THM-30MD",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"201070144",
+      "manufacturer":"LOKAL",
       "unit":"EACH",
       "price":"215000",
       "purchaseUrl":"https://example.com/industrial-temp-humidity-sensor",
@@ -62,8 +99,8 @@
    {
       "id":59,
       "name":"TEMPERATURE HUMIDITY SENSOR RS485 MODBUS XY-MD02",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"201070100",
+      "manufacturer":"LOKAL",
       "unit":"EACH",
       "price":"108000",
       "purchaseUrl":"https://example.com/temp-humidity-sensor-rs485",
@@ -74,8 +111,8 @@
    {
       "id":58,
       "name":"STAINLESS STEEL EXIT PUSH BUTTON",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"207020321",
+      "manufacturer":"LOKAL",
       "unit":"EACH",
       "price":"30000",
       "purchaseUrl":"https://example.com/stainless-steel-exit-button",
@@ -86,8 +123,8 @@
    {
       "id":57,
       "name":"ZKTECO F18 FINGERPRINT ACCESS CONTROL",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"403090016",
+      "manufacturer":"LOKAL",
       "unit":"EACH",
       "price":"1720000",
       "purchaseUrl":"https://example.com/zkteco-f18-fingerprint",
@@ -146,7 +183,7 @@
    {
       "id":52,
       "name":"SWITCH HUB 5 PORT 10 100 1000 MBPS",
-      "partNumber":"0",
+      "partNumber":"106060047",
       "manufacturer":"TP-LINK",
       "unit":"EACH",
       "price":"132700",
@@ -158,8 +195,8 @@
    {
       "id":51,
       "name":"GIGABIT USB 3 0 TO LAN RJ45 ETHERNET ADAPTER",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"401010129",
+      "manufacturer":"LOKAL",
       "unit":"EACH",
       "price":"95000",
       "purchaseUrl":"https://example.com/gigabit-usb3-to-lan-rj45",
@@ -206,7 +243,7 @@
    {
       "id":47,
       "name":"21 5 INCH TOUCHSCREEN MONITOR HD",
-      "partNumber":"0",
+      "partNumber":"401010056",
       "manufacturer":"GREENTOUCH",
       "unit":"EACH",
       "price":"0",
@@ -349,7 +386,7 @@
    },
    {
       "id":34,
-      "name":"TERMINAL BLOCK 4 0MM",
+      "name":"UK5 TERMINAL BLOCK 4 0MM",
       "partNumber":"102040064",
       "manufacturer":"PHOENIX_CONTACT",
       "unit":"EACH",
@@ -362,8 +399,8 @@
    {
       "id":33,
       "name":"JUMPER UK5 10 POINTS",
-      "partNumber":"0",
-      "manufacturer":"TBD",
+      "partNumber":"101020013",
+      "manufacturer":"PHOENIX_CONTACT",
       "unit":"EACH",
       "price":"14900",
       "purchaseUrl":"https://example.com/jumper-uk5-10-points-2",

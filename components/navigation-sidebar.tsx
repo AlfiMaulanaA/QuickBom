@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, Package as PackageIcon, FileText, FolderOpen, BarChart3 } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, Package as PackageIcon, FileText, FolderOpen, BarChart3, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -53,7 +53,7 @@ const hardcodedMenuGroups = [
   },
   {
     id: "user-management",
-    label: "User Management",
+    label: "User",
     icon: "Users",
     items: [
       {
@@ -66,7 +66,7 @@ const hardcodedMenuGroups = [
   },
   {
     id: "client-management",
-    label: "Client Management",
+    label: "Client",
     icon: "Users",
     items: [
       {
@@ -126,6 +126,12 @@ const hardcodedMenuGroups = [
         label: "Projects",
         path: "/projects",
         icon: "FolderOpen"
+      },
+      {
+        id: "pdf-config",
+        label: "PDF Configuration",
+        path: "/pdf-config",
+        icon: "FileText"
       }
     ]
   },
@@ -139,6 +145,25 @@ const hardcodedMenuGroups = [
         label: "Gantt Chart",
         path: "/gantt",
         icon: "BarChart3"
+      }
+    ]
+  },
+  {
+    id: "system",
+    label: "System",
+    icon: "Settings",
+    items: [
+      {
+        id: "backup-management",
+        label: "Backup Management",
+        path: "/backups",
+        icon: "Database"
+      },
+      {
+        id: "help-documentation",
+        label: "Help & Documentation",
+        path: "/help",
+        icon: "HelpCircle"
       }
     ]
   }
@@ -195,7 +220,6 @@ export const NavigationSidebar = memo(function NavigationSidebar({
               <p className="text-xs text-sidebar-foreground/70">{appName}</p>
               </div>
           </div>
-          <ThemeToggle />
         </div>
       </SidebarHeader>
 
@@ -287,6 +311,7 @@ export const NavigationSidebar = memo(function NavigationSidebar({
                             {item.icon === 'Activity' && <Activity className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
                             {item.icon === 'Database' && <Database className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
                             {item.icon === 'Users' && <Users className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {item.icon === 'HelpCircle' && <HelpCircle className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
                             <span>{item.label}</span>
                           </Link>
                         </SidebarMenuButton>

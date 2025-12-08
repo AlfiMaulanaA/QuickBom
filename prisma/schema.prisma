@@ -218,6 +218,9 @@ model Assembly {
   name        String   @unique // Nama assembly harus unik
   description String?
 
+  // Document files associated with this assembly
+  docs        Json?    // Array of {name: string, url: string, size: number, type: string, uploadedAt: DateTime}
+
   // Relasi ke bawah: Assembly ini butuh Material apa saja?
   materials   AssemblyMaterial[]
 
@@ -250,6 +253,9 @@ model Template {
   id          Int      @id @default(autoincrement())
   name        String   @unique // Nama template harus unik
   description String?
+
+  // Document files associated with this template
+  docs        Json?    // Array of {name: string, url: string, size: number, type: string, uploadedAt: DateTime}
 
   // Relasi ke bawah: Template ini butuh Assembly apa saja?
   assemblies  TemplateAssembly[]
@@ -481,9 +487,16 @@ enum TaskType {
   MATERIAL_PROCUREMENT
   SITE_PREPARATION
   CONSTRUCTION
+  ELECTRICAL
+  PLUMBING
+  MECHANICAL
+  DESIGN
+  PERMIT
+  SUPERVISION
   QUALITY_CHECK
   DOCUMENTATION
   CLIENT_APPROVAL
+  OTHER
 }
 
 enum TaskStatus {

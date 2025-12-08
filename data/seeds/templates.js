@@ -55,6 +55,7 @@ async function seedTemplates(prismaInstance = null) {
         where: { name: templateData.name },
         update: {
           description: templateData.description,
+          docs: [], // Empty docs array
           assemblies: {
             deleteMany: {}, // Remove existing assemblies
             create: templateAssemblies,
@@ -63,6 +64,7 @@ async function seedTemplates(prismaInstance = null) {
         create: {
           name: templateData.name,
           description: templateData.description,
+          docs: [], // Empty docs array
           assemblies: {
             create: templateAssemblies,
           },

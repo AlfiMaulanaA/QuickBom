@@ -8,14 +8,14 @@ import {
   useCallback,
 } from "react";
 import type { ReactNode } from "react";
-import type { Role } from "@prisma/client";
+
 import type { MenuItemWithPermissions, MenuGroupWithItems } from "@/lib/types/menu";
 import { useRouter, usePathname } from "next/navigation";
 import { showToast } from "@/lib/toast-utils";
 
 interface User {
   userId: string;
-  role: Role;
+  role: import("@prisma/client").UserRole;
   email: string;
 }
 
@@ -125,7 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // Setup session expiration check
               setupSessionCheck();
 
-              showToast.success("Login Successful", "Welcome back!");
+              // Redirect immediately after login
+              if (pathname === '/login') {
+                router.replace("/");
+              }
 
               return;
             } else {

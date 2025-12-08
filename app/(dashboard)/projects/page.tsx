@@ -676,6 +676,36 @@ export default function ProjectsPage() {
     });
   };
 
+  const exportMaterialHandoverPDF = async (projectId: number) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/export-pdf`, {
+        method: 'GET',
+      });
+
+      if (response.ok) {
+        // The PDF will be automatically downloaded by the browser
+        // due to the Content-Disposition header set in the API
+        toast({
+          title: "PDF Export Successful",
+          description: "Material handover PDF has been downloaded.",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Export Failed",
+          description: error.error || "Failed to generate PDF",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Network error occurred during PDF export",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -1060,7 +1090,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
@@ -1076,11 +1106,24 @@ export default function ProjectsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Available Templates</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{templates.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Reusable configurations
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(projects.reduce((total, project) => total + Number(project.totalPrice), 0))}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -1249,7 +1292,7 @@ export default function ProjectsPage() {
                           (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson)
                           : "-"}
                       </TableCell>
-                      <TableCell className="font-semibold">
+                      <TableCell className="font-semibold text-green-600 dark:text-green-400">
                         {formatCurrency(Number(project.totalPrice))}
                       </TableCell>
                       <TableCell>
@@ -1371,14 +1414,26 @@ export default function ProjectsPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {project.template && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => exportConsolidatedMaterialsForProject(project)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
+                          <div className="flex gap-1 justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => exportConsolidatedMaterialsForProject(project)}
+                              title="Export to CSV"
+                            >
+                              <File className="h-4 w-4 mr-1" />
+                              CSV
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => exportMaterialHandoverPDF(project.id)}
+                              title="Export Material Handover PDF"
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              PDF
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -1398,6 +1453,12 @@ export default function ProjectsPage() {
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => router.push(`/projects/${project.id}/timeline`)}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              View Timeline
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDuplicate(project)}
@@ -1827,7 +1888,7 @@ export default function ProjectsPage() {
                       </div>
 
                       <div className="text-center p-3 border rounded-lg">
-                        <div className="text-xl font-bold">
+                        <div className="text-xl font-bold text-green-600 dark:text-green-400">
                           {formatCurrency(Number(selectedProject.totalPrice))}
                         </div>
                         <div className="text-sm text-muted-foreground">Calculated Cost</div>
@@ -1854,7 +1915,7 @@ export default function ProjectsPage() {
                             </div>
 
                             <div className="text-right">
-                              <div className="font-semibold">
+                              <div className="font-semibold text-green-600 dark:text-green-400">
                                 {formatCurrency(calculateAssemblyCost(assembly) * quantity)}
                               </div>
                               <div className="text-xs text-muted-foreground">
@@ -1883,7 +1944,7 @@ export default function ProjectsPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="font-medium">Template Cost</span>
-                      <span className="font-semibold">
+                      <span className="font-semibold text-green-600 dark:text-green-400">
                         {selectedProject?.template
                           ? formatCurrency(Number(selectedProject.totalPrice))
                           : "N/A (Custom Project)"}
@@ -1899,7 +1960,7 @@ export default function ProjectsPage() {
 
                     <div className="flex justify-between items-center py-2 text-lg font-bold border-t-2">
                       <span>Total Project Cost</span>
-                      <span>{formatCurrency(Number(selectedProject?.totalPrice || 0))}</span>
+                      <span className="text-green-600 dark:text-green-400">{formatCurrency(Number(selectedProject?.totalPrice || 0))}</span>
                     </div>
                   </div>
 

@@ -65,6 +65,58 @@
 - **Mapping**: Leaflet integration
 - **Security**: bcrypt, JWT, RBAC implementation
 
+## 💾 Backup Management System
+
+QuickBom includes a comprehensive automated backup system for critical business data:
+
+### 🔄 Automatic Backup Features
+- **Daily Automated Backups** - Scheduled backups at 2:00 AM daily
+- **Data Retention Policy** - Automatic cleanup of backups older than 7 days
+- **Comprehensive Coverage** - Backs up materials, assemblies, and templates data
+- **Real-time Monitoring** - Track backup status and scheduler health
+
+### 📊 Backup Management
+- **Web Interface** - Access backup management through `/backups` in the dashboard
+- **Manual Operations** - Create backups on-demand and trigger cleanup
+- **Restore Functionality** - Restore data from any backup point
+- **Statistics Dashboard** - Monitor backup success rates and storage usage
+
+### 🛠️ Backup Scripts
+```bash
+# Create a backup manually
+npm run backup:create
+
+# Run cleanup to remove old backups
+npm run backup:cleanup
+
+# Start backup scheduler (for development)
+npm run backup:start
+
+# Stop backup scheduler
+npm run backup:stop
+```
+
+### 🔧 Configuration
+- **Auto-start**: Scheduler automatically starts in production, or set `BACKUP_SCHEDULER_ALWAYS_ON=true` for development
+- **Timezone**: Backups run in Asia/Jakarta timezone
+- **Storage**: Backups stored in `backups/` directory as JSON files
+- **Retention**: Configured for 7-day retention (customizable in code)
+
+### 🧪 Testing
+```bash
+# Run comprehensive backup system test
+npm run backup:test
+```
+
+### 📋 Backup Contents
+Each backup includes:
+- Complete materials catalog with specifications
+- Assembly definitions with material relationships
+- Template configurations and compositions
+- Metadata with timestamps and version information
+
+**Note**: Projects and user data are not included in automated backups to maintain system integrity.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
