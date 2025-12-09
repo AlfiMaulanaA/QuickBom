@@ -81,6 +81,7 @@ export default function CreateAssemblyPage() {
     setIsSubmitting(true);
 
     try {
+      // First, create the assembly without documents
       const response = await fetch("/api/assemblies", {
         method: "POST",
         headers: {
@@ -89,25 +90,65 @@ export default function CreateAssemblyPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          docs: assemblyDocs.length > 0 ? assemblyDocs : null,
+          docs: null, // We'll add documents later
           materials: formData.materials
         }),
       });
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Assembly created successfully",
-        });
-        router.push("/assemblies");
-      } else {
+      if (!response.ok) {
         const error = await response.json();
         toast({
           title: "Error",
           description: error.error || "Failed to create assembly",
           variant: "destructive",
         });
+        return;
       }
+
+      const createdAssembly = await response.json();
+
+      // Now upload any temporary documents
+      if (assemblyDocs.length > 0) {
+        let uploadSuccess = true;
+
+        for (const doc of assemblyDocs) {
+          if (doc.url.startsWith('#temp-') && doc.file) {
+            // This is a temporary file that needs to be uploaded
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', doc.file);
+            formDataUpload.append('assemblyId', createdAssembly.id.toString());
+
+            try {
+              const uploadResponse = await fetch('/api/assemblies/upload', {
+                method: 'POST',
+                body: formDataUpload,
+              });
+
+              if (!uploadResponse.ok) {
+                console.error('Failed to upload document:', doc.name);
+                uploadSuccess = false;
+              }
+            } catch (uploadError) {
+              console.error('Error uploading document:', doc.name, uploadError);
+              uploadSuccess = false;
+            }
+          }
+        }
+
+        if (!uploadSuccess) {
+          toast({
+            title: "Warning",
+            description: "Assembly created but some documents failed to upload",
+            variant: "destructive",
+          });
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Assembly created successfully",
+      });
+      router.push("/assemblies");
     } catch (error) {
       toast({
         title: "Error",

@@ -37,7 +37,9 @@ import {
   Eye,
   Edit3,
   Copy,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface Client {
@@ -120,6 +122,8 @@ export default function GlobalGanttChartPage() {
   const [zoomLevel, setZoomLevel] = useState(1.0); // Continuous zoom from 0.1 to 5.0
   const [viewStartDate, setViewStartDate] = useState<Date | null>(null);
   const [viewEndDate, setViewEndDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>('timeline');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [taskTypeFilter, setTaskTypeFilter] = useState<string>('all');
@@ -505,40 +509,62 @@ export default function GlobalGanttChartPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-2 bg-muted/50 rounded-md p-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
             <Button
-              variant="ghost"
+              variant={viewMode === 'timeline' ? 'default' : 'ghost'}
               size="sm"
-              onClick={resetZoom}
-              className="h-7 w-7 p-0"
-              title="Reset Zoom"
+              onClick={() => setViewMode('timeline')}
+              className="h-7 px-3 text-xs"
             >
-              <RotateCcw className="h-3 w-3" />
+              Timeline
             </Button>
-            <input
-              type="range"
-              min="0.1"
-              max="5.0"
-              step="0.1"
-              value={zoomLevel}
-              onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
-              className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-              title={`Zoom: ${zoomLevel.toFixed(1)}x`}
-            />
             <Button
-              variant="ghost"
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
               size="sm"
-              onClick={handleAutoFit}
-              className="h-7 w-7 p-0"
-              title="Auto Fit"
+              onClick={() => setViewMode('calendar')}
+              className="h-7 px-3 text-xs"
             >
-              <Maximize2 className="h-3 w-3" />
+              Calendar
             </Button>
-            <div className="px-2 py-0.5 text-xs font-medium min-w-[4rem] text-center">
-              {zoomLevel.toFixed(1)}x
-            </div>
           </div>
+
+          {/* Zoom Controls - Only show in timeline mode */}
+          {viewMode === 'timeline' && (
+            <div className="flex items-center gap-2 bg-muted/50 rounded-md p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetZoom}
+                className="h-7 w-7 p-0"
+                title="Reset Zoom"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </Button>
+              <input
+                type="range"
+                min="0.1"
+                max="5.0"
+                step="0.1"
+                value={zoomLevel}
+                onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+                className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                title={`Zoom: ${zoomLevel.toFixed(1)}x`}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAutoFit}
+                className="h-7 w-7 p-0"
+                title="Auto Fit"
+              >
+                <Maximize2 className="h-3 w-3" />
+              </Button>
+              <div className="px-2 py-0.5 text-xs font-medium min-w-[4rem] text-center">
+                {zoomLevel.toFixed(1)}x
+              </div>
+            </div>
+          )}
 
           <Button
             variant="outline"
@@ -738,172 +764,298 @@ export default function GlobalGanttChartPage() {
         </CardHeader>
 
         <CardContent>
-          {/* Fixed left panel for project/task info */}
-          <div className="flex">
-            {/* Fixed left column for project/task names */}
-            <div className="w-96 flex-shrink-0 border-r bg-muted/30">
-              {/* Header for fixed column */}
-              <div className="p-4 border-b bg-muted/50">
-                <h3 className="font-semibold text-sm">Project / Task / Milestone</h3>
-              </div>
+          {viewMode === 'timeline' ? (
+            /* Timeline View */
+            <div className="flex">
+              {/* Fixed left column for project/task names */}
+              <div className="w-96 flex-shrink-0 border-r bg-muted/30">
+                {/* Header for fixed column */}
+                <div className="p-4 border-b bg-muted/50">
+                  <h3 className="font-semibold text-sm">Project / Task / Milestone</h3>
+                </div>
 
-              {/* Scrollable content for project/task rows */}
-              <div className="max-h-[600px] overflow-y-auto">
-                {Object.entries(itemsByProject).map(([projectId, items]) => {
-                  const project = projects.find(p => p.id === parseInt(projectId));
-                  return (
-                    <div key={projectId} className="border-b">
-                      {/* Project Header */}
-                      <div className="p-4 bg-primary/5 border-b-2 border-primary/20">
-                        <div className="flex items-center gap-2">
-                          <Building className="h-4 w-4 text-primary" />
-                          <span className="font-semibold text-primary">{project?.name}</span>
+                {/* Scrollable content for project/task rows */}
+                <div className="max-h-[600px] overflow-y-auto">
+                  {Object.entries(itemsByProject).map(([projectId, items]) => {
+                    const project = projects.find(p => p.id === parseInt(projectId));
+                    return (
+                      <div key={projectId} className="border-b">
+                        {/* Project Header */}
+                        <div className="p-4 bg-primary/5 border-b-2 border-primary/20">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-primary">{project?.name}</span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Project Items */}
-                      {items.map((item, index) => (
-                        <div key={item.id} className="p-4 border-b bg-card">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 rounded flex items-center justify-center ${
-                              item.type === 'milestone'
-                                ? 'bg-purple-100 dark:bg-purple-900/50'
-                                : 'bg-blue-100 dark:bg-blue-900/50'
-                            }`}>
-                              {item.type === 'milestone' ? (
-                                <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">{item.name}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {item.type === 'milestone'
-                                  ? `Milestone • Due: ${item.dueDate ? formatDate(item.dueDate) : 'N/A'}`
-                                  : `${item.taskType || 'Task'} • ${item.duration || 0} days • ${item.progress}% complete`
-                                }
-                              </p>
-                              {item.type === 'task' && item.priority && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs mt-1"
-                                  style={{
-                                    backgroundColor: `${getPriorityColor(item.priority)}15`,
-                                    color: getPriorityColor(item.priority)
-                                  }}
-                                >
-                                  {item.priority}
-                                </Badge>
-                              )}
+                        {/* Project Items */}
+                        {items.map((item, index) => (
+                          <div key={item.id} className="p-4 border-b bg-card">
+                            <div className="flex items-start gap-3">
+                              <div className={`w-8 h-8 rounded flex items-center justify-center ${
+                                item.type === 'milestone'
+                                  ? 'bg-purple-100 dark:bg-purple-900/50'
+                                  : 'bg-blue-100 dark:bg-blue-900/50'
+                              }`}>
+                                {item.type === 'milestone' ? (
+                                  <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">{item.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {item.type === 'milestone'
+                                    ? `Milestone • Due: ${item.dueDate ? formatDate(item.dueDate) : 'N/A'}`
+                                    : `${item.taskType || 'Task'} • ${item.duration || 0} days • ${item.progress}% complete`
+                                  }
+                                </p>
+                                {item.type === 'task' && item.priority && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs mt-1"
+                                    style={{
+                                      backgroundColor: `${getPriorityColor(item.priority)}15`,
+                                      color: getPriorityColor(item.priority)
+                                    }}
+                                  >
+                                    {item.priority}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Scrollable timeline area */}
+              <div className="flex-1 overflow-x-auto">
+                <div style={{ width: `${Math.max(800, timeLabels.length * 80 * zoomLevel)}px` }}>
+                  {/* Time Header */}
+                  <div className="border-b mb-4">
+                    <div className="flex">
+                      {timeLabels.map((label, index) => (
+                        <div
+                          key={index}
+                          className="text-center p-3 border-r text-xs font-medium bg-muted/30"
+                          style={{ width: `${80 * zoomLevel}px`, minWidth: '80px' }}
+                        >
+                          {label.label}
                         </div>
                       ))}
                     </div>
-                  );
-                })}
+                  </div>
+
+                  {/* Chart Rows - Timeline visualization only */}
+                  {Object.entries(itemsByProject).map(([projectId, items]) => (
+                    <div key={projectId} className="border-b">
+                      {/* Project spacer */}
+                      <div className="h-[72px] border-b-2 border-primary/20"></div>
+
+                      {/* Timeline bars for each item */}
+                      {items.map((item, index) => (
+                        <div key={item.id} className="relative h-20 border-b">
+                          {/* Background Grid */}
+                          <div className="absolute inset-0 flex">
+                            {timeLabels.map((_, idx) => (
+                              <div
+                                key={idx}
+                                className="border-r border-muted/20"
+                                style={{ width: `${80 * zoomLevel}px`, minWidth: '80px' }}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Task/Milestone Bars */}
+                          {item.type === 'task' ? (
+                            <div
+                              className="absolute top-6 h-8 rounded cursor-pointer hover:shadow-lg transition-shadow border-2 group"
+                              style={{
+                                left: `${calculateTaskPosition(item).left}%`,
+                                width: `${calculateTaskPosition(item).width}%`,
+                                backgroundColor: getTaskBarColor(item.taskType || 'OTHER'),
+                                borderColor: getTaskBarColor(item.taskType || 'OTHER'),
+                                opacity: item.progress === 100 ? 1 : 0.85
+                              }}
+                              title={`${item.name} (${item.progress}% complete) - ${item.taskType || 'Task'}`}
+                              onClick={() => handleTaskClick(item.projectId, item.id)}
+                              onContextMenu={(e) => handleContextMenu(e, item)}
+                            >
+                              {/* Progress Fill */}
+                              <div
+                                className="h-full bg-white/40 rounded"
+                                style={{ width: `${item.progress}%` }}
+                              />
+                              {/* Task Label */}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-white text-xs font-semibold drop-shadow truncate px-2">
+                                  {item.name}
+                                </span>
+                              </div>
+                              {/* Click indicator */}
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                                <ExternalLink className="h-3 w-3 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            /* Milestone Diamond */
+                            <div
+                              className="absolute top-8 transform -translate-x-1/2 cursor-pointer hover:scale-110 transition-transform group"
+                              style={{ left: `${calculateMilestonePosition(item)}%` }}
+                              title={`${item.name} - Milestone`}
+                              onClick={() => handleTaskClick(item.projectId, item.id)}
+                              onContextMenu={(e) => handleContextMenu(e, item)}
+                            >
+                              <div
+                                className="w-4 h-4 rotate-45 border-2"
+                                style={{
+                                  backgroundColor: '#8b5cf6',
+                                  borderColor: '#7c3aed'
+                                }}
+                              />
+                              {/* Click indicator */}
+                              <div className="absolute -top-1 -left-1 w-6 h-6 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                                <ExternalLink className="h-2 w-2 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+          ) : (
+            /* Calendar View */
+            <div className="space-y-4">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(currentDate);
+                      newDate.setMonth(newDate.getMonth() - 1);
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
 
-            {/* Scrollable timeline area */}
-            <div className="flex-1 overflow-x-auto">
-              <div style={{ width: `${Math.max(800, timeLabels.length * 80 * zoomLevel)}px` }}>
-                {/* Time Header */}
-                <div className="border-b mb-4">
-                  <div className="flex">
-                    {timeLabels.map((label, index) => (
-                      <div
-                        key={index}
-                        className="text-center p-3 border-r text-xs font-medium bg-muted/30"
-                        style={{ width: `${80 * zoomLevel}px`, minWidth: '80px' }}
-                      >
-                        {label.label}
-                      </div>
-                    ))}
-                  </div>
+                  <h3 className="text-lg font-semibold">
+                    {currentDate.toLocaleDateString('id-ID', {
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </h3>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDate = new Date(currentDate);
+                      newDate.setMonth(newDate.getMonth() + 1);
+                      setCurrentDate(newDate);
+                    }}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
 
-                {/* Chart Rows - Timeline visualization only */}
-                {Object.entries(itemsByProject).map(([projectId, items]) => (
-                  <div key={projectId} className="border-b">
-                    {/* Project spacer */}
-                    <div className="h-[72px] border-b-2 border-primary/20"></div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentDate(new Date())}
+                >
+                  Today
+                </Button>
+              </div>
 
-                    {/* Timeline bars for each item */}
-                    {items.map((item, index) => (
-                      <div key={item.id} className="relative h-20 border-b">
-                        {/* Background Grid */}
-                        <div className="absolute inset-0 flex">
-                          {timeLabels.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className="border-r border-muted/20"
-                              style={{ width: `${80 * zoomLevel}px`, minWidth: '80px' }}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Task/Milestone Bars */}
-                        {item.type === 'task' ? (
-                          <div
-                            className="absolute top-6 h-8 rounded cursor-pointer hover:shadow-lg transition-shadow border-2 group"
-                            style={{
-                              left: `${calculateTaskPosition(item).left}%`,
-                              width: `${calculateTaskPosition(item).width}%`,
-                              backgroundColor: getTaskBarColor(item.taskType || 'OTHER'),
-                              borderColor: getTaskBarColor(item.taskType || 'OTHER'),
-                              opacity: item.progress === 100 ? 1 : 0.85
-                            }}
-                            title={`${item.name} (${item.progress}% complete) - ${item.taskType || 'Task'}`}
-                            onClick={() => handleTaskClick(item.projectId, item.id)}
-                            onContextMenu={(e) => handleContextMenu(e, item)}
-                          >
-                            {/* Progress Fill */}
-                            <div
-                              className="h-full bg-white/40 rounded"
-                              style={{ width: `${item.progress}%` }}
-                            />
-                            {/* Task Label */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-white text-xs font-semibold drop-shadow truncate px-2">
-                                {item.name}
-                              </span>
-                            </div>
-                            {/* Click indicator */}
-                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                              <ExternalLink className="h-3 w-3 text-white" />
-                            </div>
-                          </div>
-                        ) : (
-                          /* Milestone Diamond */
-                          <div
-                            className="absolute top-8 transform -translate-x-1/2 cursor-pointer hover:scale-110 transition-transform group"
-                            style={{ left: `${calculateMilestonePosition(item)}%` }}
-                            title={`${item.name} - Milestone`}
-                            onClick={() => handleTaskClick(item.projectId, item.id)}
-                            onContextMenu={(e) => handleContextMenu(e, item)}
-                          >
-                            <div
-                              className="w-4 h-4 rotate-45 border-2"
-                              style={{
-                                backgroundColor: '#8b5cf6',
-                                borderColor: '#7c3aed'
-                              }}
-                            />
-                            {/* Click indicator */}
-                            <div className="absolute -top-1 -left-1 w-6 h-6 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                              <ExternalLink className="h-2 w-2 text-white" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Day Headers */}
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="p-2 text-center font-semibold text-sm bg-muted/50">
+                    {day}
                   </div>
                 ))}
+
+                {/* Calendar Days */}
+                {(() => {
+                  const year = currentDate.getFullYear();
+                  const month = currentDate.getMonth();
+
+                  const firstDay = new Date(year, month, 1);
+                  const lastDay = new Date(year, month + 1, 0);
+                  const startDate = new Date(firstDay);
+                  startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+                  const days = [];
+                  const current = new Date(startDate);
+
+                  for (let i = 0; i < 42; i++) {
+                    const dayEvents = allItems.filter(item => {
+                      const itemDate = item.type === 'task' ? item.plannedStart : item.dueDate;
+                      if (!itemDate) return false;
+
+                      const eventDate = new Date(itemDate);
+                      return eventDate.toDateString() === current.toDateString();
+                    });
+
+                    const isCurrentMonth = current.getMonth() === month;
+                    const isToday = current.toDateString() === new Date().toDateString();
+
+                    days.push(
+                      <div
+                        key={i}
+                        className={`min-h-[100px] p-2 border border-border/50 ${
+                          isCurrentMonth ? 'bg-background' : 'bg-muted/20'
+                        } ${isToday ? 'ring-2 ring-primary' : ''}`}
+                      >
+                        <div className={`text-sm font-medium mb-1 ${isCurrentMonth ? '' : 'text-muted-foreground'}`}>
+                          {current.getDate()}
+                        </div>
+
+                        <div className="space-y-1">
+                          {dayEvents.slice(0, 3).map(event => (
+                            <div
+                              key={event.id}
+                              className={`text-xs p-1 rounded cursor-pointer truncate ${
+                                event.type === 'milestone'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                              title={event.name}
+                              onClick={() => handleTaskClick(event.projectId, event.id)}
+                            >
+                              {event.type === 'milestone' ? '🏁' : '📋'} {event.name}
+                            </div>
+                          ))}
+
+                          {dayEvents.length > 3 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{dayEvents.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+
+                    current.setDate(current.getDate() + 1);
+                  }
+
+                  return days;
+                })()}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Legend */}
           <div className="mt-6 p-4 bg-muted/30 rounded-lg">

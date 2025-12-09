@@ -4,6 +4,9 @@ import { getAuthFromCookie, requireAuth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const includeTimeline = searchParams.get('include') === 'timeline';
+
     const projects = await prisma.project.findMany({
       include: {
         template: {
@@ -24,7 +27,23 @@ export async function GET(request: NextRequest) {
           }
         },
         client: true,
-        creator: true
+        creator: true,
+        ...(includeTimeline && {
+          timeline: {
+            include: {
+              milestones: {
+                include: {
+                  tasks: true
+                }
+              },
+              tasks: {
+                include: {
+                  milestone: true
+                }
+              }
+            }
+          }
+        })
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -172,7 +191,7 @@ export async function POST(request: NextRequest) {
         progress: progress ? Number(progress) : 0,
         priority: priority || "MEDIUM",
         schematicDocs: schematicDocs || null,
-        qualityCheckDocs: qualityCheckDocs || null,
+        qualityCheckDocs: qualityCheckDocs || "/docs/Checksheet Form.docx",
         fromTemplateId,
         totalPrice,
         createdBy: auth.userId,
@@ -271,8 +290,8 @@ export async function PUT(request: NextRequest) {
         status: status || "PLANNING",
         progress: progress ? Number(progress) : 0,
         priority: priority || "MEDIUM",
-        schematicDocs: schematicDocs || null,
-        qualityCheckDocs: qualityCheckDocs || null,
+        ...(schematicDocs !== undefined && { schematicDocs }),
+        ...(qualityCheckDocs !== undefined && { qualityCheckDocs }),
         assignedUsers: assignedUsers || []
       },
       include: {

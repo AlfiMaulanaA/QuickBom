@@ -116,48 +116,48 @@ const CriticalPathAnalysis = ({ timeline }: any) => {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border-l-4 border-l-red-500">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Critical Tasks</p>
-                <p className="text-2xl font-bold text-red-600">{criticalTasks.length}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Critical Tasks</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-600">{criticalTasks.length}</p>
               </div>
-              <AlertTriangle className="h-6 w-6 text-red-500" />
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-yellow-500">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Float Tasks</p>
-                <p className="text-2xl font-bold text-yellow-600">{timeline.tasks.length - criticalTasks.length}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Float Tasks</p>
+                <p className="text-lg sm:text-2xl font-bold text-yellow-600">{timeline.tasks.length - criticalTasks.length}</p>
               </div>
-              <Clock className="h-6 w-6 text-yellow-500" />
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Path Length</p>
-                <p className="text-2xl font-bold text-blue-600">{timeline.duration || 'N/A'}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Path Length</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600 truncate">{timeline.duration || 'N/A'}</p>
               </div>
-              <TrendingUp className="h-6 w-6 text-blue-500" />
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="text-center py-8 text-muted-foreground">
-        <Target className="mx-auto h-12 w-12 mb-4" />
+      <div className="text-center py-6 sm:py-8 text-muted-foreground">
+        <Target className="mx-auto h-8 w-8 sm:h-12 sm:w-12 mb-2 sm:mb-4" />
         <p className="text-sm">Critical path analysis shows tasks that determine project completion date</p>
-        <p className="text-xs mt-2">Focus on critical tasks to avoid project delays</p>
+        <p className="text-xs mt-1 sm:mt-2">Focus on critical tasks to avoid project delays</p>
       </div>
     </div>
   );
@@ -660,11 +660,11 @@ export default function ProjectTimelinePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64"></div>
+          <div className="h-3 sm:h-4 bg-gray-200 rounded w-64 sm:w-96"></div>
+          <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -689,24 +689,28 @@ export default function ProjectTimelinePage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Compact Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push(`/projects/${projectId}`)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Project
+            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Back to Project</span>
+            <span className="xs:hidden">Back</span>
           </Button>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Timeline Management
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">{project.name}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Timeline Management</p>
+            </div>
           </div>
         </div>
 
@@ -765,27 +769,27 @@ export default function ProjectTimelinePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Project Overview
+            <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-lg sm:text-xl">Project Overview</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{project.name}</div>
-              <div className="text-sm text-muted-foreground">Project Name</div>
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 truncate">{project.name}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Project Name</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 truncate">
                 {formatCurrency(project.totalPrice)}
               </div>
-              <div className="text-sm text-muted-foreground">Total Budget</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Budget</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="text-center p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 truncate">
                 {project.clientName || "No Client"}
               </div>
-              <div className="text-sm text-muted-foreground">Client</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Client</div>
             </div>
           </div>
         </CardContent>
@@ -798,39 +802,39 @@ export default function ProjectTimelinePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <GanttChart className="h-5 w-5" />
-                Timeline Overview
+                <GanttChart className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-lg sm:text-xl">Timeline Overview</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Current project timeline status and progress
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="p-4 sm:p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="text-center p-3 sm:p-4">
+                  <div className="text-sm sm:text-base lg:text-2xl font-bold text-blue-600 truncate">
                     {formatDate(timeline.startDate)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Start Date</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Start Date</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-3 sm:p-4">
+                  <div className="text-sm sm:text-base lg:text-2xl font-bold text-green-600 truncate">
                     {timeline.endDate ? formatDate(timeline.endDate) : "Not Set"}
                   </div>
-                  <div className="text-sm text-muted-foreground">End Date</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">End Date</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className="text-center p-3 sm:p-4">
+                  <div className="text-sm sm:text-base lg:text-2xl font-bold text-purple-600">
                     {timeline.progress}%
                   </div>
-                  <div className="text-sm text-muted-foreground">Progress</div>
-                  <Progress value={timeline.progress} className="mt-2" />
+                  <div className="text-xs sm:text-sm text-muted-foreground">Progress</div>
+                  <Progress value={timeline.progress} className="mt-2 h-1.5 sm:h-2" />
                 </div>
-                <div className="text-center">
-                  <Badge className={`text-sm ${getStatusColor(timeline.status)}`}>
+                <div className="text-center p-3 sm:p-4">
+                  <Badge className={`text-xs sm:text-sm ${getStatusColor(timeline.status)}`}>
                     {timeline.status.replace('_', ' ')}
                   </Badge>
-                  <div className="text-sm text-muted-foreground mt-1">Status</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">Status</div>
                 </div>
               </div>
             </CardContent>
@@ -853,33 +857,34 @@ export default function ProjectTimelinePage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Milestones Summary */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5" />
-                      Milestones ({timeline.milestones.length})
+                      <Target className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-base sm:text-lg">Milestones ({timeline.milestones.length})</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6">
                     <div className="space-y-3">
                       {timeline.milestones.slice(0, 3).map((milestone) => (
-                        <div key={milestone.id} className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{milestone.name}</div>
-                            <div className="text-sm text-muted-foreground">
+                        <div key={milestone.id} className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm sm:text-base truncate">{milestone.name}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Due: {formatDate(milestone.dueDate)}
                             </div>
                           </div>
-                          <Badge className={getStatusColor(milestone.status)}>
+                          <Badge className={`${getStatusColor(milestone.status)} text-xs shrink-0`}>
                             {milestone.status.replace('_', ' ')}
                           </Badge>
                         </div>
                       ))}
                       {timeline.milestones.length === 0 && (
-                        <div className="text-center text-muted-foreground py-4">
-                          No milestones created yet
+                        <div className="text-center text-muted-foreground py-6 sm:py-8">
+                          <Target className="mx-auto h-6 w-6 sm:h-8 sm:w-8 mb-2" />
+                          <p className="text-sm">No milestones created yet</p>
                         </div>
                       )}
                     </div>
@@ -890,33 +895,34 @@ export default function ProjectTimelinePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5" />
-                      Tasks ({timeline.tasks.length})
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-base sm:text-lg">Tasks ({timeline.tasks.length})</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6">
                     <div className="space-y-3">
                       {timeline.tasks.slice(0, 3).map((task) => (
-                        <div key={task.id} className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{task.name}</div>
-                            <div className="text-sm text-muted-foreground">
+                        <div key={task.id} className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm sm:text-base truncate">{task.name}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               {task.taskType.replace('_', ' ')}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={getPriorityColor(task.priority)}>
-                              {task.priority}
+                          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                            <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
+                              {task.priority.charAt(0)}
                             </Badge>
-                            <Badge className={getStatusColor(task.status)}>
+                            <Badge className={`${getStatusColor(task.status)} text-xs`}>
                               {task.status.replace('_', ' ')}
                             </Badge>
                           </div>
                         </div>
                       ))}
                       {timeline.tasks.length === 0 && (
-                        <div className="text-center text-muted-foreground py-4">
-                          No tasks created yet
+                        <div className="text-center text-muted-foreground py-6 sm:py-8">
+                          <CheckCircle className="mx-auto h-6 w-6 sm:h-8 sm:w-8 mb-2" />
+                          <p className="text-sm">No tasks created yet</p>
                         </div>
                       )}
                     </div>
@@ -948,55 +954,55 @@ export default function ProjectTimelinePage() {
               </div>
 
               {/* Timeline Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <Card className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Total Tasks</p>
-                        <p className="text-2xl font-bold">{timeline.tasks.length}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Tasks</p>
+                        <p className="text-lg sm:text-2xl font-bold">{timeline.tasks.length}</p>
                       </div>
-                      <CheckCircle className="h-6 w-6 text-blue-500" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Milestones</p>
-                        <p className="text-2xl font-bold">{timeline.milestones.length}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Milestones</p>
+                        <p className="text-lg sm:text-2xl font-bold">{timeline.milestones.length}</p>
                       </div>
-                      <Target className="h-6 w-6 text-purple-500" />
+                      <Target className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-l-4 border-l-green-500">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                        <p className="text-2xl font-bold">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Completed</p>
+                        <p className="text-lg sm:text-2xl font-bold">
                           {timeline.tasks.filter(t => t.status === 'COMPLETED').length + timeline.milestones.filter(m => m.status === 'COMPLETED').length}
                         </p>
                       </div>
-                      <AlertTriangle className="h-6 w-6 text-green-500" />
+                      <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-l-4 border-l-orange-500">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Duration</p>
-                        <p className="text-2xl font-bold">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Duration</p>
+                        <p className="text-lg sm:text-2xl font-bold">
                           {timeline.duration ? `${timeline.duration} days` : 'TBD'}
                         </p>
                       </div>
-                      <Clock className="h-6 w-6 text-orange-500" />
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1043,14 +1049,14 @@ export default function ProjectTimelinePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Timeline Summary
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-lg sm:text-xl">Timeline Summary</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <h4 className="font-medium mb-3">Progress Overview</h4>
+                      <h4 className="font-medium mb-3 text-sm sm:text-base">Progress Overview</h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Overall Progress</span>
@@ -1083,32 +1089,32 @@ export default function ProjectTimelinePage() {
                     </div>
 
                     <div>
-                      <h4 className="font-medium mb-3">Timeline Health</h4>
+                      <h4 className="font-medium mb-3 text-sm sm:text-base">Timeline Health</h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">On Schedule</span>
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
                             ✓ Good
                           </Badge>
                         </div>
 
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Resource Allocation</span>
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
                             Balanced
                           </Badge>
                         </div>
 
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Risk Level</span>
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
                             Low
                           </Badge>
                         </div>
 
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Next Milestone</span>
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium truncate">
                             {timeline.milestones.find(m => m.status !== 'COMPLETED')?.name || 'All Complete'}
                           </span>
                         </div>

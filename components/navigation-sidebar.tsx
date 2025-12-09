@@ -154,6 +154,12 @@ const hardcodedMenuGroups = [
     icon: "Settings",
     items: [
       {
+        id: "pdf-tools",
+        label: "PDF Tools",
+        path: "/pdf-tools",
+        icon: "FileText"
+      },
+      {
         id: "backup-management",
         label: "Backup Management",
         path: "/backups",

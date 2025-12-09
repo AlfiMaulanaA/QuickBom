@@ -22,6 +22,7 @@ interface Template {
   name: string;
   description: string | null;
   assemblies: any[];
+  docs: any[] | null;
 }
 
 interface Client {
@@ -32,6 +33,14 @@ interface Client {
   contactPhone: string;
   status: string;
   clientType: string;
+}
+
+interface DocumentFile {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
 }
 
 interface Project {
@@ -157,10 +166,7 @@ export default function ProjectsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchProjects();
-    fetchTemplates();
-  }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,8 +202,29 @@ export default function ProjectsPage() {
         assignedUsers: formData.assignedUsers || []
       };
 
-      if (formData.fromTemplateId) {
+      if (formData.fromTemplateId && formData.fromTemplateId !== "none") {
         payload.fromTemplateId = parseInt(formData.fromTemplateId);
+
+        // If editing an existing project and template changed, copy template docs
+        if (editingProject && editingProject.fromTemplateId !== parseInt(formData.fromTemplateId)) {
+          const selectedTemplate = templates.find(t => t.id.toString() === formData.fromTemplateId);
+          if (selectedTemplate?.docs && Array.isArray(selectedTemplate.docs) && selectedTemplate.docs.length > 0) {
+            // Copy template docs to schematicDocs
+            payload.schematicDocs = selectedTemplate.docs;
+          }
+        } else if (!editingProject) {
+          // For new projects, copy template docs
+          const selectedTemplate = templates.find(t => t.id.toString() === formData.fromTemplateId);
+          if (selectedTemplate?.docs && Array.isArray(selectedTemplate.docs) && selectedTemplate.docs.length > 0) {
+            // Copy template docs to schematicDocs
+            payload.schematicDocs = selectedTemplate.docs;
+          }
+        }
+      }
+
+      // Set default quality check document for new projects
+      if (!editingProject) {
+        payload.qualityCheckDocs = "/docs/Checksheet Form.docx";
       }
 
       const response = await fetch(url, {
@@ -319,8 +346,10 @@ export default function ProjectsPage() {
         (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : '';
       const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (clientName && clientName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                           (project.template && project.template.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesTemplate = templateFilter === "all" || (templateFilter === "none" && !project.template) || project.fromTemplateId?.toString() === templateFilter;
+                           (project.template?.name && project.template.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesTemplate = templateFilter === "all" ||
+                             (templateFilter === "none" && !project.template) ||
+                             (project.fromTemplateId?.toString() === templateFilter);
       return matchesSearch && matchesTemplate;
     });
 
@@ -708,30 +737,35 @@ export default function ProjectsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-48"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64"></div>
+          <div className="h-3 sm:h-4 bg-gray-200 rounded w-64 sm:w-96"></div>
+          <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">
-            Manage construction projects and their cost calculations
-          </p>
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">Projects</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage construction projects and their cost calculations</p>
+          </div>
         </div>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Project
+            <Button size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm w-full sm:w-auto">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Add Project</span>
+              <span className="xs:hidden">Add</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1027,30 +1061,45 @@ export default function ProjectsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="qualityCheckDocs">Quality Check Documents</Label>
-                  <Input
-                    id="qualityCheckDocs"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleFileUpload(file, editingProject?.id || "new", "qualityCheck");
-                      }
-                    }}
-                  />
-                  {editingProject?.qualityCheckDocs && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Current file:</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(editingProject.qualityCheckDocs!, '_blank')}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        View Quality Check
-                      </Button>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {!editingProject && (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-blue-900 dark:text-blue-100 font-medium">
+                            Default file: Checksheet Form.docx
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                          A default quality check form will be automatically attached to this project.
+                        </p>
+                      </div>
+                    )}
+                    <Input
+                      id="qualityCheckDocs"
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(file, editingProject?.id || "new", "qualityCheck");
+                        }
+                      }}
+                    />
+                    {editingProject?.qualityCheckDocs && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Current file:</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(editingProject.qualityCheckDocs!, '_blank')}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          View Quality Check
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1090,15 +1139,15 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Projects</CardTitle>
+            <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projects.length}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold">{projects.length}</div>
+            <p className="text-xs text-muted-foreground truncate">
               Active projects
             </p>
           </CardContent>
@@ -1106,12 +1155,12 @@ export default function ProjectsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Templates</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Available Templates</CardTitle>
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{templates.length}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold">{templates.length}</div>
+            <p className="text-xs text-muted-foreground truncate">
               Reusable configurations
             </p>
           </CardContent>
@@ -1119,14 +1168,14 @@ export default function ProjectsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Value</CardTitle>
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 truncate">
               {formatCurrency(projects.reduce((total, project) => total + Number(project.totalPrice), 0))}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               Combined project value
             </p>
           </CardContent>
@@ -1134,16 +1183,16 @@ export default function ProjectsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Project Value</CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Avg Project Value</CardTitle>
+            <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-sm sm:text-lg font-bold truncate">
               {projects.length > 0
                 ? formatCurrency(projects.reduce((total, project) => total + Number(project.totalPrice), 0) / projects.length)
                 : formatCurrency(0)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               Average per project
             </p>
           </CardContent>
@@ -1263,6 +1312,7 @@ export default function ProjectsPage() {
                     <TableHead className="text-center">Schematic Docs</TableHead>
                     <TableHead className="text-center">Quality Check Docs</TableHead>
                     <TableHead className="text-center">BOM List</TableHead>
+                    <TableHead className="text-center">Template Docs</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1434,6 +1484,29 @@ export default function ProjectsPage() {
                               PDF
                             </Button>
                           </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {project.template?.docs && project.template.docs.length > 0 ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setIsDetailsDialogOpen(true);
+                            }}
+                            className="h-auto p-1 text-xs hover:bg-muted"
+                            title={`View ${project.template.docs.length} template documents`}
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            {project.template.docs.length} docs
+                          </Button>
+                        ) : project.template ? (
+                          <Badge variant="outline" className="text-xs">
+                            0 docs
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -1820,7 +1893,7 @@ export default function ProjectsPage() {
 
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Template Used</Label>
-                    <p className="text-lg">
+                    <div className="text-lg">
                       {selectedProject?.template ? (
                         <Badge variant="outline" className="text-base px-3 py-1">
                           {selectedProject.template.name}
@@ -1830,7 +1903,7 @@ export default function ProjectsPage() {
                           Custom Project
                         </Badge>
                       )}
-                    </p>
+                    </div>
                   </div>
 
                   <div>
@@ -1856,8 +1929,236 @@ export default function ProjectsPage() {
               </CardContent>
             </Card>
 
+            {/* Template Documents (if applicable) */}
+            {selectedProject?.template && selectedProject.template.docs && Array.isArray(selectedProject.template.docs) && selectedProject.template.docs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Template Documents
+                  </CardTitle>
+                  <CardDescription>
+                    Documents from "{selectedProject.template.name}" template
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Documents Summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="text-center p-3 border rounded-lg">
+                        <div className="text-xl font-bold text-blue-600">
+                          {selectedProject.template.docs?.length || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Documents</div>
+                      </div>
+
+                      <div className="text-center p-3 border rounded-lg">
+                        <div className="text-xl font-bold text-green-600">
+                          {selectedProject.template.docs?.filter(doc => doc.name.startsWith('Merged PDFs -'))?.length || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Merged PDFs</div>
+                      </div>
+
+                      <div className="text-center p-3 border rounded-lg">
+                        <div className="text-xl font-bold text-purple-600">
+                          {selectedProject.template.docs ? (selectedProject.template.docs.reduce((sum, doc) => sum + doc.size, 0) / 1024).toFixed(1) : '0.0'} KB
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Size</div>
+                      </div>
+
+                      <div className="text-center p-3 border rounded-lg">
+                        <div className="text-xl font-bold text-orange-600">
+                          {selectedProject.template.docs && selectedProject.template.docs.length > 0
+                            ? new Date(Math.max(...selectedProject.template.docs.map(doc => new Date(doc.uploadedAt).getTime()))).toLocaleDateString()
+                            : 'No docs'
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">Last Upload</div>
+                      </div>
+                    </div>
+
+                    {/* Documents List */}
+                    <div className="space-y-3 max-h-96 overflow-y-auto border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b">
+                        <h4 className="font-medium">Available Documents</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Navigate to template details to manage documents
+                            window.open(`/templates`, '_blank');
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Manage in Templates
+                        </Button>
+                      </div>
+
+                      {selectedProject.template.docs.map((doc: DocumentFile, index: number) => {
+                        const isMergedPdf = doc.name.startsWith('Merged PDFs -');
+
+                        return (
+                          <div key={`template-doc-${index}`} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors">
+                            <div className="relative flex-shrink-0">
+                              <File className="h-10 w-10 text-muted-foreground" />
+                              {isMergedPdf && (
+                                <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-sm truncate">{doc.name}</h4>
+                                {isMergedPdf && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Merged PDF
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                                <span>•</span>
+                                <span>{doc.type}</span>
+                                <span>•</span>
+                                <span>From template</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = doc.url;
+                                  link.download = doc.name;
+                                  link.target = '_blank';
+                                  link.click();
+                                }}
+                                className="hover:bg-blue-50 hover:text-blue-600"
+                                title={`Download ${doc.name}`}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  window.open(doc.url, '_blank');
+                                }}
+                                className="hover:bg-green-50 hover:text-green-600"
+                                title={`View ${doc.name} in browser`}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!selectedProject) return;
+
+                                  try {
+                                    const response = await fetch(`/api/projects/${selectedProject.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        id: selectedProject.id,
+                                        name: selectedProject.name, // Required field for API validation
+                                        schematicDocs: doc.url
+                                      }),
+                                    });
+
+                                    if (response.ok) {
+                                      const updatedProject = await response.json();
+
+                                      toast({
+                                        title: "Document Set as Schematic",
+                                        description: `"${doc.name}" has been set as schematic document for this project.`,
+                                      });
+
+                                      // Update the projects list with the updated project
+                                      setProjects(prevProjects =>
+                                        prevProjects.map(p =>
+                                          p.id === updatedProject.id ? updatedProject : p
+                                        )
+                                      );
+
+                                      // Update local state for the dialog
+                                      if (selectedProject) {
+                                        setSelectedProject(updatedProject);
+                                      }
+                                    } else {
+                                      const error = await response.json();
+                                      toast({
+                                        title: "Failed to Set Document",
+                                        description: error.error || "Failed to set document as schematic",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Network error occurred",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="hover:bg-purple-50 hover:text-purple-600"
+                                title={`Set "${doc.name}" as schematic document`}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Copy all template documents to project documents
+                          if (selectedProject?.template?.docs) {
+                            toast({
+                              title: "Feature Coming Soon",
+                              description: "Copy template documents to project feature will be available soon.",
+                            });
+                          }
+                        }}
+                        disabled={!selectedProject?.template?.docs?.length}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy to Project Docs
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Open template details
+                          window.open(`/templates`, '_blank');
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Template Details
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Template Breakdown (if applicable) */}
-            {selectedProject?.template && (
+            {selectedProject?.template && selectedProject.template.assemblies && Array.isArray(selectedProject.template.assemblies) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">

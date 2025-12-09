@@ -376,18 +376,18 @@ export default function MainDashboardPage() {
 
   if (loading) {
     return (
-      <main className="p-4 md:p-6 space-y-6">
+      <main className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="h-4 bg-gray-200 rounded w-96"></div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64"></div>
+          <div className="h-3 sm:h-4 bg-gray-200 rounded w-64 sm:w-96"></div>
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 sm:h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+            <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
+            <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
           </div>
         </div>
       </main>
@@ -395,29 +395,31 @@ export default function MainDashboardPage() {
   }
 
   return (
-    <main className="p-4 md:p-6 space-y-6">
+    <main className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header Section */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Building className="h-8 w-8 text-primary" />
-            QuickBom Dashboard
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-start lg:justify-between lg:space-y-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-primary" />
+            <span className="truncate">QuickBom Dashboard</span>
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Comprehensive construction management system overview and analytics
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
+        <div className="flex gap-2 flex-shrink-0">
+          <Button asChild size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
             <Link href="/materials">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Material
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Add Material</span>
+              <span className="xs:hidden">Add</span>
             </Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
             <Link href="/projects">
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">New Project</span>
+              <span className="xs:hidden">New</span>
             </Link>
           </Button>
         </div>
@@ -426,82 +428,94 @@ export default function MainDashboardPage() {
 
 
       {/* Main Dashboard Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-2">
+            <span className="hidden sm:inline">Overview</span>
+            <span className="sm:hidden">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-2">
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-2">
+            <span className="hidden sm:inline">Performance</span>
+            <span className="sm:hidden">Perf.</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-2">
+            <span className="hidden sm:inline">Insights</span>
+            <span className="sm:hidden">Insights</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           {/* Primary Statistics Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Materials</CardTitle>
+                <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.materials.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency(stats.materials.totalValue)} total value
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold">{stats.materials.total}</div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {formatCurrency(stats.materials.totalValue)} total
                 </p>
                 <div className="flex items-center mt-2">
-                  <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                  <span className="text-xs text-green-600">+{stats.materials.recentCount} this month</span>
+                  <TrendingUp className="h-2 w-2 sm:h-3 sm:w-3 text-green-500 mr-1 flex-shrink-0" />
+                  <span className="text-xs text-green-600 truncate">+{stats.materials.recentCount} this month</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Assemblies</CardTitle>
-                <Settings className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Assemblies</CardTitle>
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.assemblies.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency(stats.assemblies.totalValue)} total value
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold">{stats.assemblies.total}</div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {formatCurrency(stats.assemblies.totalValue)} total
                 </p>
                 <div className="flex items-center mt-2">
-                  <Target className="h-3 w-3 text-blue-500 mr-1" />
-                  <span className="text-xs text-blue-600">{stats.assemblies.avgComplexity.toFixed(1)} avg materials</span>
+                  <Target className="h-2 w-2 sm:h-3 sm:w-3 text-blue-500 mr-1 flex-shrink-0" />
+                  <span className="text-xs text-blue-600 truncate">{stats.assemblies.avgComplexity.toFixed(1)} avg materials</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Templates</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-xs sm:text-sm font-medium truncate">Active Templates</CardTitle>
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.templates.total}</div>
-                <p className="text-xs text-muted-foreground">
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold">{stats.templates.total}</div>
+                <p className="text-xs text-muted-foreground truncate">
                   {stats.templates.activeProjects} active projects
                 </p>
                 <div className="flex items-center mt-2">
-                  <Building className="h-3 w-3 text-purple-500 mr-1" />
-                  <span className="text-xs text-purple-600">{stats.templates.avgAssemblies.toFixed(1)} avg assemblies</span>
+                  <Building className="h-2 w-2 sm:h-3 sm:w-3 text-purple-500 mr-1 flex-shrink-0" />
+                  <span className="text-xs text-purple-600 truncate">{stats.templates.avgAssemblies.toFixed(1)} avg assemblies</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Projects</CardTitle>
+                <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.projects.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency(stats.projects.totalValue)} total value
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold">{stats.projects.total}</div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {formatCurrency(stats.projects.totalValue)} total
                 </p>
                 <div className="flex items-center mt-2">
-                  <DollarSign className="h-3 w-3 text-green-500 mr-1" />
-                  <span className="text-xs text-green-600">{formatCurrency(stats.projects.avgValue)} avg</span>
+                  <DollarSign className="h-2 w-2 sm:h-3 sm:w-3 text-green-500 mr-1 flex-shrink-0" />
+                  <span className="text-xs text-green-600 truncate">{formatCurrency(stats.projects.avgValue)} avg</span>
                 </div>
               </CardContent>
             </Card>

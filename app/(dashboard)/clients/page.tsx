@@ -336,13 +336,25 @@ export default function ClientManagementPage() {
     return colors[type as keyof typeof colors] || colors.INDIVIDUAL;
   };
 
-  // Format currency
+  // Format currency with smart abbreviation for large numbers
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+    if (!amount || amount === 0) return 'Rp 0';
+
+    // Handle very large numbers by showing in millions/billions
+    if (amount >= 1_000_000_000) { // 1B+
+      return `Rp ${(amount / 1_000_000_000).toFixed(1)}B`;
+    } else if (amount >= 1_000_000) { // 1M+
+      return `Rp ${(amount / 1_000_000).toFixed(1)}M`;
+    } else if (amount >= 100_000) { // 100K+
+      return `Rp ${(amount / 1_000).toFixed(0)}K`;
+    } else {
+      // Use standard formatting for smaller amounts
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
   };
 
   // Format client type display name
@@ -457,77 +469,79 @@ export default function ClientManagementPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Building2 className="h-5 w-5 text-primary" />
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">Client Management</h1>
-            <p className="text-muted-foreground">Manage clients and business relationships</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Client Management</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage clients and business relationships</p>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
+        <div className="flex gap-2 flex-shrink-0">
+          <Button onClick={handleExportCSV} variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Export CSV</span>
+            <span className="xs:hidden">Export</span>
           </Button>
-          <Button onClick={() => setShowCreateDialog(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Client
+          <Button onClick={() => setShowCreateDialog(true)} size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Add Client</span>
+            <span className="xs:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
-                <p className="text-2xl font-bold">{clients.length}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Clients</p>
+                <p className="text-lg sm:text-2xl font-bold">{clients.length}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
-                <p className="text-2xl font-bold">{clients.filter(c => c.status === 'ACTIVE').length}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Active Clients</p>
+                <p className="text-lg sm:text-2xl font-bold">{clients.filter(c => c.status === 'ACTIVE').length}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Contract Value</p>
-                <p className="text-lg font-bold">{formatCurrency(clients.reduce((sum, c) => sum + c.totalContractValue, 0))}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Contract Value</p>
+                <p className="text-sm sm:text-lg font-bold">{formatCurrency(clients.reduce((sum, c) => sum + c.totalContractValue, 0))}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Companies</p>
-                <p className="text-2xl font-bold">{clients.filter(c => c.clientType === 'COMPANY').length}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Companies</p>
+                <p className="text-lg sm:text-2xl font-bold">{clients.filter(c => c.clientType === 'COMPANY').length}</p>
               </div>
-              <Building className="h-8 w-8 text-purple-500" />
+              <Building className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -535,10 +549,10 @@ export default function ClientManagementPage() {
 
       {/* Filters and Search */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-4">
             {/* Search */}
-            <div className="relative flex-1 min-w-0">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -550,9 +564,9 @@ export default function ClientManagementPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-wrap gap-2 sm:gap-3">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-auto min-w-0">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -567,7 +581,7 @@ export default function ClientManagementPage() {
               </Select>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full sm:w-auto min-w-0">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -581,7 +595,7 @@ export default function ClientManagementPage() {
               </Select>
 
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-auto min-w-0">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -596,6 +610,57 @@ export default function ClientManagementPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Active Filters Display */}
+            {(searchTerm || typeFilter !== "all" || statusFilter !== "all" || categoryFilter !== "all") && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
+                <span className="text-sm text-muted-foreground">Active filters:</span>
+                {searchTerm && (
+                  <Badge variant="secondary" className="gap-1">
+                    Search: "{searchTerm}"
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {typeFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    Type: {formatClientTypeName(typeFilter)}
+                    <button
+                      onClick={() => setTypeFilter("all")}
+                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {statusFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    Status: {statusFilter === 'PENDING_APPROVAL' ? 'Pending' : statusFilter.toLowerCase()}
+                    <button
+                      onClick={() => setStatusFilter("all")}
+                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {categoryFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1">
+                    Category: {formatCategoryName(categoryFilter)}
+                    <button
+                      onClick={() => setCategoryFilter("all")}
+                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -607,126 +672,216 @@ export default function ClientManagementPage() {
           <CardDescription>Manage client information and business relationships</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Contract Value</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary/10">
-                          {client.clientType === 'COMPANY' ?
-                            <Building className="h-4 w-4 text-primary" /> :
-                            <UserIcon className="h-4 w-4 text-primary" />
-                          }
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">
-                          {client.clientType === 'COMPANY' ? client.companyName : client.contactPerson}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {client.clientType === 'COMPANY' ? client.contactPerson : client.contactEmail}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getClientTypeBadgeColor(client.clientType)}>
-                      {formatClientTypeName(client.clientType)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {formatCategoryName(client.category)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeColor(client.status)}>
-                      {client.status === 'PENDING_APPROVAL' ? 'Pending' :
-                       client.status === 'UNDER_REVIEW' ? 'Review' :
-                       client.status === 'ACTIVE' ? 'Active' :
-                       client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {client.contactEmail}
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        {client.contactPhone}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {client.city}, {client.province}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">
-                      {formatCurrency(client.totalContractValue)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {client.totalProjects} projects
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(client)}>
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit Client
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedClient(client);
-                            setShowDeleteDialog(true);
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Client
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {/* Desktop Table */}
+          <div className="hidden lg:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden xl:table-cell">Contact</TableHead>
+                  <TableHead className="hidden md:table-cell">Location</TableHead>
+                  <TableHead className="hidden xl:table-cell">Contract Value</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredClients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary/10">
+                            {client.clientType === 'COMPANY' ?
+                              <Building className="h-4 w-4 text-primary" /> :
+                              <UserIcon className="h-4 w-4 text-primary" />
+                            }
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">
+                            {client.clientType === 'COMPANY' ? client.companyName : client.contactPerson}
+                          </div>
+                          <div className="text-sm text-muted-foreground truncate">
+                            {client.clientType === 'COMPANY' ? client.contactPerson : client.contactEmail}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getClientTypeBadgeColor(client.clientType)}>
+                        {formatClientTypeName(client.clientType)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {formatCategoryName(client.category)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusBadgeColor(client.status)}>
+                        {client.status === 'PENDING_APPROVAL' ? 'Pending' :
+                         client.status === 'UNDER_REVIEW' ? 'Review' :
+                         client.status === 'ACTIVE' ? 'Active' :
+                         client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <div className="text-sm">
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {client.contactEmail}
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          {client.contactPhone}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <div className="text-sm">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {client.city}, {client.province}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <div className="text-sm font-medium">
+                        {formatCurrency(client.totalContractValue)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {client.totalProjects} projects
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(client)}>
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Edit Client
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedClient(client);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Client
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile/Tablet Card Layout */}
+          <div className="lg:hidden space-y-3">
+            {filteredClients.map((client) => (
+              <Card key={client.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarFallback className="bg-primary/10">
+                      {client.clientType === 'COMPANY' ?
+                        <Building className="h-4 w-4 text-primary" /> :
+                        <UserIcon className="h-4 w-4 text-primary" />
+                      }
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div>
+                      <div className="font-medium text-sm truncate">
+                        {client.clientType === 'COMPANY' ? client.companyName : client.contactPerson}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {client.clientType === 'COMPANY' ? client.contactPerson : client.contactEmail}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge className={`${getClientTypeBadgeColor(client.clientType)} text-xs`}>
+                        {formatClientTypeName(client.clientType)}
+                      </Badge>
+                      <Badge className={`${getStatusBadgeColor(client.status)} text-xs`}>
+                        {client.status === 'PENDING_APPROVAL' ? 'Pending' :
+                         client.status === 'UNDER_REVIEW' ? 'Review' :
+                         client.status === 'ACTIVE' ? 'Active' :
+                         client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {formatCategoryName(client.category)}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div className="col-span-2">
+                        <span className="font-medium">📧</span> {client.contactEmail}
+                      </div>
+                      <div>
+                        <span className="font-medium">📞</span> {client.contactPhone}
+                      </div>
+                      <div>
+                        <span className="font-medium">📍</span> {client.city}
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-medium">💰</span> {formatCurrency(client.totalContractValue)}
+                        <span className="text-muted-foreground ml-1">({client.totalProjects} projects)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="flex-shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(client)} className="text-xs">
+                        <Edit3 className="h-3 w-3 mr-2" />
+                        Edit Client
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs">
+                        <Eye className="h-3 w-3 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedClient(client);
+                          setShowDeleteDialog(true);
+                        }}
+                        className="text-destructive text-xs"
+                      >
+                        <Trash2 className="h-3 w-3 mr-2" />
+                        Delete Client
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </Card>
+            ))}
+          </div>
 
           {filteredClients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No clients found matching the current filters.
+              <Building2 className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p className="font-medium">No clients found</p>
+              <p className="text-sm">Try adjusting your search or filter criteria.</p>
             </div>
           )}
         </CardContent>
@@ -734,21 +889,21 @@ export default function ClientManagementPage() {
 
       {/* Create Client Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
           <DialogHeader>
-            <DialogTitle>Add New Client</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Add New Client</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Create a comprehensive client profile with business information.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Basic Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="clientType">Client Type *</Label>
+                  <Label htmlFor="clientType" className="text-sm">Client Type *</Label>
                   <Select value={formData.clientType} onValueChange={(value) => setFormData({...formData, clientType: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -764,7 +919,7 @@ export default function ClientManagementPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category" className="text-sm">Category *</Label>
                   <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -782,9 +937,9 @@ export default function ClientManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="status">Status *</Label>
+                  <Label htmlFor="status" className="text-sm">Status *</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -803,11 +958,11 @@ export default function ClientManagementPage() {
 
             {/* Company Information */}
             {formData.clientType !== 'INDIVIDUAL' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Company Information</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-base sm:text-lg font-medium">Company Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="companyName">Company Name</Label>
+                    <Label htmlFor="companyName" className="text-sm">Company Name</Label>
                     <Input
                       id="companyName"
                       value={formData.companyName}
@@ -815,7 +970,7 @@ export default function ClientManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="companyType">Company Type</Label>
+                    <Label htmlFor="companyType" className="text-sm">Company Type</Label>
                     <Select value={formData.companyType} onValueChange={(value) => setFormData({...formData, companyType: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select company type" />
@@ -832,9 +987,9 @@ export default function ClientManagementPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="businessLicense">Business License (SIUP/TDP)</Label>
+                    <Label htmlFor="businessLicense" className="text-sm">Business License (SIUP/TDP)</Label>
                     <Input
                       id="businessLicense"
                       value={formData.businessLicense}
@@ -842,7 +997,7 @@ export default function ClientManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="taxId">Tax ID (NPWP)</Label>
+                    <Label htmlFor="taxId" className="text-sm">Tax ID (NPWP)</Label>
                     <Input
                       id="taxId"
                       value={formData.taxId}
@@ -851,9 +1006,9 @@ export default function ClientManagementPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="industry">Industry</Label>
+                    <Label htmlFor="industry" className="text-sm">Industry</Label>
                     <Input
                       id="industry"
                       placeholder="e.g., Construction, Real Estate"
@@ -862,7 +1017,7 @@ export default function ClientManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="companySize">Company Size</Label>
+                    <Label htmlFor="companySize" className="text-sm">Company Size</Label>
                     <Select value={formData.companySize} onValueChange={(value) => setFormData({...formData, companySize: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select company size" />
@@ -877,9 +1032,9 @@ export default function ClientManagementPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="annualRevenue">Annual Revenue (IDR)</Label>
+                    <Label htmlFor="annualRevenue" className="text-sm">Annual Revenue (IDR)</Label>
                     <Input
                       id="annualRevenue"
                       type="number"
@@ -889,7 +1044,7 @@ export default function ClientManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="website">Website</Label>
+                    <Label htmlFor="website" className="text-sm">Website</Label>
                     <Input
                       id="website"
                       type="url"
@@ -903,11 +1058,11 @@ export default function ClientManagementPage() {
             )}
 
             {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Contact Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Contact Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="contactPerson">Contact Person *</Label>
+                  <Label htmlFor="contactPerson" className="text-sm">Contact Person *</Label>
                   <Input
                     id="contactPerson"
                     required
@@ -916,7 +1071,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contactTitle">Job Title</Label>
+                  <Label htmlFor="contactTitle" className="text-sm">Job Title</Label>
                   <Input
                     id="contactTitle"
                     placeholder="e.g., CEO, Project Manager"
@@ -926,9 +1081,9 @@ export default function ClientManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="contactEmail">Email *</Label>
+                  <Label htmlFor="contactEmail" className="text-sm">Email *</Label>
                   <Input
                     id="contactEmail"
                     type="email"
@@ -938,7 +1093,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contactPhone">Phone *</Label>
+                  <Label htmlFor="contactPhone" className="text-sm">Phone *</Label>
                   <Input
                     id="contactPhone"
                     required
@@ -949,7 +1104,7 @@ export default function ClientManagementPage() {
               </div>
 
               <div>
-                <Label htmlFor="contactPhone2">Secondary Phone</Label>
+                <Label htmlFor="contactPhone2" className="text-sm">Secondary Phone</Label>
                 <Input
                   id="contactPhone2"
                   value={formData.contactPhone2}
@@ -959,10 +1114,10 @@ export default function ClientManagementPage() {
             </div>
 
             {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Address Information</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Address Information</h3>
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address" className="text-sm">Address *</Label>
                 <Textarea
                   id="address"
                   required
@@ -972,9 +1127,9 @@ export default function ClientManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city" className="text-sm">City *</Label>
                   <Input
                     id="city"
                     required
@@ -983,7 +1138,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="province">Province *</Label>
+                  <Label htmlFor="province" className="text-sm">Province *</Label>
                   <Input
                     id="province"
                     required
@@ -993,9 +1148,9 @@ export default function ClientManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Label htmlFor="postalCode" className="text-sm">Postal Code</Label>
                   <Input
                     id="postalCode"
                     value={formData.postalCode}
@@ -1003,7 +1158,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="country">Country</Label>
+                  <Label htmlFor="country" className="text-sm">Country</Label>
                   <Input
                     id="country"
                     value={formData.country}
@@ -1014,11 +1169,11 @@ export default function ClientManagementPage() {
             </div>
 
             {/* Business Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Business Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Business Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="creditLimit">Credit Limit (IDR)</Label>
+                  <Label htmlFor="creditLimit" className="text-sm">Credit Limit (IDR)</Label>
                   <Input
                     id="creditLimit"
                     type="number"
@@ -1028,7 +1183,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="paymentTerms">Payment Terms</Label>
+                  <Label htmlFor="paymentTerms" className="text-sm">Payment Terms</Label>
                   <Select value={formData.paymentTerms} onValueChange={(value) => setFormData({...formData, paymentTerms: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select payment terms" />
@@ -1045,7 +1200,7 @@ export default function ClientManagementPage() {
               </div>
 
               <div>
-                <Label htmlFor="specialNotes">Special Notes</Label>
+                <Label htmlFor="specialNotes" className="text-sm">Special Notes</Label>
                 <Textarea
                   id="specialNotes"
                   rows={3}
@@ -1068,21 +1223,21 @@ export default function ClientManagementPage() {
 
       {/* Edit Client Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
           <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Client</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Update client information and business details.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Same form fields as create dialog - abbreviated for space */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Basic Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit-clientType">Client Type *</Label>
+                  <Label htmlFor="edit-clientType" className="text-sm">Client Type *</Label>
                   <Select value={formData.clientType} onValueChange={(value) => setFormData({...formData, clientType: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1098,7 +1253,7 @@ export default function ClientManagementPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="edit-status">Status *</Label>
+                  <Label htmlFor="edit-status" className="text-sm">Status *</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1116,11 +1271,11 @@ export default function ClientManagementPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Contact Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium">Contact Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit-contactPerson">Contact Person *</Label>
+                  <Label htmlFor="edit-contactPerson" className="text-sm">Contact Person *</Label>
                   <Input
                     id="edit-contactPerson"
                     required
@@ -1129,7 +1284,7 @@ export default function ClientManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-contactEmail">Email *</Label>
+                  <Label htmlFor="edit-contactEmail" className="text-sm">Email *</Label>
                   <Input
                     id="edit-contactEmail"
                     type="email"
@@ -1141,11 +1296,11 @@ export default function ClientManagementPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit">Update Client</Button>
+              <Button type="submit" className="w-full sm:w-auto">Update Client</Button>
             </div>
           </form>
         </DialogContent>

@@ -39,6 +39,7 @@ interface Assembly {
   name: string;
   description: string | null;
   materials: AssemblyMaterial[];
+  docs?: DocumentFile[] | null;
 }
 
 interface TemplateAssembly {
@@ -84,8 +85,18 @@ export default function TemplatesPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
   const [isDescriptionDialogOpen, setIsDescriptionDialogOpen] = useState(false);
   const [isAssemblyDetailsDialogOpen, setIsAssemblyDetailsDialogOpen] = useState(false);
+  const [isTemplateDocumentsDialogOpen, setIsTemplateDocumentsDialogOpen] = useState(false);
+  const [isMergingPdfs, setIsMergingPdfs] = useState(false);
+  const [isPdfOrderDialogOpen, setIsPdfOrderDialogOpen] = useState(false);
+  const [pdfOrder, setPdfOrder] = useState<number[]>([]);
+  const [mergeProgress, setMergeProgress] = useState<{
+    stage: string;
+    progress: number;
+    message: string;
+  } | null>(null);
   const [selectedAssembly, setSelectedAssembly] = useState<Assembly | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -722,6 +733,107 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleMergePdfs = async (template: Template) => {
+    if (!template || template.assemblies.length === 0) {
+      toast({
+        title: "Cannot Merge PDFs",
+        description: "Template has no assemblies to merge PDFs from",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if template has assemblies with PDFs
+    let totalPdfFiles = 0;
+    const assembliesWithPdfs = template.assemblies.filter(assembly => {
+      const docs = Array.isArray(assembly.assembly.docs) ? assembly.assembly.docs : [];
+      const pdfCount = docs.filter((doc: any) =>
+        doc.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+      ).length;
+      totalPdfFiles += pdfCount;
+      return pdfCount > 0;
+    });
+
+    if (totalPdfFiles < 2) {
+      toast({
+        title: "Cannot Merge PDFs",
+        description: `Need at least 2 PDF files to merge. Found ${totalPdfFiles} PDF files.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set up the order dialog
+    setSelectedTemplate(template);
+    setPdfOrder(assembliesWithPdfs.map(ta => ta.assemblyId));
+    setIsPdfOrderDialogOpen(true);
+  };
+
+  const confirmMergePdfs = async () => {
+    if (!selectedTemplate || pdfOrder.length === 0) return;
+
+    setIsPdfOrderDialogOpen(false);
+    setIsMergingPdfs(true);
+    setMergeProgress({ stage: 'Preparing files...', progress: 10, message: 'Collecting PDF files from assemblies' });
+
+    try {
+      // Update progress
+      setMergeProgress({ stage: 'Sending to server...', progress: 30, message: 'Uploading files to merge service' });
+
+      const response = await fetch(`/api/templates/${selectedTemplate.id}/merge-pdfs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          templateName: selectedTemplate.name,
+          pdfOrder: pdfOrder
+        }),
+      });
+
+      setMergeProgress({ stage: 'Processing...', progress: 60, message: 'Merging PDF files' });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMergeProgress({ stage: 'Saving...', progress: 90, message: 'Saving merged PDF' });
+
+        toast({
+          title: "PDFs Merged Successfully",
+          description: `Merged ${data.totalFilesMerged} PDF files into "${data.mergedFile.name}"`,
+        });
+
+        // Refresh template data to show new merged document
+        await fetchTemplates();
+
+        setMergeProgress({ stage: 'Complete!', progress: 100, message: 'PDF merge completed successfully' });
+
+        // Close current dialog and reopen to show updated documents
+        setIsDetailsDialogOpen(false);
+        setTimeout(() => {
+          setSelectedTemplate(selectedTemplate);
+          setIsDetailsDialogOpen(true);
+        }, 500);
+
+      } else {
+        toast({
+          title: "Merge Failed",
+          description: data.error || "Failed to merge PDFs",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Merge Failed",
+        description: "Network error occurred while merging PDFs",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMergingPdfs(false);
+      setMergeProgress(null);
+    }
+  };
+
   const exportTemplateDetailsToCSV = () => {
     if (!selectedTemplate) return;
 
@@ -784,7 +896,42 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 relative">
+      {/* Global Loading Overlay untuk PDF Merge */}
+      {isMergingPdfs && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Merging PDFs</h3>
+                <p className="text-sm text-muted-foreground">
+                  {mergeProgress?.stage || 'Processing...'}
+                </p>
+              </div>
+            </div>
+
+            {mergeProgress && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{mergeProgress.message}</span>
+                  <span className="font-medium">{mergeProgress.progress}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${mergeProgress.progress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 text-xs text-muted-foreground text-center">
+              Please wait, this may take a few moments...
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Templates</h1>
@@ -799,15 +946,15 @@ export default function TemplatesPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Templates</CardTitle>
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{templates.length}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold">{templates.length}</div>
+            <p className="text-xs text-muted-foreground truncate">
               Construction packages
             </p>
           </CardContent>
@@ -815,14 +962,14 @@ export default function TemplatesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Active Projects</CardTitle>
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold">
               {templates.reduce((total, template) => total + template.projects.length, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               Projects using templates
             </p>
           </CardContent>
@@ -830,16 +977,16 @@ export default function TemplatesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Assemblies</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">Avg Assemblies</CardTitle>
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold">
               {templates.length > 0
                 ? Math.round(templates.reduce((total, template) => total + template.assemblies.length, 0) / templates.length)
                 : 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               Assemblies per template
             </p>
           </CardContent>
@@ -1150,9 +1297,24 @@ export default function TemplatesPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {template.docs?.length || 0} docs
-                          </Badge>
+                          {template.docs && template.docs.length > 0 ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTemplate(template);
+                                setIsTemplateDocumentsDialogOpen(true);
+                              }}
+                              className="h-auto p-1 text-xs hover:bg-muted"
+                            >
+                              <FileText className="h-3 w-3 mr-1" />
+                              {template.docs.length} docs
+                            </Button>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              0 docs
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
@@ -1164,7 +1326,7 @@ export default function TemplatesPage() {
                             {template.projects.length} projects
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-semibold text-blue-600">
+                        <TableCell className="font-semibold text-green-600">
                           {formatCurrency(calculateEstimatedCost(template))}
                         </TableCell>
                         <TableCell className="text-sm">
@@ -1271,27 +1433,27 @@ export default function TemplatesPage() {
 
       {/* Export CSV Dialog */}
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Download className="h-4 w-4 sm:h-5 sm:w-5" />
               Export Templates CSV
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm sm:text-base">
               Choose the export format for your template data
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
             <div className="space-y-3">
               <Button
                 onClick={exportTemplatesBasic}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >
-                <div className="text-left">
-                  <div className="font-medium">Basic Template List</div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                <div>
+                  <div className="font-medium text-sm sm:text-base">Basic Template List</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Export template names, descriptions, and basic statistics
                   </div>
                 </div>
@@ -1299,12 +1461,12 @@ export default function TemplatesPage() {
 
               <Button
                 onClick={exportTemplatesWithAssemblies}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >
-                <div className="text-left">
-                  <div className="font-medium">Templates with Assembly Details</div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                <div>
+                  <div className="font-medium text-sm sm:text-base">Templates with Assembly Details</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Include assembly breakdown for each template
                   </div>
                 </div>
@@ -1312,12 +1474,12 @@ export default function TemplatesPage() {
 
               <Button
                 onClick={exportTemplatesWithMaterials}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >
-                <div className="text-left">
-                  <div className="font-medium">Complete Breakdown (Templates + Materials)</div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                <div>
+                  <div className="font-medium text-sm sm:text-base">Complete Breakdown (Templates + Materials)</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Full details including all assembly materials
                   </div>
                 </div>
@@ -1325,20 +1487,20 @@ export default function TemplatesPage() {
 
               <Button
                 onClick={exportConsolidatedMaterials}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >
-                <div className="text-left">
-                  <div className="font-medium">Consolidated Materials per Template</div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                <div>
+                  <div className="font-medium text-sm sm:text-base">Consolidated Materials per Template</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Export separate CSV files for each template with consolidated materials
                   </div>
                 </div>
               </Button>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsExportDialogOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
             </div>
@@ -1512,6 +1674,24 @@ export default function TemplatesPage() {
                     </Badge>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => selectedTemplate && handleMergePdfs(selectedTemplate)}
+                      disabled={isMergingPdfs || !selectedTemplate?.assemblies?.length}
+                    >
+                      {isMergingPdfs ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                          Merging...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Merge PDFs
+                        </>
+                      )}
+                    </Button>
                     <input
                       type="file"
                       id={`file-upload-${selectedTemplate?.id}`}
@@ -1573,76 +1753,136 @@ export default function TemplatesPage() {
 
               {selectedTemplate?.docs && selectedTemplate.docs.length > 0 ? (
                 <div className="divide-y">
-                  {selectedTemplate.docs.map((doc: DocumentFile, index: number) => (
-                    <div key={doc.url} className="p-3 flex items-center justify-between hover:bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <File className="h-8 w-8 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium text-sm">{doc.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {(doc.size / 1024).toFixed(1)} KB • {doc.type} • Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                  {selectedTemplate.docs.map((doc: DocumentFile, index: number) => {
+                    const isMergedPdf = doc.name.startsWith('Merged PDFs -');
+
+                    return (
+                      <div key={doc.url} className="p-3 flex items-center justify-between hover:bg-muted/30 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <File className="h-8 w-8 text-muted-foreground" />
+                            {isMergedPdf && (
+                              <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                ✓
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm flex items-center gap-2">
+                              {doc.name}
+                              {isMergedPdf && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Merged PDF
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {(doc.size / 1024).toFixed(1)} KB • {doc.type} • Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = doc.url;
-                            link.download = doc.name;
-                            link.click();
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) return;
+                        <div className="flex gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = doc.url;
+                                    link.download = doc.name;
+                                    link.target = '_blank';
+                                    link.click();
+                                  }}
+                                  className="hover:bg-blue-50 hover:text-blue-600"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Download {doc.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
-                            try {
-                              const response = await fetch('/api/templates/upload', {
-                                method: 'DELETE',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                  templateId: selectedTemplate.id,
-                                  fileUrl: doc.url,
-                                }),
-                              });
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    window.open(doc.url, '_blank');
+                                  }}
+                                  className="hover:bg-green-50 hover:text-green-600"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View in browser</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
 
-                              if (response.ok) {
-                                toast({
-                                  title: "Document deleted",
-                                  description: `"${doc.name}" has been removed`,
-                                });
-                                fetchTemplates();
-                              } else {
-                                const error = await response.json();
-                                toast({
-                                  title: "Delete failed",
-                                  description: error.error || "Failed to delete document",
-                                  variant: "destructive",
-                                });
-                              }
-                            } catch (error) {
-                              toast({
-                                title: "Delete failed",
-                                description: "Network error occurred",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) return;
+
+                                    try {
+                                      const response = await fetch('/api/templates/upload', {
+                                        method: 'DELETE',
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                          templateId: selectedTemplate.id,
+                                          fileUrl: doc.url,
+                                        }),
+                                      });
+
+                                      if (response.ok) {
+                                        toast({
+                                          title: "Document deleted",
+                                          description: `"${doc.name}" has been removed`,
+                                        });
+                                        fetchTemplates();
+                                      } else {
+                                        const error = await response.json();
+                                        toast({
+                                          title: "Delete failed",
+                                          description: error.error || "Failed to delete document",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "Delete failed",
+                                        description: "Network error occurred",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete document</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="p-8 text-center">
@@ -1942,6 +2182,474 @@ export default function TemplatesPage() {
         onCancel={() => setIsBulkDeleteDialogOpen(false)}
         destructive
       />
+
+      {/* Template Documents Dialog */}
+      <Dialog open={isTemplateDocumentsDialogOpen} onOpenChange={setIsTemplateDocumentsDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden sm:w-[90vw] md:w-[80vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+              Template Documents: "{selectedTemplate?.name}"
+            </DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
+              All documents uploaded to this template
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 sm:space-y-6">
+            {/* Documents List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Documents ({selectedTemplate?.docs?.length || 0})</h3>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    id={`template-doc-upload-${selectedTemplate?.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!selectedTemplate || files.length === 0) return;
+
+                      for (const file of files) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('templateId', selectedTemplate.id.toString());
+
+                        try {
+                          const response = await fetch('/api/templates/upload', {
+                            method: 'POST',
+                            body: formData,
+                          });
+
+                          if (response.ok) {
+                            toast({
+                              title: "Document uploaded",
+                              description: `"${file.name}" has been uploaded successfully`,
+                            });
+                            fetchTemplates();
+                          } else {
+                            const error = await response.json();
+                            toast({
+                              title: "Upload failed",
+                              description: error.error || "Failed to upload document",
+                              variant: "destructive",
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Upload failed",
+                            description: "Network error occurred",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                      // Reset input
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById(`template-doc-upload-${selectedTemplate?.id}`)?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto border rounded-lg">
+                {selectedTemplate?.docs && selectedTemplate.docs.length > 0 ? (
+                  <div className="divide-y">
+                    {selectedTemplate.docs.map((doc: DocumentFile, index: number) => {
+                      const isMergedPdf = doc.name.startsWith('Merged PDFs -');
+
+                      return (
+                        <div key={doc.url} className="p-4 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="relative flex-shrink-0">
+                              <File className="h-10 w-10 text-muted-foreground" />
+                              {isMergedPdf && (
+                                <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-sm truncate">{doc.name}</h4>
+                                {isMergedPdf && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Merged PDF
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                                <span>•</span>
+                                <span>{doc.type}</span>
+                                <span>•</span>
+                                <span>Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 flex-shrink-0">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = doc.url;
+                                        link.download = doc.name;
+                                        link.target = '_blank';
+                                        link.click();
+                                      }}
+                                      className="hover:bg-blue-50 hover:text-blue-600"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Download {doc.name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        window.open(doc.url, '_blank');
+                                      }}
+                                      className="hover:bg-green-50 hover:text-green-600"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View in browser</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => {
+                                        if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) return;
+
+                                        try {
+                                          const response = await fetch('/api/templates/upload', {
+                                            method: 'DELETE',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                              templateId: selectedTemplate.id,
+                                              fileUrl: doc.url,
+                                            }),
+                                          });
+
+                                          if (response.ok) {
+                                            toast({
+                                              title: "Document deleted",
+                                              description: `"${doc.name}" has been removed`,
+                                            });
+                                            fetchTemplates();
+                                            setIsTemplateDocumentsDialogOpen(false);
+                                          } else {
+                                            const error = await response.json();
+                                            toast({
+                                              title: "Delete failed",
+                                              description: error.error || "Failed to delete document",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        } catch (error) {
+                                          toast({
+                                            title: "Delete failed",
+                                            description: "Network error occurred",
+                                            variant: "destructive",
+                                          });
+                                        }
+                                      }}
+                                      className="hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Delete document</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <File className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-medium text-muted-foreground mb-2">No documents uploaded</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      This template doesn't have any documents yet. Upload some documents to get started.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById(`template-doc-upload-${selectedTemplate?.id}`)?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload First Document
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary */}
+            {selectedTemplate?.docs && selectedTemplate.docs.length > 0 && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-primary">{selectedTemplate.docs.length}</div>
+                    <div className="text-muted-foreground">Total Documents</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-blue-600">
+                      {selectedTemplate.docs.filter(doc => doc.name.startsWith('Merged PDFs -')).length}
+                    </div>
+                    <div className="text-muted-foreground">Merged PDFs</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-600">
+                      {(selectedTemplate.docs.reduce((sum, doc) => sum + doc.size, 0) / 1024).toFixed(1)} KB
+                    </div>
+                    <div className="text-muted-foreground">Total Size</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-purple-600">
+                      {new Date(Math.max(...selectedTemplate.docs.map(doc => new Date(doc.uploadedAt).getTime()))).toLocaleDateString()}
+                    </div>
+                    <div className="text-muted-foreground">Last Upload</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button onClick={() => setIsTemplateDocumentsDialogOpen(false)} className="w-full sm:w-auto">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Order Dialog */}
+      <Dialog open={isPdfOrderDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsPdfOrderDialogOpen(false);
+          setPdfOrder([]);
+        }
+      }}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-hidden sm:w-[90vw] md:w-[80vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+              Set PDF Merge Order
+            </DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
+              Arrange the order of assemblies for PDF merging. The first assembly will appear first in the merged PDF.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 sm:space-y-6">
+            {/* Progress Indicator */}
+            {isMergingPdfs && mergeProgress && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span className="font-medium text-blue-900 dark:text-blue-100">
+                    {mergeProgress.stage}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-700 dark:text-blue-300">{mergeProgress.message}</span>
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">{mergeProgress.progress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${mergeProgress.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Assembly Order List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Assembly Order for PDF Merge</h3>
+                <span className="text-xs text-muted-foreground">
+                  {pdfOrder.length} assemblies selected
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto border rounded-lg p-3">
+                {selectedTemplate && selectedTemplate.assemblies
+                  .filter(ta => {
+                    const docs = Array.isArray(ta.assembly.docs) ? ta.assembly.docs : [];
+                    return docs.some((doc: any) =>
+                      doc.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+                    );
+                  })
+                  .sort((a, b) => {
+                    const aIndex = pdfOrder.indexOf(a.assemblyId);
+                    const bIndex = pdfOrder.indexOf(b.assemblyId);
+                    if (aIndex === -1 && bIndex === -1) return 0;
+                    if (aIndex === -1) return 1;
+                    if (bIndex === -1) return -1;
+                    return aIndex - bIndex;
+                  })
+                  .map((templateAssembly, index) => {
+                    const assembly = templateAssembly.assembly;
+                    const docs = Array.isArray(assembly.docs) ? assembly.docs : [];
+                    const pdfCount = docs.filter((doc: any) =>
+                      doc.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+                    ).length;
+
+                    return (
+                      <div
+                        key={templateAssembly.assemblyId}
+                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border"
+                      >
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">
+                            {index + 1}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const currentIndex = pdfOrder.indexOf(templateAssembly.assemblyId);
+                              if (currentIndex > 0) {
+                                const newOrder = [...pdfOrder];
+                                [newOrder[currentIndex], newOrder[currentIndex - 1]] = [newOrder[currentIndex - 1], newOrder[currentIndex]];
+                                setPdfOrder(newOrder);
+                              }
+                            }}
+                            disabled={index === 0}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const currentIndex = pdfOrder.indexOf(templateAssembly.assemblyId);
+                              if (currentIndex < pdfOrder.length - 1) {
+                                const newOrder = [...pdfOrder];
+                                [newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]];
+                                setPdfOrder(newOrder);
+                              }
+                            }}
+                            disabled={index === pdfOrder.length - 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{assembly.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {pdfCount} PDF file{pdfCount !== 1 ? 's' : ''} • {templateAssembly.quantity}x quantity
+                          </div>
+                        </div>
+
+                        <Badge variant="secondary" className="text-xs">
+                          {pdfCount} PDF{pdfCount !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Summary */}
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Total assemblies to merge:</span>
+                  <span className="font-medium">{pdfOrder.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span>Estimated total PDF files:</span>
+                  <span className="font-medium">
+                    {selectedTemplate ? selectedTemplate.assemblies
+                      .filter(ta => pdfOrder.includes(ta.assemblyId))
+                      .reduce((total, ta) => {
+                        const docs = Array.isArray(ta.assembly.docs) ? ta.assembly.docs : [];
+                        const pdfCount = docs.filter((doc: any) =>
+                          doc.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+                        ).length;
+                        return total + pdfCount;
+                      }, 0) : 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsPdfOrderDialogOpen(false);
+                  setPdfOrder([]);
+                }}
+                disabled={isMergingPdfs}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmMergePdfs}
+                disabled={isMergingPdfs || pdfOrder.length < 2}
+                className="w-full sm:w-auto"
+              >
+                {isMergingPdfs ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    Merging PDFs...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Start PDF Merge
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

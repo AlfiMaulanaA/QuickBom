@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             status: true,
+            totalPrice: true,
           },
         },
       },
@@ -47,12 +48,28 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform data to include calculated fields
-    const transformedClients = clientsData.map((client: any) => ({
-      ...client,
-      totalProjects: client.projects.length,
-      activeProjects: client.projects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'APPROVED').length,
-      completedProjects: client.projects.filter((p: any) => p.status === 'COMPLETED').length,
-    }));
+    const transformedClients = clientsData.map((client: any) => {
+      // Calculate total contract value from all projects
+      const totalContractValue = client.projects.reduce((sum: number, project: any) => {
+        return sum + (Number(project.totalPrice) || 0);
+      }, 0);
+
+      // Calculate outstanding balance (simplified - could be more complex)
+      const outstandingBalance = client.projects
+        .filter((p: any) => p.status !== 'COMPLETED' && p.status !== 'CANCELLED')
+        .reduce((sum: number, project: any) => {
+          return sum + (Number(project.totalPrice) || 0);
+        }, 0);
+
+      return {
+        ...client,
+        totalProjects: client.projects.length,
+        activeProjects: client.projects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'APPROVED').length,
+        completedProjects: client.projects.filter((p: any) => p.status === 'COMPLETED').length,
+        totalContractValue,
+        outstandingBalance,
+      };
+    });
 
     // Ensure we return an array even if database is empty
     if (!transformedClients) {

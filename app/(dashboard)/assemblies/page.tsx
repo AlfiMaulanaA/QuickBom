@@ -70,6 +70,7 @@ export default function AssembliesPage() {
   const [hasMoreData, setHasMoreData] = useState(true);
   const [selectedAssembly, setSelectedAssembly] = useState<Assembly | null>(null);
   const [isMaterialsDialogOpen, setIsMaterialsDialogOpen] = useState(false);
+  const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [assemblyToDelete, setAssemblyToDelete] = useState<number | null>(null);
@@ -495,28 +496,33 @@ export default function AssembliesPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-48"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64"></div>
+          <div className="h-3 sm:h-4 bg-gray-200 rounded w-64 sm:w-96"></div>
+          <div className="h-48 sm:h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Assemblies</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Manage construction assemblies and their material compositions
-          </p>
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">Assemblies</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage construction assemblies and their material compositions</p>
+          </div>
         </div>
 
-        <Button onClick={() => router.push("/assemblies/create")} className="w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Assembly
+        <Button onClick={() => router.push("/assemblies/create")} size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm w-full sm:w-auto">
+          <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden xs:inline">Add Assembly</span>
+          <span className="xs:hidden">Add</span>
         </Button>
       </div>
 
@@ -706,24 +712,25 @@ export default function AssembliesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {assemblies.length === 0 ? (
-            <div className="text-center py-8">
-              <Settings className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by adding your first assembly.
-              </p>
-            </div>
-          ) : processedAssemblies.length === 0 ? (
-            <div className="text-center py-8">
-              <Search className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search criteria.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden lg:block">
+            {assemblies.length === 0 ? (
+              <div className="text-center py-8">
+                <Settings className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding your first assembly.
+                </p>
+              </div>
+            ) : processedAssemblies.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Try adjusting your search criteria.
+                </p>
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -771,9 +778,24 @@ export default function AssembliesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {assembly.docs?.length || 0} docs
-                        </Badge>
+                        {assembly.docs && assembly.docs.length > 0 ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAssembly(assembly);
+                              setIsDocumentsDialogOpen(true);
+                            }}
+                            className="h-auto p-2 rounded-full border border-gray-500 text-xs hover:bg-muted"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            {assembly.docs.length} docs
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            0 docs
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="font-semibold text-green-600">
                         {formatCurrency(calculateTotalCost(assembly))}
@@ -826,6 +848,109 @@ export default function AssembliesPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </div>
+
+          {/* Mobile/Tablet Card Layout */}
+          <div className="lg:hidden space-y-3">
+            {processedAssemblies.slice(0, displayMode === 'lazy' ? visibleItemsCount : processedAssemblies.length).map((assembly) => (
+              <Card key={assembly.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Checkbox
+                      checked={selectedAssemblies.includes(assembly.id)}
+                      onCheckedChange={(checked) => handleSelectAssembly(assembly.id, checked as boolean)}
+                    />
+                    <Settings className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div>
+                      <div className="font-medium text-sm truncate">{assembly.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {assembly.description || 'No description'}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {assembly.materials.length} materials
+                      </Badge>
+                      {assembly.docs && assembly.docs.length > 0 ? (
+                        <Badge variant="outline" className="text-xs">
+                          {assembly.docs.length} docs
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-800">
+                          0 docs
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="font-medium text-green-600">{formatCurrency(calculateTotalCost(assembly))}</span>
+                        <span className="text-muted-foreground ml-1">total</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {new Date(assembly.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="flex-shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => router.push(`/assemblies/edit/${assembly.id}`)} className="text-xs">
+                        <Edit className="h-3 w-3 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(assembly)} className="text-xs">
+                        <Copy className="h-3 w-3 mr-2" />
+                        Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedAssembly(assembly);
+                          setIsMaterialsDialogOpen(true);
+                        }}
+                        className="text-xs"
+                      >
+                        <Eye className="h-3 w-3 mr-2" />
+                        View Materials
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(assembly.id)}
+                        className="text-destructive text-xs"
+                      >
+                        <Trash2 className="h-3 w-3 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {assemblies.length > 0 && processedAssemblies.length === 0 && (
+            <div className="text-center py-8 lg:hidden">
+              <Search className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try adjusting your search criteria.
+              </p>
+            </div>
+          )}
+
+          {assemblies.length === 0 && (
+            <div className="text-center py-8 lg:hidden">
+              <Settings className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No assemblies</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by adding your first assembly.
+              </p>
             </div>
           )}
 
@@ -1183,7 +1308,119 @@ export default function AssembliesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Documents Detail Dialog */}
+      <Dialog open={isDocumentsDialogOpen} onOpenChange={setIsDocumentsDialogOpen}>
+        <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documents for "{selectedAssembly?.name}"
+            </DialogTitle>
+            <DialogDescription>
+              All documents attached to this assembly
+            </DialogDescription>
+          </DialogHeader>
 
+          <div className="space-y-4">
+            {selectedAssembly?.docs && selectedAssembly.docs.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {selectedAssembly.docs.map((doc: DocumentFile, index: number) => (
+                  <div key={doc.url} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0">
+                        <File className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{doc.name}</div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>Size: {(doc.size / 1024).toFixed(1)} KB</div>
+                          <div>Type: {doc.type}</div>
+                          <div>Uploaded: {new Date(doc.uploadedAt).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = doc.url;
+                          link.download = doc.name;
+                          link.click();
+                        }}
+                        title="Download document"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          if (!confirm(`Are you sure you want to delete "${doc.name}"?`)) return;
+
+                          try {
+                            const response = await fetch('/api/assemblies/upload', {
+                              method: 'DELETE',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                assemblyId: selectedAssembly.id,
+                                fileUrl: doc.url,
+                              }),
+                            });
+
+                            if (response.ok) {
+                              toast({
+                                title: "Document deleted",
+                                description: `"${doc.name}" has been removed`,
+                              });
+                              fetchAssemblies();
+                              setIsDocumentsDialogOpen(false);
+                            } else {
+                              const error = await response.json();
+                              toast({
+                                title: "Delete failed",
+                                description: error.error || "Failed to delete document",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Delete failed",
+                              description: "Network error occurred",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        title="Delete document"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <File className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground">No documents attached to this assembly</p>
+              </div>
+            )}
+
+            {/* Summary */}
+            <div className="flex justify-between items-center pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Total documents: {selectedAssembly?.docs?.length || 0}
+              </div>
+              <Button onClick={() => setIsDocumentsDialogOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Single Delete Confirmation Dialog */}
       <ConfirmationDialog

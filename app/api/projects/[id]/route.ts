@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
-    const { name, clientId, fromTemplateId } = body;
+    const { name, clientId, fromTemplateId, schematicDocs, qualityCheckDocs } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -110,7 +110,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         name,
         clientId,
         fromTemplateId,
-        totalPrice
+        totalPrice,
+        ...(schematicDocs !== undefined && { schematicDocs }),
+        ...(qualityCheckDocs !== undefined && { qualityCheckDocs })
       },
       include: {
         template: true

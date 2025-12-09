@@ -486,13 +486,16 @@ export default function MaterialsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Materials</h1>
-          <p className="text-muted-foreground">
-            Manage construction materials and their pricing
-          </p>
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Materials</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage construction materials and their pricing</p>
+          </div>
         </div>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -502,26 +505,30 @@ export default function MaterialsPage() {
               Add Material
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Material</DialogTitle>
-              <DialogDescription>
-                Add a new construction material to the database.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Add New Material</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
+              Add a new construction material to the database.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Row 1: Material Name (Full Width) */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm">Material Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Bata Merah"
+                required
+              />
+            </div>
+
+            {/* Row 2: Part Number and Manufacturer */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Material Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Bata Merah"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="partNumber">Part Number</Label>
+                <Label htmlFor="partNumber" className="text-sm">Part Number</Label>
                 <Input
                   id="partNumber"
                   value={formData.partNumber}
@@ -530,7 +537,7 @@ export default function MaterialsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Label htmlFor="manufacturer" className="text-sm">Manufacturer</Label>
                 <Input
                   id="manufacturer"
                   value={formData.manufacturer}
@@ -538,8 +545,12 @@ export default function MaterialsPage() {
                   placeholder="e.g., PT. Bata Indonesia"
                 />
               </div>
+            </div>
+
+            {/* Row 3: Unit and Price */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="unit" className="text-sm">Unit *</Label>
                 <Input
                   id="unit"
                   value={formData.unit}
@@ -549,7 +560,7 @@ export default function MaterialsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price per Unit</Label>
+                <Label htmlFor="price" className="text-sm">Price per Unit</Label>
                 <Input
                   id="price"
                   type="number"
@@ -559,46 +570,54 @@ export default function MaterialsPage() {
                   placeholder="e.g., 1500"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="purchaseUrl">Purchase URL</Label>
-                <Input
-                  id="purchaseUrl"
-                  type="url"
-                  value={formData.purchaseUrl}
-                  onChange={(e) => setFormData({ ...formData, purchaseUrl: e.target.value })}
-                  placeholder="https://example.com/buy"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="datasheetFile">Datasheet File</Label>
-                <Input
-                  id="datasheetFile"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setFormData({ ...formData, datasheetFile: file });
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Upload PDF, DOC, DOCX, XLS, or XLSX files only
-                </p>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreateDialogOpen(false);
-                    setFormData({ name: "", partNumber: "", manufacturer: "", unit: "", price: "", purchaseUrl: "", datasheetFile: null });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Add Material</Button>
-              </div>
-            </form>
-          </DialogContent>
+            </div>
+
+            {/* Row 4: Purchase URL (Full Width) */}
+            <div className="space-y-2">
+              <Label htmlFor="purchaseUrl" className="text-sm">Purchase URL</Label>
+              <Input
+                id="purchaseUrl"
+                type="url"
+                value={formData.purchaseUrl}
+                onChange={(e) => setFormData({ ...formData, purchaseUrl: e.target.value })}
+                placeholder="https://example.com/buy"
+              />
+            </div>
+
+            {/* Row 5: Datasheet File (Full Width) */}
+            <div className="space-y-2">
+              <Label htmlFor="datasheetFile" className="text-sm">Datasheet File</Label>
+              <Input
+                id="datasheetFile"
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setFormData({ ...formData, datasheetFile: file });
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Upload PDF, DOC, DOCX, XLS, or XLSX files only
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  setFormData({ name: "", partNumber: "", manufacturer: "", unit: "", price: "", purchaseUrl: "", datasheetFile: null });
+                }}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto">Add Material</Button>
+            </div>
+          </form>
+        </DialogContent>
         </Dialog>
       </div>
 
@@ -787,24 +806,25 @@ export default function MaterialsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {materials.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by adding your first material.
-              </p>
-            </div>
-          ) : processedMaterials.length === 0 ? (
-            <div className="text-center py-8">
-              <Search className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search or filter criteria.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden lg:block">
+            {materials.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding your first material.
+                </p>
+              </div>
+            ) : processedMaterials.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Try adjusting your search or filter criteria.
+                </p>
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -932,6 +952,97 @@ export default function MaterialsPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </div>
+
+          {/* Mobile/Tablet Card Layout */}
+          <div className="lg:hidden space-y-3">
+            {processedMaterials.slice(0, displayMode === 'lazy' ? visibleItemsCount : (currentPage - 1) * pageSize + pageSize).map((material) => (
+              <Card key={material.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Checkbox
+                      checked={selectedMaterials.includes(material.id)}
+                      onCheckedChange={(checked) => handleSelectMaterial(material.id, checked as boolean)}
+                    />
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div>
+                      <div className="font-medium text-sm truncate">{material.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {material.manufacturer || 'No manufacturer'}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="secondary" className="text-xs">{material.unit}</Badge>
+                      {material.partNumber && material.partNumber !== "0" && material.partNumber !== "" ? (
+                        <Badge variant="outline" className="text-xs font-mono">
+                          PN: {material.partNumber}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                          No PN
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="font-medium text-green-600">{formatCurrency(material.price)}</span>
+                        <span className="text-muted-foreground ml-1">per {material.unit}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {new Date(material.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="flex-shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(material)} className="text-xs">
+                        <Edit className="h-3 w-3 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(material)} className="text-xs">
+                        <Copy className="h-3 w-3 mr-2" />
+                        Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(material.id)}
+                        className="text-destructive text-xs"
+                      >
+                        <Trash2 className="h-3 w-3 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {materials.length > 0 && processedMaterials.length === 0 && (
+            <div className="text-center py-8 lg:hidden">
+              <Search className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try adjusting your search or filter criteria.
+              </p>
+            </div>
+          )}
+
+          {materials.length === 0 && (
+            <div className="text-center py-8 lg:hidden">
+              <Package className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">No materials</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by adding your first material.
+              </p>
             </div>
           )}
 
@@ -1004,16 +1115,17 @@ export default function MaterialsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
           <DialogHeader>
-            <DialogTitle>Edit Material</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Material</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Update material information.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Row 1: Material Name (Full Width) */}
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Material Name</Label>
+              <Label htmlFor="edit-name" className="text-sm">Material Name *</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -1021,43 +1133,53 @@ export default function MaterialsPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-partNumber">Part Number</Label>
-              <Input
-                id="edit-partNumber"
-                value={formData.partNumber}
-                onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
-              />
+
+            {/* Row 2: Part Number and Manufacturer */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-partNumber" className="text-sm">Part Number</Label>
+                <Input
+                  id="edit-partNumber"
+                  value={formData.partNumber}
+                  onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-manufacturer" className="text-sm">Manufacturer</Label>
+                <Input
+                  id="edit-manufacturer"
+                  value={formData.manufacturer}
+                  onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-manufacturer">Manufacturer</Label>
-              <Input
-                id="edit-manufacturer"
-                value={formData.manufacturer}
-                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-              />
+
+            {/* Row 3: Unit and Price */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-unit" className="text-sm">Unit *</Label>
+                <Input
+                  id="edit-unit"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price" className="text-sm">Price per Unit</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
+              </div>
             </div>
+
+            {/* Row 4: Purchase URL (Full Width) */}
             <div className="space-y-2">
-              <Label htmlFor="edit-unit">Unit</Label>
-              <Input
-                id="edit-unit"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-price">Price per Unit</Label>
-              <Input
-                id="edit-price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-purchaseUrl">Purchase URL</Label>
+              <Label htmlFor="edit-purchaseUrl" className="text-sm">Purchase URL</Label>
               <Input
                 id="edit-purchaseUrl"
                 type="url"
@@ -1066,8 +1188,10 @@ export default function MaterialsPage() {
                 placeholder="https://example.com/buy"
               />
             </div>
+
+            {/* Row 5: Datasheet File (Full Width) */}
             <div className="space-y-2">
-              <Label htmlFor="edit-datasheetFile">Datasheet File</Label>
+              <Label htmlFor="edit-datasheetFile" className="text-sm">Datasheet File</Label>
               <Input
                 id="edit-datasheetFile"
                 type="file"
@@ -1081,7 +1205,9 @@ export default function MaterialsPage() {
                 Upload PDF, DOC, DOCX, XLS, or XLSX files only
               </p>
             </div>
-            <div className="flex justify-end space-x-2">
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -1090,10 +1216,11 @@ export default function MaterialsPage() {
                   setEditingMaterial(null);
                   setFormData({ name: "", partNumber: "", manufacturer: "", unit: "", price: "", purchaseUrl: "", datasheetFile: null });
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit">Update Material</Button>
+              <Button type="submit" className="w-full sm:w-auto">Update Material</Button>
             </div>
           </form>
         </DialogContent>
