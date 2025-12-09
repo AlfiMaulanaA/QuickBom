@@ -8,10 +8,22 @@ import { PDFDocument } from 'pdf-lib';
 const ILOVEPDF_PUBLIC_KEY = "project_public_a9f4bea676c8f8e97e06ec2a3b2a348185d8a57e59ba";
 const ILOVEPDF_SECRET_KEY = "secret_key_65a51e430b3e1c63e317f7785293a5a5_iBlqW554eb6973b71b5d88aeac55f67ca21ab";
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Initialize Supabase client (lazy initialization to avoid build-time errors)
+let supabase: any = null;
+
+function getSupabaseClient() {
+  if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase environment variables not configured');
+    }
+
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabase;
+}
 
 interface PDFMergeRequest {
   templateName?: string;
