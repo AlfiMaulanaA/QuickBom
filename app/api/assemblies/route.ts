@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    console.log('[API] GET /api/assemblies - Starting fetch');
     const assemblies = await prisma.assembly.findMany({
       include: {
         materials: {
@@ -14,11 +15,15 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
 
+    console.log(`[API] GET /api/assemblies - Found ${assemblies?.length || 0} assemblies`);
+
     // Ensure we return an array even if database is empty
     if (!assemblies) {
+      console.log('[API] GET /api/assemblies - No assemblies found, returning empty array');
       return NextResponse.json([]);
     }
 
+    console.log('[API] GET /api/assemblies - Returning assemblies successfully');
     return NextResponse.json(assemblies);
   } catch (error: any) {
     console.error('API Error [GET /api/assemblies]:', error);

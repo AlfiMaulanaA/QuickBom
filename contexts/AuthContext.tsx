@@ -252,8 +252,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Disable unauthorized access checks during login flow
   // This prevents conflicts between login redirects and auth checks
+  // Allow access to dashboard routes - middleware will handle authentication
   useEffect(() => {
-    if (!user && !isLoading && pathname !== '/login' && pathname !== '/register' && !pathname.startsWith('/api/') && pathname !== '/') {
+    const isPublicRoute = pathname === '/login' ||
+                         pathname === '/register' ||
+                         pathname === '/' ||
+                         pathname.startsWith('/api/');
+
+    const isDashboardRoute = pathname.startsWith('/(') ||
+                            pathname.startsWith('/assemblies') ||
+                            pathname.startsWith('/materials') ||
+                            pathname.startsWith('/projects') ||
+                            pathname.startsWith('/templates') ||
+                            pathname.startsWith('/clients') ||
+                            pathname.startsWith('/users') ||
+                            pathname.startsWith('/backups') ||
+                            pathname === '/gantt' ||
+                            pathname === '/dashboard';
+
+    // Only redirect to login for routes that are clearly not dashboard routes
+    if (!user && !isLoading && !isPublicRoute && !isDashboardRoute) {
       router.push('/login');
     }
   }, [user, isLoading, pathname, router]);

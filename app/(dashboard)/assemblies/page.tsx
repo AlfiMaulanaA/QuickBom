@@ -78,11 +78,19 @@ export default function AssembliesPage() {
 
   const fetchAssemblies = async () => {
     try {
+      console.log('[Page] Assemblies - Starting fetch');
       const response = await fetch("/api/assemblies");
+      console.log(`[Page] Assemblies - Response status: ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
+        console.log(`[Page] Assemblies - Received ${data?.length || 0} assemblies`);
         setAssemblies(data);
       } else {
+        console.error(`[Page] Assemblies - Fetch failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Page] Assemblies - Error response:', errorText);
+
         toast({
           title: "Error",
           description: "Failed to fetch assemblies",
@@ -90,6 +98,7 @@ export default function AssembliesPage() {
         });
       }
     } catch (error) {
+      console.error('[Page] Assemblies - Network error:', error);
       toast({
         title: "Error",
         description: "Failed to fetch assemblies",

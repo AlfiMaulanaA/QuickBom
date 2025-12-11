@@ -67,6 +67,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // Special logging for assemblies routes
+  if (pathname.startsWith('/assemblies')) {
+    console.log(`[Middleware] Processing assemblies route: ${pathname}, token exists: ${!!token}`)
+  }
+
   // Verify token for page routes
   try {
     const payload = verifyToken(token)

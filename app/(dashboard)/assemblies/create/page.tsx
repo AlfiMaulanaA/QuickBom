@@ -148,7 +148,27 @@ export default function CreateAssemblyPage() {
         title: "Success",
         description: "Assembly created successfully",
       });
-      router.push("/assemblies");
+
+      // Verify authentication before redirect to prevent token loss
+      try {
+        const authCheck = await fetch("/api/auth/me", {
+          headers: { 'Cache-Control': 'no-cache' },
+          credentials: 'include'
+        });
+
+        if (authCheck.ok) {
+          // Authentication confirmed, safe to redirect
+          router.replace("/assemblies");
+        } else {
+          // Authentication lost, redirect to login
+          console.warn("Authentication lost after assembly creation");
+          router.replace("/login?redirect=/assemblies");
+        }
+      } catch (error) {
+        console.error("Auth verification failed:", error);
+        // On error, try redirect anyway
+        router.replace("/assemblies");
+      }
     } catch (error) {
       toast({
         title: "Error",

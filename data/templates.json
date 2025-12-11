@@ -4,10 +4,16 @@
       "name":"[ HAC ] 2x10 Rows No Monitor, Manual Door",
       "description":"Feature :\n1.  Hot Aisle Containment 2x10 Racks\n2. Manual Door\n3. No Monitor\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "docs":[
-    
+         {
+            "name":"Merged PDFs - [ HAC ] 2x10 Rows No Monitor, Manual Door",
+            "url":"/uploads/templates/merged___HAC___2x10_Rows_No_Monitor__Manual_Door_1765178518043.pdf",
+            "size":1296619,
+            "type":"application/pdf",
+            "uploadedAt":"2025-12-08T07:21:58.045Z"
+         }
       ],
       "createdAt":"2025-12-07T11:48:26.014Z",
-      "updatedAt":"2025-12-08T10:26:59.723Z",
+      "updatedAt":"2025-12-11T04:44:23.709Z",
       "assemblies":[
          {
             "templateId":4,
@@ -52,7 +58,13 @@
                "name":"[Containment] Material Instalation",
                "description":"",
                "docs":[
-                
+                  {
+                     "name":"AccessIO.pdf",
+                     "url":"/uploads/assemblies/assembly_2_1765176892883_AccessIO.pdf",
+                     "size":320673,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:52.885Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.921Z",
                "updatedAt":"2025-12-08T06:54:52.887Z",
@@ -475,7 +487,13 @@
                "name":"[Containment] Box Junction",
                "description":"",
                "docs":[
-               
+                  {
+                     "name":"Title.pdf",
+                     "url":"/uploads/assemblies/assembly_7_1765176866396_Title.pdf",
+                     "size":22482,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:26.397Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.958Z",
                "updatedAt":"2025-12-08T06:54:26.398Z",
@@ -711,7 +729,13 @@
                "name":" [Containment] Main Control Component",
                "description":"",
                "docs":[
-                  
+                  {
+                     "name":"Box_Control.pdf",
+                     "url":"/uploads/assemblies/assembly_9_1765176851659_Box_Control.pdf",
+                     "size":328930,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:11.660Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.973Z",
                "updatedAt":"2025-12-08T06:54:11.661Z",
@@ -1396,6 +1420,38 @@
                   }
                ]
             }
+         },
+         {
+            "templateId":4,
+            "assemblyId":13,
+            "quantity":"1",
+            "assembly":{
+               "id":13,
+               "name":" [Containment] Smoke Detector (2EA / Set)",
+               "description":null,
+               "docs":null,
+               "createdAt":"2025-12-11T04:25:35.875Z",
+               "updatedAt":"2025-12-11T04:25:35.875Z",
+               "materials":[
+                  {
+                     "assemblyId":13,
+                     "materialId":4,
+                     "quantity":"2",
+                     "material":{
+                        "id":4,
+                        "name":"CONVENTIONAL PHOTOELECTRIC SMOKE DETECTOR C/W BASE",
+                        "partNumber":"403040002",
+                        "manufacturer":"SIMPLEX",
+                        "unit":"EACH",
+                        "price":"0",
+                        "purchaseUrl":null,
+                        "datasheetFile":null,
+                        "createdAt":"2025-12-07T11:48:25.719Z",
+                        "updatedAt":"2025-12-07T11:48:25.719Z"
+                     }
+                  }
+               ]
+            }
          }
       ],
       "projects":[
@@ -1407,7 +1463,13 @@
       "name":"[ HAC ] 2x10 Rows w Monitor, Automatic Door",
       "description":"Feature :\n1.  Hot Aisle Containment 2x10 Racks\n2. Automatic Door via Access Control (PIN, CARD, Finger Print)\n3. Monitor 21'5 Inch Touchscreen\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base & Via Monitor\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "docs":[
-       
+         {
+            "name":"Merged PDFs - [ HAC ] 2x10 Rows w Monitor, Automatic Door",
+            "url":"/uploads/templates/merged___HAC___2x10_Rows_w_Monitor__Automatic_Door_1765189277065.pdf",
+            "size":669586,
+            "type":"application/pdf",
+            "uploadedAt":"2025-12-08T10:21:17.073Z"
+         }
       ],
       "createdAt":"2025-12-07T11:48:26.002Z",
       "updatedAt":"2025-12-08T10:27:29.986Z",
@@ -1455,7 +1517,13 @@
                "name":"[Containment] Material Instalation",
                "description":"",
                "docs":[
-               
+                  {
+                     "name":"AccessIO.pdf",
+                     "url":"/uploads/assemblies/assembly_2_1765176892883_AccessIO.pdf",
+                     "size":320673,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:52.885Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.921Z",
                "updatedAt":"2025-12-08T06:54:52.887Z",
@@ -2165,7 +2233,13 @@
                "name":"[Containment] Box Junction",
                "description":"",
                "docs":[
-                 
+                  {
+                     "name":"Title.pdf",
+                     "url":"/uploads/assemblies/assembly_7_1765176866396_Title.pdf",
+                     "size":22482,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:26.397Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.958Z",
                "updatedAt":"2025-12-08T06:54:26.398Z",
@@ -2301,7 +2375,13 @@
                "name":" [Containment] Main Control Component",
                "description":"",
                "docs":[
-                
+                  {
+                     "name":"Box_Control.pdf",
+                     "url":"/uploads/assemblies/assembly_9_1765176851659_Box_Control.pdf",
+                     "size":328930,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:11.660Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.973Z",
                "updatedAt":"2025-12-08T06:54:11.661Z",
@@ -3159,7 +3239,7 @@
             "status":"PLANNING",
             "progress":"20",
             "priority":"HIGH",
-            "schematicDocs":"",
+            "schematicDocs":"/uploads/templates/merged___HAC___2x10_Rows_w_Monitor__Automatic_Door_1765189277065.pdf",
             "qualityCheckDocs":null,
             "fromTemplateId":3,
             "createdBy":"cmivnsiwf0000gv8wlbwrivjk",
@@ -3222,7 +3302,13 @@
                "name":"[Containment] Material Instalation",
                "description":"",
                "docs":[
-               
+                  {
+                     "name":"AccessIO.pdf",
+                     "url":"/uploads/assemblies/assembly_2_1765176892883_AccessIO.pdf",
+                     "size":320673,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:52.885Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.921Z",
                "updatedAt":"2025-12-08T06:54:52.887Z",
@@ -3915,7 +4001,13 @@
                "name":"[Containment] Box Junction",
                "description":"",
                "docs":[
-                 
+                  {
+                     "name":"Title.pdf",
+                     "url":"/uploads/assemblies/assembly_7_1765176866396_Title.pdf",
+                     "size":22482,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:26.397Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.958Z",
                "updatedAt":"2025-12-08T06:54:26.398Z",
@@ -4051,7 +4143,13 @@
                "name":" [Containment] Main Control Component",
                "description":"",
                "docs":[
-                  
+                  {
+                     "name":"Box_Control.pdf",
+                     "url":"/uploads/assemblies/assembly_9_1765176851659_Box_Control.pdf",
+                     "size":328930,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:11.660Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.973Z",
                "updatedAt":"2025-12-08T06:54:11.661Z",
@@ -4900,7 +4998,20 @@
       "name":"[ CAC ] 2x10 Rows No Monitor, Manual Door",
       "description":"Feature :\n\n1.  Cold Aisle Containment 2x10 Racks\n2. Manual\n3. No Monitor\n4. Fire Supperssion Integration with Existing Panel\n5. DCIM Integration with existing system via SNMP/Modbus TCP\n6. Internal Smoke Detection System\n7. Temperature Sensor Standar ASHRAE each Rack\n8. Local System Monitoring Via IP Address Web Base\n9. Manage Alarm Log\n10. Manage Sensor Log\n11. Manage Access Log",
       "docs":[
-        
+         {
+            "name":"Merged PDFs - [ CAC ] 2x10 Rows No Monitor, Manual Door",
+            "url":"/uploads/templates/merged___CAC___2x10_Rows_No_Monitor__Manual_Door_1765178548600.pdf",
+            "size":982321,
+            "type":"application/pdf",
+            "uploadedAt":"2025-12-08T07:22:28.603Z"
+         },
+         {
+            "name":"Merged PDFs - [ CAC ] 2x10 Rows No Monitor, Manual Door",
+            "url":"/uploads/templates/merged___CAC___2x10_Rows_No_Monitor__Manual_Door_1765189516222.pdf",
+            "size":669567,
+            "type":"application/pdf",
+            "uploadedAt":"2025-12-08T10:25:16.227Z"
+         }
       ],
       "createdAt":"2025-12-07T11:48:25.988Z",
       "updatedAt":"2025-12-08T10:28:04.935Z",
@@ -4914,7 +5025,13 @@
                "name":" [Containment] Main Control Component",
                "description":"",
                "docs":[
-                  
+                  {
+                     "name":"Box_Control.pdf",
+                     "url":"/uploads/assemblies/assembly_9_1765176851659_Box_Control.pdf",
+                     "size":328930,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:11.660Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.973Z",
                "updatedAt":"2025-12-08T06:54:11.661Z",
@@ -5609,7 +5726,13 @@
                "name":"[Containment] Material Instalation",
                "description":"",
                "docs":[
-                 
+                  {
+                     "name":"AccessIO.pdf",
+                     "url":"/uploads/assemblies/assembly_2_1765176892883_AccessIO.pdf",
+                     "size":320673,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:52.885Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.921Z",
                "updatedAt":"2025-12-08T06:54:52.887Z",
@@ -5847,7 +5970,13 @@
                "name":"[Containment] Box Junction",
                "description":"",
                "docs":[
-                  
+                  {
+                     "name":"Title.pdf",
+                     "url":"/uploads/assemblies/assembly_7_1765176866396_Title.pdf",
+                     "size":22482,
+                     "type":"application/pdf",
+                     "uploadedAt":"2025-12-08T06:54:26.397Z"
+                  }
                ],
                "createdAt":"2025-12-07T11:48:25.958Z",
                "updatedAt":"2025-12-08T06:54:26.398Z",

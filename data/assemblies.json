@@ -1,5 +1,32 @@
 [
    {
+      "id":13,
+      "name":" [Containment] Smoke Detector (2EA / Set)",
+      "description":null,
+      "docs":null,
+      "createdAt":"2025-12-11T04:25:35.875Z",
+      "updatedAt":"2025-12-11T04:25:35.875Z",
+      "materials":[
+         {
+            "assemblyId":13,
+            "materialId":4,
+            "quantity":"2",
+            "material":{
+               "id":4,
+               "name":"CONVENTIONAL PHOTOELECTRIC SMOKE DETECTOR C/W BASE",
+               "partNumber":"403040002",
+               "manufacturer":"SIMPLEX",
+               "unit":"EACH",
+               "price":"0",
+               "purchaseUrl":null,
+               "datasheetFile":null,
+               "createdAt":"2025-12-07T11:48:25.719Z",
+               "updatedAt":"2025-12-07T11:48:25.719Z"
+            }
+         }
+      ]
+   },
+   {
       "id":12,
       "name":"[Containment] Automatic Back Door",
       "description":"",
@@ -346,9 +373,7 @@
       "id":9,
       "name":" [Containment] Main Control Component",
       "description":"",
-      "docs":[
-        
-      ],
+      "docs":null,
       "createdAt":"2025-12-07T11:48:25.973Z",
       "updatedAt":"2025-12-08T06:54:11.661Z",
       "materials":[
@@ -542,7 +567,7 @@
          {
             "assemblyId":9,
             "materialId":35,
-            "quantity":"2",
+            "quantity":"1",
             "material":{
                "id":35,
                "name":"TERMINAL KLASTIN 10A 380V",
@@ -1031,9 +1056,7 @@
       "id":7,
       "name":"[Containment] Box Junction",
       "description":"",
-      "docs":[
-         
-      ],
+      "docs":null,
       "createdAt":"2025-12-07T11:48:25.958Z",
       "updatedAt":"2025-12-08T06:54:26.398Z",
       "materials":[
@@ -1753,9 +1776,7 @@
       "id":3,
       "name":"[Containment] Monitor",
       "description":"",
-      "docs":[
-         
-      ],
+      "docs":null,
       "createdAt":"2025-12-07T11:48:25.931Z",
       "updatedAt":"2025-12-08T06:53:29.928Z",
       "materials":[
@@ -1782,9 +1803,7 @@
       "id":2,
       "name":"[Containment] Material Instalation",
       "description":"",
-      "docs":[
-        
-      ],
+      "docs":null,
       "createdAt":"2025-12-07T11:48:25.921Z",
       "updatedAt":"2025-12-08T06:54:52.887Z",
       "materials":[
@@ -2015,9 +2034,7 @@
       "id":1,
       "name":"[Containment] Motion Sensor (1 EA / 10 Racks)",
       "description":"",
-      "docs":[
-         
-      ],
+      "docs":null,
       "createdAt":"2025-12-07T11:48:25.913Z",
       "updatedAt":"2025-12-08T06:53:29.935Z",
       "materials":[
