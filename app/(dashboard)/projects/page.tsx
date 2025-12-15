@@ -339,6 +339,14 @@ export default function ProjectsPage() {
     }).format(amount);
   };
 
+  const isNewItem = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+    return diffDays <= 3;
+  };
+
   // Filter and sort projects
   const processedProjects = useMemo(() => {
     let filtered = projects.filter(project => {
@@ -1326,16 +1334,23 @@ export default function ProjectsPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedProject(project);
-                            setIsDetailsDialogOpen(true);
-                          }}
-                          className="hover:text-primary hover:underline text-left transition-colors"
-                          title="Click to view project details"
-                        >
-                          {project.name}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setIsDetailsDialogOpen(true);
+                            }}
+                            className="hover:text-primary hover:underline text-left transition-colors"
+                            title="Click to view project details"
+                          >
+                            {project.name}
+                          </button>
+                          {isNewItem(project.createdAt) && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                              New
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {project.client ?

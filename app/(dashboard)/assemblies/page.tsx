@@ -40,10 +40,20 @@ interface DocumentFile {
   uploadedAt: string;
 }
 
+interface AssemblyCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string | null;
+  icon: string | null;
+}
+
 interface Assembly {
   id: number;
   name: string;
   description: string | null;
+  categoryId: number;
+  category: AssemblyCategory;
   docs: DocumentFile[] | null;
   materials: AssemblyMaterial[];
   createdAt: string;
@@ -192,6 +202,14 @@ export default function AssembliesPage() {
       style: "currency",
       currency: "IDR",
     }).format(amount);
+  };
+
+  const isNewItem = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+    return diffDays <= 3;
   };
 
   // Filter and sort assemblies
@@ -756,6 +774,7 @@ export default function AssembliesPage() {
                       </Button>
                     </TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Materials Count</TableHead>
                     <TableHead>Documents</TableHead>
                     <TableHead>Total Cost</TableHead>
@@ -777,9 +796,27 @@ export default function AssembliesPage() {
                           onCheckedChange={(checked) => handleSelectAssembly(assembly.id, checked as boolean)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{assembly.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{assembly.name}</span>
+                          {isNewItem(assembly.createdAt) && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {assembly.description || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: assembly.category.color || '#3b82f6' }}
+                          />
+                          <span className="text-sm font-medium">{assembly.category.name}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
@@ -874,7 +911,14 @@ export default function AssembliesPage() {
                   </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div>
-                      <div className="font-medium text-sm truncate">{assembly.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-sm truncate">{assembly.name}</div>
+                        {isNewItem(assembly.createdAt) && (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {assembly.description || 'No description'}
                       </div>

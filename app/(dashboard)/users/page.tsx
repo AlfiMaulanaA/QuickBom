@@ -297,6 +297,14 @@ export default function UserManagementPage() {
     });
   };
 
+  const isNewItem = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+    return diffDays <= 3;
+  };
+
   // Handle CSV export
   const handleExportCSV = () => {
     if (filteredUsers.length === 0) {
@@ -613,8 +621,17 @@ export default function UserManagementPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium truncate">{user.name || 'No Name'}</div>
-                          <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="font-medium truncate">{user.name || 'No Name'}</div>
+                              <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+                            </div>
+                            {isNewItem(user.createdAt) && (
+                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                                New
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -684,7 +701,14 @@ export default function UserManagementPage() {
                   </Avatar>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div>
-                      <div className="font-medium text-sm truncate">{user.name || 'No Name'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-sm truncate">{user.name || 'No Name'}</div>
+                        {isNewItem(user.createdAt) && (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                     </div>
                     <div className="flex flex-wrap gap-1">

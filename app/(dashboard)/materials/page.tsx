@@ -474,6 +474,14 @@ export default function MaterialsPage() {
     }).format(amount);
   };
 
+  const isNewMaterial = (createdAt: string) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 3600 * 24);
+    return diffDays <= 3;
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -872,6 +880,11 @@ export default function MaterialsPage() {
                           <span className="truncate max-w-96" title={material.name}>
                             {material.name}
                           </span>
+                          {isNewMaterial(material.createdAt) && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                              New
+                            </Badge>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -969,7 +982,14 @@ export default function MaterialsPage() {
                   </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div>
-                      <div className="font-medium text-sm truncate">{material.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-sm truncate">{material.name}</div>
+                        {isNewMaterial(material.createdAt) && (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {material.manufacturer || 'No manufacturer'}
                       </div>

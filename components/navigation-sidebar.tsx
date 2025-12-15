@@ -100,6 +100,12 @@ const hardcodedMenuGroups = [
         label: "Assemblies",
         path: "/assemblies",
         icon: "Settings"
+      },
+      {
+        id: "assembly-categories",
+        label: "Assembly Categories",
+        path: "/assembly-categories",
+        icon: "FolderOpen"
       }
     ]
   },

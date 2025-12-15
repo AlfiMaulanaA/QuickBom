@@ -7,6 +7,7 @@ const { PrismaClient } = require('@prisma/client');
 const { seedUsers } = require('./users');
 const { seedClients } = require('./clients');
 const { seedMaterials } = require('./materials');
+const { seedAssemblyCategories } = require('./assembly-categories');
 const { seedAssemblies } = require('./assemblies');
 const { seedTemplates } = require('./templates');
 
@@ -153,6 +154,10 @@ async function seedAll() {
     console.log('='.repeat(50) + '\n');
 
     console.log('='.repeat(50));
+    const assemblyCategories = await seedAssemblyCategories(prisma);
+    console.log('='.repeat(50) + '\n');
+
+    console.log('='.repeat(50));
     const assemblies = await seedAssemblies(prisma);
     console.log('='.repeat(50) + '\n');
 
@@ -167,6 +172,7 @@ async function seedAll() {
     console.log(`   👥 Users: ${users.length}`);
     console.log(`   🏢 Clients: ${clients.length}`);
     console.log(`   🔧 Materials: ${materials.length}`);
+    console.log(`   📂 Assembly Categories: ${assemblyCategories.length}`);
     console.log(`   🏗️  Assemblies: ${assemblies.length}`);
     console.log(`   📋 Templates: ${templates.length}`);
 
@@ -198,6 +204,7 @@ module.exports = {
   seedUsers,
   seedClients,
   seedMaterials,
+  seedAssemblyCategories,
   seedAssemblies,
   seedTemplates,
 };

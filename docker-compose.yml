@@ -1,0 +1,111 @@
+# =============================================================================
+#  QUICKBOM DOCKER COMPOSE
+# =============================================================================
+# Complete Docker setup for QuickBom application with PostgreSQL database
+# Includes database initialization, migrations, and seeding
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------------------------
+  #  QUICKBOM APPLICATION (Supabase Database)
+  # -----------------------------------------------------------------------------
+  quickbom:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickbom-app
+    ports:
+      - "4000:4000"  # Expose on port 4000 as requested
+    environment:
+      # Application Configuration
+      - NODE_ENV=production
+      - PORT=4000
+      - NEXT_PUBLIC_APP_NAME=QuickBom - Construction Management
+
+      # Database Configuration (Supabase)
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
+
+      # JWT Configuration (generate secure secrets in production)
+      - JWT_SECRET=${JWT_SECRET}
+
+      # Supabase Configuration (required for Supabase database)
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+
+      # File Storage (Supabase Storage)
+      - SUPABASE_STORAGE_BUCKET=quickbom-uploads
+      - SUPABASE_STORAGE_USER_FOLDER=user_files
+      - SUPABASE_STORAGE_PROJECT_FOLDER=project_files
+
+      # Disable Next.js telemetry
+      - NEXT_TELEMETRY_DISABLED=1
+
+    volumes:
+      # Mount uploads directory for persistent file storage
+      - ./uploads:/app/uploads
+      # Mount data directory for seeds and static data
+      - ./data:/app/data:ro
+
+    networks:
+      - quickbom-network
+
+    restart: unless-stopped
+
+    # Health check for the application
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # -----------------------------------------------------------------------------
+  #  DATABASE MIGRATION SERVICE (Supabase)
+  # -----------------------------------------------------------------------------
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickbom-migration
+    environment:
+      # Database Configuration (Supabase)
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
+      - NODE_ENV=production
+
+      # Supabase Configuration (required for migrations)
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+
+    volumes:
+      - ./prisma:/app/prisma:ro
+
+    networks:
+      - quickbom-network
+
+    command: >
+      sh -c "
+      echo 'Running Prisma migrations to Supabase...' &&
+      npx prisma migrate deploy &&
+      echo 'Running database seeding...' &&
+      npm run db:seed &&
+      echo 'Migration and seeding completed!'
+      "
+
+    profiles:
+      - migration  # Only runs when explicitly requested with --profile migration
+
+# -----------------------------------------------------------------------------
+#  NETWORKS
+# -----------------------------------------------------------------------------
+networks:
+  quickbom-network:
+    driver: bridge
+    name: quickbom-network

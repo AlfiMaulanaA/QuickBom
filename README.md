@@ -217,18 +217,45 @@ All API endpoints are documented in respective route files under `app/api/`.
   "build": "next build",
   "start": "next start",
   "lint": "next lint",
-  "db:seed": "npm run seed:init"
+  "db:seed": "node data/seeds/index.js",
+  "db:create": "./create-database.sh",
+  "db:drop": "./drop-database.sh",
+  "db:clear": "./clear-database.sh"
 }
 ```
 
-### Database Seeding Scripts
+### Database Management Scripts
+
+#### Database Creation & Setup
 ```bash
-npm run seed:users          # Seed user accounts
-npm run seed:menu          # Seed menu structure
-npm run seed:dashboard     # Seed dashboard layouts
-npm run seed:devices       # Seed device templates
-npm run seed:tenants       # Seed tenant data
+# Create the QuickBom database and all tables from scratch
+npm run db:create
+
+# Drop the entire QuickBom database (with safety confirmations)
+npm run db:drop
+
+# Clear all data from existing database (preserves tables)
+npm run db:clear
+
+# Seed database with sample data
+npm run db:seed
 ```
+
+#### Development Database Workflow
+```bash
+# Fresh database setup (drop → create → seed)
+npm run db:drop && npm run db:create && npm run db:seed
+
+# Reset database data only (clear → seed)
+npm run db:clear && npm run db:seed
+```
+
+### ⚠️ Database Operations Safety
+
+- **`db:drop`**: Completely removes the database. **Double confirmation required**
+- **`db:create`**: Creates database and tables. Safe to run multiple times
+- **`db:clear`**: Removes all data but keeps table structure
+- **`db:seed`**: Adds sample data. Safe to run multiple times (handles duplicates)
 
 ## 🏗️ Architecture
 

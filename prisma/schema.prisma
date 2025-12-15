@@ -190,6 +190,24 @@ model Client {
   @@index([province])
 }
 
+// ASSEMBLY CATEGORY MODEL
+// ========================
+model AssemblyCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Nama kategori harus unik
+  description String?
+  color       String?  // Hex color code for UI display
+  icon        String?  // Icon name for UI display
+
+  // Relations
+  assemblies  Assembly[] // Assemblies in this category
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+}
+
 // LEVEL 1: ITEM / MATERIAL
 // Ini adalah bahan baku mentah atau upah dasar
 model Material {
@@ -218,6 +236,10 @@ model Assembly {
   name        String   @unique // Nama assembly harus unik
   description String?
 
+  // Category relationship - REQUIRED
+  categoryId  Int
+  category    AssemblyCategory @relation(fields: [categoryId], references: [id])
+
   // Document files associated with this assembly
   docs        Json?    // Array of {name: string, url: string, size: number, type: string, uploadedAt: DateTime}
 
@@ -229,6 +251,8 @@ model Assembly {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
 }
 
 // TABEL PENGHUBUNG (LEVEL 1 ke 2)

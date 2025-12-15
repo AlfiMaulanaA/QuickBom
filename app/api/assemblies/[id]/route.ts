@@ -16,7 +16,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           include: {
             material: true
           }
-        }
+        },
+        category: true
       }
     });
 
@@ -39,13 +40,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
-    const { name, description, docs, materials } = body;
+    const { name, description, docs, materials, categoryId } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: "Name is required" },
         { status: 400 }
       );
+    }
+
+    // Verify category exists if provided
+    if (categoryId) {
+      const category = await prisma.assemblyCategory.findUnique({
+        where: { id: categoryId }
+      });
+
+      if (!category) {
+        return NextResponse.json(
+          { error: "Selected category does not exist" },
+          { status: 400 }
+        );
+      }
     }
 
     // First, delete existing material associations
@@ -59,6 +74,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       description,
       docs: docs || null
     };
+
+    // Add category if provided
+    if (categoryId) {
+      updateData.categoryId = categoryId;
+    }
 
     // Add materials if provided
     if (materials && materials.length > 0) {
@@ -79,7 +99,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           include: {
             material: true
           }
-        }
+        },
+        category: true
       }
     });
 

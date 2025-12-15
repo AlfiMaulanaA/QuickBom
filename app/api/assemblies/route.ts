@@ -10,7 +10,8 @@ export async function GET() {
           include: {
             material: true
           }
-        }
+        },
+        category: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -57,7 +58,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, docs, materials } = body;
+    const { name, description, docs, materials, categoryId } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -66,10 +67,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!categoryId) {
+      return NextResponse.json(
+        { error: "Category is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify category exists
+    const category = await prisma.assemblyCategory.findUnique({
+      where: { id: categoryId }
+    });
+
+    if (!category) {
+      return NextResponse.json(
+        { error: "Selected category does not exist" },
+        { status: 400 }
+      );
+    }
+
     const assembly = await prisma.assembly.create({
       data: {
         name,
         description: description || null,
+        categoryId,
         docs: docs || null,
         ...(materials && materials.length > 0 ? {
           materials: {
@@ -85,7 +106,8 @@ export async function POST(request: NextRequest) {
           include: {
             material: true
           }
-        }
+        },
+        category: true
       }
     });
 

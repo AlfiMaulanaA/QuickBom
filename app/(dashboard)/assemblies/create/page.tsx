@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Package, Save, X, Upload, File, Plus, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Package, Save, X, Upload, File, Plus, Search, FolderOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MaterialSelector from "@/components/material-selector";
 
@@ -26,13 +27,23 @@ interface SelectedMaterial {
   material: Material;
 }
 
+interface AssemblyCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string | null;
+  icon: string | null;
+}
+
 export default function CreateAssemblyPage() {
   const router = useRouter();
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [categories, setCategories] = useState<AssemblyCategory[]>([]);
   const [isMaterialSelectorOpen, setIsMaterialSelectorOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    categoryId: "",
     materials: [] as { materialId: number; quantity: number }[]
   });
   const [assemblyDocs, setAssemblyDocs] = useState<any[]>([]);
@@ -52,6 +63,7 @@ export default function CreateAssemblyPage() {
 
   useEffect(() => {
     fetchMaterials();
+    fetchCategories();
   }, []);
 
   const fetchMaterials = async () => {
@@ -66,8 +78,29 @@ export default function CreateAssemblyPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/assembly-categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.categoryId) {
+      toast({
+        title: "Error",
+        description: "Please select an assembly category",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (formData.materials.length === 0) {
       toast({
@@ -90,6 +123,7 @@ export default function CreateAssemblyPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
+          categoryId: parseInt(formData.categoryId),
           docs: null, // We'll add documents later
           materials: formData.materials
         }),
@@ -246,6 +280,36 @@ export default function CreateAssemblyPage() {
                   placeholder="Describe this assembly..."
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Assembly Category *</Label>
+                <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category for this assembly" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: category.color || '#3b82f6' }}
+                          />
+                          <span>{category.name}</span>
+                          {category.description && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              - {category.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose the category that best describes this assembly type
+                </p>
               </div>
             </CardContent>
           </Card>

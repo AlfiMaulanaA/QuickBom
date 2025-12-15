@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,6 +71,11 @@ interface Assembly {
   id: number;
   name: string;
   description: string | null;
+  category?: {
+    id: number;
+    name: string;
+    description?: string | null;
+  };
   materials: AssemblyMaterial[];
   createdAt: string;
   updatedAt: string;
@@ -110,13 +122,28 @@ export default function EditTemplatePage() {
 
   // Data state
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
+  const [assemblyCategories, setAssemblyCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("select");
 
   useEffect(() => {
     fetchTemplate();
     fetchAssemblies();
+    fetchAssemblyCategories();
   }, [templateId]);
+
+  const fetchAssemblyCategories = async () => {
+    try {
+      const response = await fetch("/api/assembly-categories");
+      if (response.ok) {
+        const data = await response.json();
+        setAssemblyCategories(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assembly categories:", error);
+    }
+  };
 
   const fetchTemplate = async () => {
     try {
@@ -189,13 +216,19 @@ export default function EditTemplatePage() {
     }, 0);
   };
 
-  // Filter assemblies based on search
+  // Filter assemblies based on category and search
   const filteredAssemblies = useMemo(() => {
-    return assemblies.filter(assembly =>
-      assembly.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (assembly.description && assembly.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [assemblies, searchTerm]);
+    return assemblies.filter(assembly => {
+      // Filter by category if selected
+      if (selectedCategoryId && assembly.category?.id !== selectedCategoryId) {
+        return false;
+      }
+
+      // Filter by search term
+      return assembly.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             (assembly.description && assembly.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
+  }, [assemblies, selectedCategoryId, searchTerm]);
 
   // Add assembly to template
   const addAssemblyToTemplate = (assembly: Assembly) => {
@@ -464,8 +497,65 @@ export default function EditTemplatePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Search */}
-                <div className="mb-6">
+                {/* Category Filter and Search */}
+                <div className="mb-6 space-y-4">
+                  {/* Category Filter - Eye-catching */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Package className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">Filter by Assembly Category</Label>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">Choose a category to narrow down available assemblies</p>
+                      </div>
+                    </div>
+
+                    <Select
+                      value={selectedCategoryId?.toString() || "all"}
+                      onValueChange={(value) => setSelectedCategoryId(value === "all" ? null : parseInt(value))}
+                    >
+                      <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-12">
+                        <SelectValue placeholder={
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium">All Categories</span>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                              {assemblies.length} assemblies
+                            </Badge>
+                          </div>
+                        } />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        <SelectItem value="all" className="cursor-pointer">
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-blue-500" />
+                              <span className="font-medium">All Categories</span>
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                              {assemblies.length}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                        {assemblyCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id.toString()} className="cursor-pointer">
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-green-500" />
+                                <span className="font-medium">{category.name}</span>
+                              </div>
+                              <Badge variant="outline" className="border-green-300 text-green-700">
+                                {category._count?.assemblies || 0}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Search */}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
