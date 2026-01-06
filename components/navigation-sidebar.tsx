@@ -97,7 +97,7 @@ const hardcodedMenuGroups = [
     items: [
       {
         id: "assemblies-list",
-        label: "Assemblies",
+        label: "Assemblies Sets",
         path: "/assemblies",
         icon: "Settings"
       },
@@ -106,6 +106,12 @@ const hardcodedMenuGroups = [
         label: "Assembly Categories",
         path: "/assembly-categories",
         icon: "FolderOpen"
+      },
+      {
+        id: "assembly-groups",
+        label: "Assembly Groups",
+        path: "/assembly-groups",
+        icon: "Package"
       }
     ]
   },

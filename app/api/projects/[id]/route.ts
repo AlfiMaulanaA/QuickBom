@@ -12,7 +12,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const project = await prisma.project.findUnique({
       where: { id: parseInt(params.id) },
       include: {
-        template: true
+        template: {
+          include: {
+            assemblies: {
+              include: {
+                assembly: {
+                  include: {
+                    materials: {
+                      include: {
+                        material: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        client: true,
+        creator: true
       }
     });
 

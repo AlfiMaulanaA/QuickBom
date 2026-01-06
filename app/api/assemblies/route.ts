@@ -58,7 +58,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, docs, materials, categoryId } = body;
+    const { name, description, docs, materials, categoryId, module } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description: description || null,
+        module: module || 'ELECTRICAL', // Default to ELECTRICAL if not provided
         categoryId,
         docs: docs || null,
         ...(materials && materials.length > 0 ? {

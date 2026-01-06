@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
-    const { name, description, docs, assemblies } = body;
+    const { name, description, docs, assemblies, assemblySelections } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -65,8 +65,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Prepare update data
     const updateData: any = {
       name,
-      description,
-      docs: docs || null
+      description: description || null,
+      docs: docs || null,
+      assemblySelections: assemblySelections || null
     };
 
     // Add assemblies if provided
@@ -88,6 +89,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           include: {
             assembly: {
               include: {
+                category: true,
                 materials: {
                   include: {
                     material: true
@@ -96,11 +98,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               }
             }
           }
-        }
+        },
+        projects: true
       }
     });
 
-    return NextResponse.json(template);
+    // Transform data to ensure consistent format
+    const transformedTemplate = {
+      ...template,
+      assemblies: template.assemblies.map(ta => ({
+        ...ta,
+        quantity: Number(ta.quantity) // Ensure quantity is number, not string
+      }))
+    };
+
+    return NextResponse.json(transformedTemplate);
   } catch (error: any) {
     if (error.code === 'P2025') {
       return NextResponse.json(

@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Package, Search, Filter, Download, Upload, ArrowUpDown, Eye, Copy, MoreHorizontal, Check, Building, DollarSign, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Search, Filter, Download, Upload, ArrowUpDown, Eye, Copy, MoreHorizontal, Check, Building, DollarSign, ChevronLeft, ChevronRight, Loader2, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface Material {
@@ -844,19 +845,14 @@ export default function MaterialsPage() {
                     </TableHead>
                     <TableHead>
                       <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-semibold">
-                        Name
+                        Name & Details
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                       </Button>
                     </TableHead>
                     <TableHead>Part Number</TableHead>
-                    <TableHead>Manufacturer</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort("price")} className="h-auto p-0 font-semibold">
-                        Price
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Links & Files</TableHead>
                     <TableHead>
                       <Button variant="ghost" onClick={() => handleSort("createdAt")} className="h-auto p-0 font-semibold">
                         Created
@@ -876,90 +872,127 @@ export default function MaterialsPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate max-w-96" title={material.name}>
-                            {material.name}
-                          </span>
-                          {isNewMaterial(material.createdAt) && (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
-                              New
-                            </Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              const textToCopy = material.manufacturer
-                                ? `${material.name} - ${material.manufacturer}`
-                                : material.name;
-                              copyToClipboard(textToCopy, material.name, 'name');
-                            }}
-                            title="Copy material name with manufacturer"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate max-w-64" title={material.name}>
+                              {material.name}
+                            </span>
+                            {isNewMaterial(material.createdAt) && (
+                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                                New
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            {material.manufacturer && (
+                              <>
+                                <span className="truncate max-w-48">{material.manufacturer}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-4 w-4 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    const textToCopy = material.manufacturer
+                                      ? `${material.name} - ${material.manufacturer}`
+                                      : material.name;
+                                    copyToClipboard(textToCopy, material.name, 'name');
+                                  }}
+                                  title="Copy material name with manufacturer"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        <div className="flex items-center gap-2">
-                          {material.partNumber && material.partNumber !== "0" && material.partNumber !== "" ? (
-                            <>
-                              <span className="truncate max-w-32">
-                                {material.partNumber}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-gray-100"
-                                onClick={() => copyToClipboard(material.partNumber!, material.partNumber!, 'part number')}
-                                title="Copy part number"
+                        {material.partNumber && material.partNumber !== "0" && material.partNumber !== "" ? (
+                          <div className="flex items-center gap-2">
+                            <span className="truncate max-w-32">
+                              {material.partNumber}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={() => copyToClipboard(material.partNumber!, material.partNumber!, 'part number')}
+                              title="Copy part number"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-800 font-medium text-xs">
+                            No PN
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">{material.unit}</Badge>
+                      </TableCell>
+                      <TableCell className="text-green-600 font-medium">
+                        {formatCurrency(material.price)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 max-w-32">
+                          {material.purchaseUrl && (
+                            <div className="text-xs">
+                              <a
+                                href={material.purchaseUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline truncate block"
+                                title={material.purchaseUrl}
                               >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Badge variant="secondary" className="bg-orange-800 text-white-800 font-medium">
-                              No Part Number
-                            </Badge>
+                                Link
+                              </a>
+                            </div>
+                          )}
+                          {material.datasheetFile && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <File className="h-3 w-3" />
+                              <span className="truncate" title={material.datasheetFile}>
+                                {material.datasheetFile}
+                              </span>
+                            </div>
+                          )}
+                          {!material.purchaseUrl && !material.datasheetFile && (
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{material.manufacturer || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{material.unit}</Badge>
-                      </TableCell>
-                      <TableCell className="text-green-600 font-medium">{formatCurrency(material.price)}</TableCell>
                       <TableCell>
                         {new Date(material.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent side="left" align="start">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEdit(material)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDuplicate(material)}>
-                              <Copy className="mr-2 h-4 w-4" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(material.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(material)}
+                            title="Edit material"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDuplicate(material)}
+                            title="Duplicate material"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(material.id)}
+                            title="Delete material"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -973,74 +1006,129 @@ export default function MaterialsPage() {
             {processedMaterials.slice(0, displayMode === 'lazy' ? visibleItemsCount : (currentPage - 1) * pageSize + pageSize).map((material) => (
               <Card key={material.id} className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                     <Checkbox
                       checked={selectedMaterials.includes(material.id)}
                       onCheckedChange={(checked) => handleSelectMaterial(material.id, checked as boolean)}
                     />
-                    <Package className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-sm truncate">{material.name}</div>
-                        {isNewMaterial(material.createdAt) && (
-                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
-                            New
-                          </Badge>
+                  <div className="flex-1 min-w-0 space-y-3">
+                    {/* Header with name and actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Package className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="font-medium text-sm truncate">{material.name}</span>
+                          {isNewMaterial(material.createdAt) && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5 flex-shrink-0">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                        {material.manufacturer && (
+                          <div className="text-xs text-muted-foreground truncate pl-6">
+                            {material.manufacturer}
+                          </div>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {material.manufacturer || 'No manufacturer'}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="flex-shrink-0 h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(material)} className="text-xs">
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicate(material)} className="text-xs">
+                            <Copy className="h-3 w-3 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(material.id)}
+                            className="text-destructive text-xs"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-2 gap-3 pl-6">
+                      {/* Part Number */}
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Part Number</div>
+                        <div className="text-xs">
+                          {material.partNumber && material.partNumber !== "0" && material.partNumber !== "" ? (
+                            <Badge variant="outline" className="text-xs font-mono">
+                              {material.partNumber}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                              No PN
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Unit */}
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Unit</div>
+                        <Badge variant="secondary" className="text-xs">{material.unit}</Badge>
+                      </div>
+
+                      {/* Price */}
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Price</div>
+                        <div className="text-sm font-semibold text-green-600">
+                          {formatCurrency(material.price)}
+                        </div>
+                      </div>
+
+                      {/* Created Date */}
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Created</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(material.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant="secondary" className="text-xs">{material.unit}</Badge>
-                      {material.partNumber && material.partNumber !== "0" && material.partNumber !== "" ? (
-                        <Badge variant="outline" className="text-xs font-mono">
-                          PN: {material.partNumber}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
-                          No PN
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="font-medium text-green-600">{formatCurrency(material.price)}</span>
-                        <span className="text-muted-foreground ml-1">per {material.unit}</span>
+
+                    {/* Purchase URL and Datasheet */}
+                    {(material.purchaseUrl || material.datasheetFile) && (
+                      <div className="pl-6 pt-2 border-t space-y-2">
+                        {material.purchaseUrl && (
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Purchase URL</div>
+                            <a
+                              href={material.purchaseUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800 underline truncate block"
+                            >
+                              {material.purchaseUrl}
+                            </a>
+                          </div>
+                        )}
+                        {material.datasheetFile && (
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Datasheet</div>
+                            <div className="flex items-center gap-2">
+                              <File className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground truncate">
+                                {material.datasheetFile}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-muted-foreground">
-                        {new Date(material.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="flex-shrink-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(material)} className="text-xs">
-                        <Edit className="h-3 w-3 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDuplicate(material)} className="text-xs">
-                        <Copy className="h-3 w-3 mr-2" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(material.id)}
-                        className="text-destructive text-xs"
-                      >
-                        <Trash2 className="h-3 w-3 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </Card>
             ))}

@@ -20,7 +20,38 @@ async function seedMaterials(prismaInstance = null) {
     datasheetFile: material.datasheetFile,
   }));
 
-  const allMaterials = boqMaterials;
+  // Add some dummy/placeholder materials for testing
+  const dummyMaterials = [
+    {
+      name: "DUMMY MATERIAL - PLACEHOLDER",
+      partNumber: "DUMMY-001",
+      manufacturer: "DUMMY",
+      unit: "EACH",
+      price: 0,
+      purchaseUrl: null,
+      datasheetFile: null,
+    },
+    {
+      name: "BLANK MATERIAL - FOR TESTING",
+      partNumber: "BLANK-001",
+      manufacturer: "BLANK",
+      unit: "EACH",
+      price: 0,
+      purchaseUrl: null,
+      datasheetFile: null,
+    },
+    {
+      name: "NODE MATERIAL - PLACEHOLDER",
+      partNumber: "NODE-001",
+      manufacturer: "NODE",
+      unit: "EACH",
+      price: 0,
+      purchaseUrl: null,
+      datasheetFile: null,
+    }
+  ];
+
+  const allMaterials = [...boqMaterials, ...dummyMaterials];
   const createdMaterials = [];
 
   for (const material of allMaterials) {

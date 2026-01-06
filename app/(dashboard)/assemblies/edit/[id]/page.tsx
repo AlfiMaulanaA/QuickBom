@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Package, Save, X, Upload, File, Plus, Search } from "lucide-react";
+import { ArrowLeft, Package, Save, X, Upload, File, Plus, Search, Settings } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import MaterialSelector from "@/components/material-selector";
 
@@ -34,10 +35,21 @@ interface DocumentFile {
   uploadedAt: string;
 }
 
+interface AssemblyCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string | null;
+  icon: string | null;
+}
+
 interface Assembly {
   id: number;
   name: string;
   description: string | null;
+  module: 'ELECTRONIC' | 'ELECTRICAL' | 'ASSEMBLY' | 'INSTALLATION' | 'MECHANICAL';
+  categoryId: number;
+  category: AssemblyCategory;
   docs: DocumentFile[] | null;
   materials: Array<{
     id?: number;
@@ -52,11 +64,14 @@ export default function EditAssemblyPage() {
   const params = useParams();
   const assemblyId = parseInt(params.id as string);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [categories, setCategories] = useState<AssemblyCategory[]>([]);
   const [assembly, setAssembly] = useState<Assembly | null>(null);
   const [isMaterialSelectorOpen, setIsMaterialSelectorOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    module: "ELECTRICAL" as 'ELECTRONIC' | 'ELECTRICAL' | 'ASSEMBLY' | 'INSTALLATION' | 'MECHANICAL',
+    categoryId: "",
     materials: [] as { materialId: number; quantity: number }[]
   });
   const [assemblyDocs, setAssemblyDocs] = useState<any[]>([]);
@@ -78,6 +93,7 @@ export default function EditAssemblyPage() {
   useEffect(() => {
     fetchAssembly();
     fetchMaterials();
+    fetchCategories();
   }, [assemblyId]);
 
   const fetchAssembly = async () => {
@@ -89,6 +105,8 @@ export default function EditAssemblyPage() {
         setFormData({
           name: data.name,
           description: data.description || "",
+          module: data.module || "ELECTRICAL",
+          categoryId: data.categoryId.toString(),
           materials: data.materials.map((am: any) => ({
             materialId: am.materialId,
             quantity: Number(am.quantity)
@@ -130,8 +148,29 @@ export default function EditAssemblyPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/assembly-categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.categoryId) {
+      toast({
+        title: "Error",
+        description: "Please select an assembly category",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (formData.materials.length === 0) {
       toast({
@@ -154,6 +193,8 @@ export default function EditAssemblyPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
+          module: formData.module,
+          categoryId: parseInt(formData.categoryId),
           docs: null, // We'll handle documents separately
           materials: formData.materials
         }),
@@ -309,6 +350,55 @@ export default function EditAssemblyPage() {
                   placeholder="Describe this assembly..."
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="module">Assembly Module *</Label>
+                <Select value={formData.module} onValueChange={(value: any) => setFormData({ ...formData, module: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a module for this assembly" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELECTRONIC">Electronic - Electronic components and systems</SelectItem>
+                    <SelectItem value="ELECTRICAL">Electrical - Electrical wiring and installations</SelectItem>
+                    <SelectItem value="ASSEMBLY">Assembly - General assembly components</SelectItem>
+                    <SelectItem value="INSTALLATION">Installation - Installation and mounting components</SelectItem>
+                    <SelectItem value="MECHANICAL">Mechanical - Mechanical parts and components</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose the module that best describes this assembly type
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Assembly Category *</Label>
+                <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category for this assembly" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: category.color || '#3b82f6' }}
+                          />
+                          <span>{category.name}</span>
+                          {category.description && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              - {category.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose the category that best describes this assembly type
+                </p>
               </div>
             </CardContent>
           </Card>

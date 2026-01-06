@@ -1,0 +1,106 @@
+[
+   {
+      "id":2,
+      "name":"Container",
+      "description":"Shipping containers and modular container solutions",
+      "color":"#10b981",
+      "icon":"Package",
+      "createdAt":"2025-12-16T08:10:50.227Z",
+      "updatedAt":"2025-12-16T08:10:50.227Z",
+      "assemblies":[
+         
+      ],
+      "_count":{
+         "assemblies":0
+      }
+   },
+   {
+      "id":1,
+      "name":"Containment",
+      "description":"Server room containment systems and environmental controls",
+      "color":"#3b82f6",
+      "icon":"Building",
+      "createdAt":"2025-12-16T08:10:50.221Z",
+      "updatedAt":"2025-12-16T08:10:50.221Z",
+      "assemblies":[
+         {
+            "id":13,
+            "name":" [Containment] Smoke Detector (2EA / Set)",
+            "description":""
+         },
+         {
+            "id":14,
+            "name":"[Containment] Automatic Back Door",
+            "description":""
+         },
+         {
+            "id":15,
+            "name":"[Containment] Manual Back Door",
+            "description":""
+         },
+         {
+            "id":17,
+            "name":"[Containment] Manual Front Door",
+            "description":""
+         },
+         {
+            "id":19,
+            "name":"[Containment] Automatic Front Door",
+            "description":""
+         },
+         {
+            "id":20,
+            "name":"[Containment] Rack Cold Aisle",
+            "description":""
+         },
+         {
+            "id":21,
+            "name":"[Containment] Rack Hot Aisle",
+            "description":""
+         },
+         {
+            "id":22,
+            "name":"[Containment] Monitor",
+            "description":""
+         },
+         {
+            "id":24,
+            "name":"[Containment] Motion Sensor (1 EA / 10 Racks)",
+            "description":""
+         },
+         {
+            "id":23,
+            "name":"[Containment] Material Instalation",
+            "description":null
+         },
+         {
+            "id":16,
+            "name":" [Containment] Main Control Component",
+            "description":null
+         },
+         {
+            "id":18,
+            "name":"[Containment] Box Junction",
+            "description":null
+         }
+      ],
+      "_count":{
+         "assemblies":12
+      }
+   },
+   {
+      "id":3,
+      "name":"Smart Rack",
+      "description":"Intelligent server racks with monitoring and management systems",
+      "color":"#f59e0b",
+      "icon":"Server",
+      "createdAt":"2025-12-16T08:10:50.230Z",
+      "updatedAt":"2025-12-16T08:10:50.230Z",
+      "assemblies":[
+         
+      ],
+      "_count":{
+         "assemblies":0
+      }
+   }
+]

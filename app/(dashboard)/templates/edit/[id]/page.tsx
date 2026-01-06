@@ -8,40 +8,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Plus,
-  Minus,
-  Trash2,
-  FileText,
-  Settings,
-  DollarSign,
-  Package,
-  Calculator,
   ArrowLeft,
   Save,
-  Eye,
-  Info,
+  Settings,
+  Package,
+  Calculator,
+  Upload,
+  File,
   CheckCircle,
   AlertTriangle,
   ShoppingCart,
-  Search,
+  Eye,
+  FileText,
   X,
-  Upload,
-  File,
-  Download
+  Layers,
+  Plus,
+  Minus,
+  Check,
+  Clock,
+  DollarSign,
+  Search,
+  Trash2,
+  FolderOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+import CategoryBasedSelector from "@/components/category-based-selector";
+import type { AssemblyGroup, ValidationResult } from "@/lib/types/assembly";
 
 interface Material {
   id: number;
@@ -111,11 +110,22 @@ export default function EditTemplatePage() {
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateDocs, setTemplateDocs] = useState<any[]>([]);
-  const [selectedAssemblies, setSelectedAssemblies] = useState<TemplateAssembly[]>([]);
   const [loading, setLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Search and sort for selected assemblies
+  // Assembly Group Selection state
+  const [assemblyGroups, setAssemblyGroups] = useState<any[]>([]);
+  const [selections, setSelections] = useState<Record<number, Record<string, number[]>>>({});
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("category");
+
+  // Category selection state
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [filteredAssemblyGroups, setFilteredAssemblyGroups] = useState<any[]>([]);
+
+  // Configure Quantities state (for tab "manage")
+  const [selectedAssemblies, setSelectedAssemblies] = useState<any[]>([]);
   const [assemblySearchTerm, setAssemblySearchTerm] = useState("");
   const [assemblySortBy, setAssemblySortBy] = useState<"name" | "cost">("name");
   const [assemblySortOrder, setAssemblySortOrder] = useState<"asc" | "desc">("asc");
@@ -123,9 +133,7 @@ export default function EditTemplatePage() {
   // Data state
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [assemblyCategories, setAssemblyCategories] = useState<any[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("select");
 
   useEffect(() => {
     fetchTemplate();
@@ -162,6 +170,11 @@ export default function EditTemplatePage() {
         }));
 
         setSelectedAssemblies(templateAssemblies);
+
+        // Load existing selections if available
+        if (data.assemblySelections) {
+          setSelections(data.assemblySelections);
+        }
 
         // Load existing documents
         setTemplateDocs(data.docs || []);
@@ -342,7 +355,8 @@ export default function EditTemplatePage() {
         assemblies: selectedAssemblies.map(sa => ({
           assemblyId: sa.assemblyId,
           quantity: sa.quantity
-        }))
+        })),
+        assemblySelections: selections // Store selections as JSON
       };
 
       const response = await fetch(`/api/templates/${templateId}`, {
@@ -499,15 +513,15 @@ export default function EditTemplatePage() {
               <CardContent>
                 {/* Category Filter and Search */}
                 <div className="mb-6 space-y-4">
-                  {/* Category Filter - Eye-catching */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                  {/* Category Filter - Clean & Simple */}
+                  <div className="bg-muted/30 p-4 rounded-lg border">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <Package className="h-4 w-4 text-white" />
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Package className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <Label className="text-base font-semibold text-blue-900 dark:text-blue-100">Filter by Assembly Category</Label>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Choose a category to narrow down available assemblies</p>
+                        <Label className="text-base font-semibold text-gray-900 dark:text-gray-100">Filter by Assembly Category</Label>
+                        <p className="text-sm text-muted-foreground dark:text-gray-400">Choose a category to narrow down available assemblies</p>
                       </div>
                     </div>
 
@@ -515,12 +529,12 @@ export default function EditTemplatePage() {
                       value={selectedCategoryId?.toString() || "all"}
                       onValueChange={(value) => setSelectedCategoryId(value === "all" ? null : parseInt(value))}
                     >
-                      <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-12">
+                      <SelectTrigger className="w-full h-12">
                         <SelectValue placeholder={
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-blue-500" />
+                            <Package className="h-4 w-4 text-primary" />
                             <span className="font-medium">All Categories</span>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                            <Badge variant="secondary">
                               {assemblies.length} assemblies
                             </Badge>
                           </div>
@@ -530,10 +544,10 @@ export default function EditTemplatePage() {
                         <SelectItem value="all" className="cursor-pointer">
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4 text-blue-500" />
+                              <Package className="h-4 w-4 text-primary" />
                               <span className="font-medium">All Categories</span>
                             </div>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                            <Badge variant="secondary">
                               {assemblies.length}
                             </Badge>
                           </div>
@@ -542,10 +556,10 @@ export default function EditTemplatePage() {
                           <SelectItem key={category.id} value={category.id.toString()} className="cursor-pointer">
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4 text-green-500" />
+                                <Package className="h-4 w-4 text-primary" />
                                 <span className="font-medium">{category.name}</span>
                               </div>
-                              <Badge variant="outline" className="border-green-300 text-green-700">
+                              <Badge variant="outline">
                                 {category._count?.assemblies || 0}
                               </Badge>
                             </div>
@@ -557,7 +571,7 @@ export default function EditTemplatePage() {
 
                   {/* Search */}
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search assemblies by name or description..."
                       value={searchTerm}
@@ -862,111 +876,158 @@ export default function EditTemplatePage() {
           <TabsContent value="review" className="space-y-6">
             {/* Template Information and Documents - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Template Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Template Information
-                  </CardTitle>
+              {/* Template Information - Enhanced */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Template Information</CardTitle>
+                      <CardDescription className="text-base text-muted-foreground dark:text-gray-400">
+                        Basic details and description for your template
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="template-name">Template Name *</Label>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="template-name" className="text-base font-medium flex items-center gap-2">
+                      Template Name
+                      <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="template-name"
                       value={templateName}
                       onChange={(e) => setTemplateName(e.target.value)}
-                      placeholder="e.g., Paket Renovasi Kamar Mandi Standard"
+                      placeholder="e.g., Premium Bathroom Renovation Package"
+                      className="h-12 text-base"
                       required
                     />
+                    {templateName.trim().length === 0 && (
+                      <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <AlertTriangle className="h-4 w-4" />
+                        Template name is required
+                      </p>
+                    )}
                   </div>
 
-                  <div>
-                    <Label htmlFor="template-description">Description</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="template-description" className="text-base font-medium">Description</Label>
                     <Textarea
                       id="template-description"
                       value={templateDescription}
                       onChange={(e) => setTemplateDescription(e.target.value)}
-                      placeholder="Describe this template..."
-                      rows={3}
+                      placeholder="Describe this template, its intended use, and any special features..."
+                      rows={4}
+                      className="resize-none text-base"
                     />
+                    <p className="text-sm text-muted-foreground dark:text-gray-400">
+                      Optional description to help users understand this template
+                    </p>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Documents Upload */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <File className="h-5 w-5" />
-                    Documents
-                  </CardTitle>
-                  <CardDescription>
-                    Upload supporting documents for this template (PDF files only)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* File Input */}
+              {/* Documents Upload - Enhanced */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <Upload className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
                     <div>
-                      <input
-                        type="file"
-                        id="document-upload"
-                        className="hidden"
-                        accept=".pdf"
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          if (files.length === 0) return;
+                      <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Supporting Documents</CardTitle>
+                      <CardDescription className="text-base text-muted-foreground dark:text-gray-400">
+                        Upload specifications, drawings, or reference materials
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Upload Area */}
+                  <div className="space-y-4">
+                    <input
+                      type="file"
+                      id="document-upload"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
 
-                          // Process each file
-                          files.forEach(file => {
-                            const docObject = {
-                              name: file.name,
-                              url: `#temp-${Date.now()}-${file.name}`, // Temporary URL
-                              size: file.size,
-                              type: file.type || 'application/pdf',
-                              uploadedAt: new Date().toISOString(),
-                              file: file // Keep file reference for upload
-                            };
-                            setTemplateDocs(prev => [...prev, docObject]);
-                          });
+                        files.forEach(file => {
+                          const docObject = {
+                            name: file.name,
+                            url: `#temp-${Date.now()}-${file.name}`,
+                            size: file.size,
+                            type: file.type || 'application/octet-stream',
+                            uploadedAt: new Date().toISOString(),
+                            file: file
+                          };
+                          setTemplateDocs(prev => [...prev, docObject]);
+                        });
 
-                          // Reset input
-                          e.target.value = '';
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => document.getElementById('document-upload')?.click()}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Choose PDF Files
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Select one or more PDF files to attach to this template
+                        e.target.value = '';
+                      }}
+                    />
+
+                    {/* Upload Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-primary/5 transition-colors"
+                      onClick={() => document.getElementById('document-upload')?.click()}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                        <div className="text-center">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">Upload Documents</p>
+                          <p className="text-sm text-muted-foreground dark:text-gray-400">
+                            PDF, Word, Excel, Images
+                          </p>
+                        </div>
+                      </div>
+                    </Button>
+
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground dark:text-gray-400">
+                        Supported formats: PDF, Word, Excel, Images (JPG, PNG)
                       </p>
                     </div>
+                  </div>
 
-                    {/* Documents List */}
-                    {templateDocs.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Selected Documents:</Label>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {/* Documents List - Enhanced */}
+                  {templateDocs.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-medium">Uploaded Documents ({templateDocs.length})</Label>
+                        <Badge variant="secondary" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
+                          {templateDocs.length} files
+                        </Badge>
+                      </div>
+
+                      <ScrollArea className="h-48">
+                        <div className="space-y-3">
                           {templateDocs.map((doc, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{doc.name}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {(doc.size / 1024).toFixed(1)} KB
-                                  </p>
+                            <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
+                              <div className="w-8 h-8 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <File className="h-4 w-4 text-primary" />
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {doc.name}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-gray-400">
+                                  <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                                  <span>•</span>
+                                  <span>{doc.type.split('/')[1]?.toUpperCase() || 'FILE'}</span>
                                 </div>
                               </div>
+
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -974,119 +1035,141 @@ export default function EditTemplatePage() {
                                 onClick={() => {
                                   setTemplateDocs(prev => prev.filter((_, i) => i !== index));
                                 }}
-                                className="text-destructive hover:text-destructive"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
 
-            {/* Template Statistics - Full Width (Outside Grid) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Template Statistics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary">
-                      {templateStats.totalAssemblies}
+            {/* Template Statistics - Clean & Simple */}
+            {selectedAssemblies.length > 0 && (
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                      <Calculator className="h-5 w-5" />
                     </div>
-                    <div className="text-sm text-muted-foreground">Assemblies</div>
-                  </div>
-
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {templateStats.totalMaterials}
+                    <div>
+                      <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Template Statistics</CardTitle>
+                      <CardDescription className="text-base text-muted-foreground dark:text-gray-400">
+                        Overview of your template composition and estimated costs
+                      </CardDescription>
                     </div>
-                    <div className="text-sm text-muted-foreground">Total Materials</div>
                   </div>
-
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(templateStats.avgAssemblyCost)}
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-6 bg-muted/50 rounded-lg border">
+                      <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-3 border">
+                        <Package className="h-6 w-6" />
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                        {templateStats.totalAssemblies}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total Assemblies</div>
                     </div>
-                    <div className="text-sm text-muted-foreground">Avg Assembly Cost</div>
-                  </div>
 
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(templateStats.totalCost)}
+                    <div className="text-center p-6 bg-muted/50 rounded-lg border">
+                      <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-3 border">
+                        <FolderOpen className="h-6 w-6" />
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                        {templateStats.totalMaterials}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total Materials</div>
                     </div>
-                    <div className="text-sm text-muted-foreground">Total Cost</div>
+
+                    <div className="text-center p-6 bg-muted/50 rounded-lg border">
+                      <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-3 border">
+                        <DollarSign className="h-6 w-6" />
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                        {formatCurrency(templateStats.avgAssemblyCost)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Avg Assembly Cost</div>
+                    </div>
+
+                    <div className="text-center p-6 bg-muted/50 rounded-lg border">
+                      <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-3 border">
+                        <Calculator className="h-6 w-6" />
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                        {formatCurrency(templateStats.totalCost)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total Cost</div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Assemblies Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Assemblies Breakdown
-                </CardTitle>
-                <CardDescription>
-                  Detailed breakdown of all assemblies in this template
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-96">
-                  <div className="space-y-4">
-                    {selectedAssemblies.map((sa, index) => {
-                      const assembly = sa.assembly;
-                      const percentage = (sa.estimatedCost / totalTemplateCost) * 100;
+            {/* Assembly Selection Breakdown - Clean & Improved */}
+            {selectedAssemblies.length > 0 && (
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                      <Package className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Assembly Selection Breakdown</CardTitle>
+                      <CardDescription className="text-base text-muted-foreground dark:text-gray-400">
+                        Detailed breakdown of selected assemblies organized by category and group
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-96">
+                    <div className="space-y-6">
+                      {/* We'll show a simple list since we don't have group breakdown in edit mode */}
+                      {selectedAssemblies.map((sa, index) => {
+                        const assembly = sa.assembly;
 
-                      return (
-                        <div key={sa.assemblyId} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
-                              {index + 1}
+                        return (
+                          <div key={sa.assemblyId} className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border hover:bg-muted/40 transition-colors">
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-semibold text-primary">{index + 1}</span>
                             </div>
-                            <div>
-                              <h4 className="font-semibold">{assembly.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {assembly.materials.length} materials × {sa.quantity} qty
-                              </p>
-                            </div>
-                          </div>
 
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <div className="font-semibold text-green-600">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {assembly.name}
+                                </h5>
+                                <Badge variant="secondary" className="text-xs px-2 py-0">
+                                  ×{sa.quantity}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span>Unit: {formatCurrency(sa.estimatedCost / sa.quantity)}</span>
+                                <span>•</span>
+                                <span>Materials: {assembly.materials?.length || 0}</span>
+                              </div>
+                            </div>
+
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-2xl font-semibold text-green-600 dark:text-green-400">
                                 {formatCurrency(sa.estimatedCost)}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {percentage.toFixed(1)}% of total
-                              </div>
-                            </div>
-
-                            <div className="w-24">
-                              <div className="w-full bg-muted rounded-full h-2">
-                                <div
-                                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                                />
-                              </div>
+                              <div className="text-sm text-muted-foreground">Total Cost</div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Validation Messages */}
             {(!templateName.trim() || selectedAssemblies.length === 0) && (

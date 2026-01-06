@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    const { id } = params;
+    const assemblyId = parseInt(id);
+
+    if (isNaN(assemblyId)) {
+      return NextResponse.json(
+        { error: "Invalid assembly ID" },
+        { status: 400 }
+      );
+    }
+
     const assembly = await prisma.assembly.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: assemblyId },
       include: {
+        category: true,
         materials: {
           include: {
             material: true
           }
-        },
-        category: true
+        }
       }
     });
 
@@ -29,7 +36,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(assembly);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Error [GET /api/assemblies/[id]]:', error);
     return NextResponse.json(
       { error: "Failed to fetch assembly" },
       { status: 500 }
@@ -37,10 +45,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    const { id } = params;
+    const assemblyId = parseInt(id);
+
+    if (isNaN(assemblyId)) {
+      return NextResponse.json(
+        { error: "Invalid assembly ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
-    const { name, description, docs, materials, categoryId } = body;
+    const { name, description, docs, materials, categoryId, module } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -49,36 +70,38 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Verify category exists if provided
-    if (categoryId) {
-      const category = await prisma.assemblyCategory.findUnique({
-        where: { id: categoryId }
-      });
+    if (!categoryId) {
+      return NextResponse.json(
+        { error: "Category is required" },
+        { status: 400 }
+      );
+    }
 
-      if (!category) {
-        return NextResponse.json(
-          { error: "Selected category does not exist" },
-          { status: 400 }
-        );
-      }
+    // Verify category exists
+    const category = await prisma.assemblyCategory.findUnique({
+      where: { id: categoryId }
+    });
+
+    if (!category) {
+      return NextResponse.json(
+        { error: "Selected category does not exist" },
+        { status: 400 }
+      );
     }
 
     // First, delete existing material associations
     await prisma.assemblyMaterial.deleteMany({
-      where: { assemblyId: parseInt(params.id) }
+      where: { assemblyId: assemblyId }
     });
 
     // Prepare update data
     const updateData: any = {
       name,
-      description,
+      description: description || null,
+      module: module || 'ELECTRICAL',
+      categoryId,
       docs: docs || null
     };
-
-    // Add category if provided
-    if (categoryId) {
-      updateData.categoryId = categoryId;
-    }
 
     // Add materials if provided
     if (materials && materials.length > 0) {
@@ -90,9 +113,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       };
     }
 
-    // Then update assembly with new data
+    // Update assembly with new data
     const assembly = await prisma.assembly.update({
-      where: { id: parseInt(params.id) },
+      where: { id: assemblyId },
       data: updateData,
       include: {
         materials: {
@@ -125,68 +148,51 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const assemblyId = parseInt(params.id);
-
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    console.log(`Attempting to delete assembly with ID: ${assemblyId}`);
+    const { id } = params;
+    const assemblyId = parseInt(id);
+
+    if (isNaN(assemblyId)) {
+      return NextResponse.json(
+        { error: "Invalid assembly ID" },
+        { status: 400 }
+      );
+    }
 
     // Check if assembly is used in any templates
-    const templatesCount = await prisma.templateAssembly.count({
+    const templateCount = await prisma.templateAssembly.count({
       where: { assemblyId: assemblyId }
     });
 
-    console.log(`Assembly ${assemblyId} is used in ${templatesCount} templates`);
-
-    if (templatesCount > 0) {
-      console.log(`Returning 409 for assembly ${assemblyId} - used in templates`);
+    if (templateCount > 0) {
       return NextResponse.json(
         {
           error: "Cannot delete assembly",
-          message: `This assembly is used in ${templatesCount} template(s). Remove it from all templates first.`
+          message: `This assembly is used in ${templateCount} template(s). Remove it from all templates first.`
         },
         { status: 409 }
       );
     }
 
-    console.log(`Deleting assembly ${assemblyId}`);
-
-    // First, delete all AssemblyMaterial records associated with this assembly
-    await prisma.assemblyMaterial.deleteMany({
-      where: { assemblyId: assemblyId }
-    });
-
-    // Then delete the assembly
+    // Delete assembly
     await prisma.assembly.delete({
       where: { id: assemblyId }
     });
 
-    console.log(`Successfully deleted assembly ${assemblyId}`);
     return NextResponse.json({ message: "Assembly deleted successfully" });
   } catch (error: any) {
-    console.error(`Error deleting assembly ${assemblyId}:`, error);
-
     if (error.code === 'P2025') {
-      console.log(`Assembly ${assemblyId} not found`);
       return NextResponse.json(
         { error: "Assembly not found" },
         { status: 404 }
       );
     }
-    if (error.code === 'P2003') {
-      console.log(`Assembly ${assemblyId} has foreign key constraints`);
-      return NextResponse.json(
-        {
-          error: "Cannot delete assembly",
-          message: "This assembly is referenced by other records and cannot be deleted."
-        },
-        { status: 409 }
-      );
-    }
-
-    console.error('Unexpected error deleting assembly:', error);
     return NextResponse.json(
-      { error: "Failed to delete assembly", message: error.message, code: error.code },
+      { error: "Failed to delete assembly" },
       { status: 500 }
     );
   }

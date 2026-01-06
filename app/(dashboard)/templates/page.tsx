@@ -89,6 +89,7 @@ export default function TemplatesPage() {
   const [isDescriptionDialogOpen, setIsDescriptionDialogOpen] = useState(false);
   const [isAssemblyDetailsDialogOpen, setIsAssemblyDetailsDialogOpen] = useState(false);
   const [isTemplateDocumentsDialogOpen, setIsTemplateDocumentsDialogOpen] = useState(false);
+  const [isBoqDialogOpen, setIsBoqDialogOpen] = useState(false);
   const [isMergingPdfs, setIsMergingPdfs] = useState(false);
   const [isPdfOrderDialogOpen, setIsPdfOrderDialogOpen] = useState(false);
   const [pdfOrder, setPdfOrder] = useState<number[]>([]);
@@ -1333,45 +1334,62 @@ export default function TemplatesPage() {
                           {new Date(template.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent side="left" align="start">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedTemplate(template);
-                                  setIsDetailsDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/templates/edit/${template.id}`)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicate(template)}>
-                                <Copy className="mr-2 h-4 w-4" />
-                                Duplicate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => exportToCSV()}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export CSV
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(template.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTemplate(template);
+                                setIsDetailsDialogOpen(true);
+                              }}
+                              title="View template details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                router.push(`/templates/${template.id}/boq`);
+                              }}
+                              title="View bill of quantity"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => router.push(`/templates/edit/${template.id}`)}
+                              title="Edit template"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDuplicate(template)}
+                              title="Duplicate template"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => exportToCSV()}
+                              title="Export CSV"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(template.id)}
+                              title="Delete template"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

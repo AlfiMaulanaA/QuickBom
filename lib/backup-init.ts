@@ -1,8 +1,6 @@
 // lib/backup-init.ts
 // Initialize backup scheduler on server startup
 
-import { backupScheduler } from './backup-scheduler';
-
 let initialized = false;
 
 export function initializeBackupScheduler() {
@@ -12,15 +10,28 @@ export function initializeBackupScheduler() {
   }
 
   try {
-    // Always initialize the scheduler
-    backupScheduler.initialize();
-    console.log('Backup scheduler initialized');
+    // Delay initialization to avoid Prisma client issues during Next.js compilation
+    setTimeout(async () => {
+      try {
+        const { backupScheduler } = await import('./backup-scheduler');
 
-    // Always auto-start the scheduler regardless of environment
-    backupScheduler.start();
-    console.log('Backup scheduler auto-started and will run continuously');
+        // Initialize the scheduler
+        backupScheduler.initialize();
+        console.log('Backup scheduler initialized');
 
-    initialized = true;
+        // Auto-start the scheduler in production only
+        if (process.env.NODE_ENV === 'production') {
+          backupScheduler.start();
+          console.log('Backup scheduler auto-started and will run continuously');
+        } else {
+          console.log('Backup scheduler initialized but not started (development mode)');
+        }
+
+        initialized = true;
+      } catch (error) {
+        console.error('Failed to initialize backup scheduler:', error);
+      }
+    }, 1000); // Delay by 1 second to ensure Prisma client is ready
   } catch (error) {
     console.error('Failed to initialize backup scheduler:', error);
   }

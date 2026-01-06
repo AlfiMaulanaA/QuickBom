@@ -7,8 +7,9 @@ const { PrismaClient } = require('@prisma/client');
 const { seedUsers } = require('./users');
 const { seedClients } = require('./clients');
 const { seedMaterials } = require('./materials');
-const { seedAssemblyCategories } = require('./assembly-categories');
+const { seedAssemblyCategoriesFromJson } = require('./assembly-categories-seed');
 const { seedAssemblies } = require('./assemblies');
+const { seedAssemblyGroupsFromJson } = require('./assembly-groups-seed');
 const { seedTemplates } = require('./templates');
 
 
@@ -154,11 +155,15 @@ async function seedAll() {
     console.log('='.repeat(50) + '\n');
 
     console.log('='.repeat(50));
-    const assemblyCategories = await seedAssemblyCategories(prisma);
+    const assemblyCategories = await seedAssemblyCategoriesFromJson(prisma);
     console.log('='.repeat(50) + '\n');
 
     console.log('='.repeat(50));
     const assemblies = await seedAssemblies(prisma);
+    console.log('='.repeat(50) + '\n');
+
+    console.log('='.repeat(50));
+    const assemblyGroups = await seedAssemblyGroupsFromJson(prisma);
     console.log('='.repeat(50) + '\n');
 
     console.log('='.repeat(50));
@@ -204,8 +209,9 @@ module.exports = {
   seedUsers,
   seedClients,
   seedMaterials,
-  seedAssemblyCategories,
+  seedAssemblyCategoriesFromJson,
   seedAssemblies,
+  seedAssemblyGroupsFromJson,
   seedTemplates,
 };
 

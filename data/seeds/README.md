@@ -24,8 +24,14 @@ npm run db:seed
 ```
 This will run all seeders in the correct dependency order.
 
-### Run Individual Seeders
+### Run Individual Seeders (New Enhanced Method)
 ```bash
+# List all available seeders
+npm run db:seed:list
+
+# Check current database statistics
+npm run db:seed:stats
+
 # Seed only users
 npm run db:seed:users
 
@@ -41,8 +47,24 @@ npm run db:seed:assemblies
 # Seed only templates
 npm run db:seed:templates
 
-# Seed only projects
-npm run db:seed:projects
+# Or use direct command:
+node data/seeds/run-seed.js users
+node data/seeds/run-seed.js materials
+node data/seeds/run-seed.js assemblies
+```
+
+### Advanced Individual Seeding
+```bash
+# Using the enhanced runner script
+node data/seeds/run-seed.js <seeder-name>
+
+# Examples:
+node data/seeds/run-seed.js users         # Seed users only
+node data/seeds/run-seed.js materials     # Seed materials only
+node data/seeds/run-seed.js assemblies    # Seed assemblies only
+node data/seeds/run-seed.js all          # Run all seeders
+node data/seeds/run-seed.js list         # List available seeders
+node data/seeds/run-seed.js stats        # Show database statistics
 ```
 
 ### Seed to Supabase (Production)

@@ -201,6 +201,7 @@ model AssemblyCategory {
 
   // Relations
   assemblies  Assembly[] // Assemblies in this category
+  assemblyGroups AssemblyGroup[] // Assembly groups in this category
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -225,6 +226,9 @@ model Material {
   // Relasi: Material ini dipakai di Assembly apa saja?
   assemblies           AssemblyMaterial[]
 
+  // Project overrides relations
+  projectOverrides     ProjectOverride[]
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
@@ -235,6 +239,9 @@ model Assembly {
   id          Int      @id @default(autoincrement())
   name        String   @unique // Nama assembly harus unik
   description String?
+
+  // Module classification - NEW FIELD
+  module      AssemblyModule @default(ELECTRICAL) // Module classification
 
   // Category relationship - REQUIRED
   categoryId  Int
@@ -249,10 +256,17 @@ model Assembly {
   // Relasi ke atas: Assembly ini dipakai di Template apa saja?
   templates   TemplateAssembly[]
 
+  // Assembly grouping system relations
+  assemblyGroupItems AssemblyGroupItem[]
+
+  // Project overrides relations
+  projectOverrides ProjectOverride[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([categoryId])
+  @@index([module]) // Index for module filtering
 }
 
 // TABEL PENGHUBUNG (LEVEL 1 ke 2)
@@ -280,6 +294,11 @@ model Template {
 
   // Document files associated with this template
   docs        Json?    // Array of {name: string, url: string, size: number, type: string, uploadedAt: DateTime}
+
+  // Assembly selection configuration (JSON)
+  // Stores which assembly groups and their selections for this template
+  // Format: { categoryId: { groupId: [assemblyId1, assemblyId2, ...] } }
+  assemblySelections Json?
 
   // Relasi ke bawah: Template ini butuh Assembly apa saja?
   assemblies  TemplateAssembly[]
@@ -354,6 +373,9 @@ model Project {
 
   // Timeline integration
   timeline    ProjectTimeline?
+
+  // Project overrides for BOQ customization
+  overrides   ProjectOverride[]
 
   @@index([clientId])
   @@index([status])
@@ -546,6 +568,57 @@ enum DependencyType {
   SF  // Start to Finish
 }
 
+// ASSEMBLY GROUPING SYSTEM
+// =========================
+
+model AssemblyGroup {
+  id            String   @id @default(cuid())
+  name          String   // "Closet Options", "Door Types", "Shower Types"
+  description   String?
+  groupType     AssemblyGroupType
+  categoryId    Int      // Link ke AssemblyCategory
+  category      AssemblyCategory @relation(fields: [categoryId], references: [id])
+  items         AssemblyGroupItem[]
+  sortOrder     Int      @default(0) // For ordering groups within category
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model AssemblyGroupItem {
+  id            String   @id @default(cuid())
+  groupId       String
+  group         AssemblyGroup @relation(fields: [groupId], references: [id])
+  assemblyId    Int
+  assembly      Assembly @relation(fields: [assemblyId], references: [id])
+  quantity      Decimal  @default(1) // Default quantity when selected
+  conflictsWith String[] // Array of assembly IDs that conflict with this item
+  isDefault     Boolean  @default(false) // Default selection for CHOOSE_ONE
+  sortOrder     Int      @default(0) // For ordering within group
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([groupId, assemblyId])
+}
+
+enum AssemblyGroupType {
+  REQUIRED      // All items in group must be selected (Base Items)
+  CHOOSE_ONE    // Exactly one item must be selected from group
+  OPTIONAL      // Items can be selected optionally (Add-Ons)
+  CONFLICT      // Items that cannot be selected together (Conflicts)
+}
+
+// ASSEMBLY MODULE ENUM
+// ====================
+enum AssemblyModule {
+  ELECTRONIC    // Electronic components and systems
+  ELECTRICAL    // Electrical wiring and installations
+  ASSEMBLY      // General assembly components
+  INSTALLATION  // Installation and mounting components
+  MECHANICAL    // Mechanical parts and components
+}
+
 // PROJECT MANAGEMENT ENUMS
 // ========================
 
@@ -564,4 +637,97 @@ enum ProjectPriority {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// PROJECT-SPECIFIC OVERRIDES SYSTEM
+// ==================================
+
+enum OverrideType {
+  ASSEMBLY_QUANTITY   // Override quantity of assembly (affects all materials proportionally)
+  MATERIAL_QUANTITY   // Override quantity of specific material (breaks assembly relationship)
+  MATERIAL_PRICE      // Override price of material
+}
+
+model ProjectOverride {
+  id            String   @id @default(cuid())
+
+  // Project relationship
+  projectId     Int
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // What is being overridden
+  overrideType  OverrideType
+
+  // For assembly quantity overrides
+  assemblyId    Int?     // Reference to assembly being overridden
+  assembly      Assembly? @relation(fields: [assemblyId], references: [id])
+  originalAssemblyQty Decimal? // Original quantity from template
+
+  // For material price overrides
+  materialId    Int?     // Reference to material being overridden
+  material      Material? @relation(fields: [materialId], references: [id])
+  originalMaterialPrice Decimal? // Original price from material table
+
+  // Override values
+  newQuantity   Decimal? // New quantity (for assemblies)
+  newPrice      Decimal? // New price (for materials)
+
+  // Metadata
+  reason        String?  // Reason for override (optional)
+  notes         String?  // Additional notes
+
+  // User tracking
+  createdBy     String   // User ID who created the override
+  updatedBy     String?  // User ID who last updated the override
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Indexes
+  @@index([projectId])
+  @@index([assemblyId])
+  @@index([materialId])
+  @@index([overrideType])
+  @@unique([projectId, assemblyId]) // One override per assembly per project
+  @@unique([projectId, materialId]) // One override per material per project
+}
+
+// CHANGE HISTORY FOR PROJECT OVERRIDES
+// ====================================
+
+enum ChangeType {
+  CREATED       // Override was created
+  UPDATED       // Override was modified
+  DELETED       // Override was deleted
+}
+
+model ProjectOverrideHistory {
+  id            String     @id @default(cuid())
+
+  // Link to the override
+  overrideId    String
+  projectId     Int
+
+  // Change details
+  changeType    ChangeType
+  fieldChanged  String     // e.g., "quantity", "price", "reason"
+
+  // Values
+  oldValue      String?    // Previous value (JSON string for complex data)
+  newValue      String?    // New value (JSON string for complex data)
+
+  // Context
+  reason        String?    // Reason for this change
+  notes         String?    // Additional context
+
+  // User tracking
+  changedBy     String     // User ID who made the change
+
+  createdAt     DateTime   @default(now())
+
+  // Indexes
+  @@index([overrideId])
+  @@index([projectId])
+  @@index([changedBy])
+  @@index([createdAt])
 }

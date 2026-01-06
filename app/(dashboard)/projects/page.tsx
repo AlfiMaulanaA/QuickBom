@@ -1319,7 +1319,7 @@ export default function ProjectsPage() {
                     </TableHead>
                     <TableHead className="text-center">Schematic Docs</TableHead>
                     <TableHead className="text-center">Quality Check Docs</TableHead>
-                    <TableHead className="text-center">BOM List</TableHead>
+                    <TableHead className="text-center">BOQ</TableHead>
                     <TableHead className="text-center">Template Docs</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -1478,27 +1478,18 @@ export default function ProjectsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {project.template && (
-                          <div className="flex gap-1 justify-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => exportConsolidatedMaterialsForProject(project)}
-                              title="Export to CSV"
-                            >
-                              <File className="h-4 w-4 mr-1" />
-                              CSV
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => exportMaterialHandoverPDF(project.id)}
-                              title="Export Material Handover PDF"
-                            >
-                              <FileText className="h-4 w-4 mr-1" />
-                              PDF
-                            </Button>
-                          </div>
+                        {project.template ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/projects/${project.id}/boq`)}
+                            title="View Bill of Quantity"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            View BOQ
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
@@ -1525,50 +1516,60 @@ export default function ProjectsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent side="left" align="start">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedProject(project);
-                                setIsDetailsDialogOpen(true);
-                              }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => router.push(`/projects/${project.id}/timeline`)}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              View Timeline
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDuplicate(project)}
-                            >
-                              <Copy className="mr-2 h-4 w-4" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(project)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(project.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setIsDetailsDialogOpen(true);
+                            }}
+                            title="View project details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/projects/${project.id}/timeline`)}
+                            title="View project timeline"
+                          >
+                            <Calendar className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/projects/${project.id}/boq`)}
+                            title="View bill of quantity"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDuplicate(project)}
+                            title="Duplicate project"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(project)}
+                            title="Edit project"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(project.id)}
+                            title="Delete project"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -43,6 +43,7 @@ export default function CreateAssemblyPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    module: "ELECTRICAL", // Default module
     categoryId: "",
     materials: [] as { materialId: number; quantity: number }[]
   });
@@ -123,6 +124,7 @@ export default function CreateAssemblyPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
+          module: formData.module,
           categoryId: parseInt(formData.categoryId),
           docs: null, // We'll add documents later
           materials: formData.materials
@@ -280,6 +282,25 @@ export default function CreateAssemblyPage() {
                   placeholder="Describe this assembly..."
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="module">Assembly Module *</Label>
+                <Select value={formData.module} onValueChange={(value) => setFormData({ ...formData, module: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a module for this assembly" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELECTRONIC">Electronic - Electronic components and systems</SelectItem>
+                    <SelectItem value="ELECTRICAL">Electrical - Electrical wiring and installations</SelectItem>
+                    <SelectItem value="ASSEMBLY">Assembly - General assembly components</SelectItem>
+                    <SelectItem value="INSTALLATION">Installation - Installation and mounting components</SelectItem>
+                    <SelectItem value="MECHANICAL">Mechanical - Mechanical parts and components</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose the module that best describes this assembly type
+                </p>
               </div>
 
               <div className="space-y-2">

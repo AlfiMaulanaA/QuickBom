@@ -9,6 +9,7 @@ export async function GET() {
           include: {
             assembly: {
               include: {
+                category: true,
                 materials: {
                   include: {
                     material: true
@@ -28,7 +29,16 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    return NextResponse.json(templates);
+    // Transform data to ensure consistent format
+    const transformedTemplates = templates.map(template => ({
+      ...template,
+      assemblies: template.assemblies.map(ta => ({
+        ...ta,
+        quantity: Number(ta.quantity) // Ensure quantity is number, not string
+      }))
+    }));
+
+    return NextResponse.json(transformedTemplates);
   } catch (error: any) {
     console.error('API Error [GET /api/templates]:', error);
 
@@ -61,7 +71,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, docs, assemblies } = body;
+    const { name, description, docs, assemblies, assemblySelections } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -75,6 +85,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         docs: docs || null,
+        assemblySelections: assemblySelections || null,
         ...(assemblies && assemblies.length > 0 ? {
           assemblies: {
             create: assemblies.map((a: any) => ({
@@ -89,6 +100,7 @@ export async function POST(request: NextRequest) {
           include: {
             assembly: {
               include: {
+                category: true,
                 materials: {
                   include: {
                     material: true
@@ -97,11 +109,21 @@ export async function POST(request: NextRequest) {
               }
             }
           }
-        }
+        },
+        projects: true
       }
     });
 
-    return NextResponse.json(template, { status: 201 });
+    // Transform data to ensure consistent format
+    const transformedTemplate = {
+      ...template,
+      assemblies: template.assemblies.map(ta => ({
+        ...ta,
+        quantity: Number(ta.quantity) // Ensure quantity is number, not string
+      }))
+    };
+
+    return NextResponse.json(transformedTemplate, { status: 201 });
   } catch (error: any) {
     if (error.code === 'P2002') {
       return NextResponse.json(
