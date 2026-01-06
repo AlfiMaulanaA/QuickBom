@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     console.log('[API] Database connection OK');
 
     // Check if tables exist
-    console.log('[API] Checking if assemblyGroup table exists...');
+    console.log('[API] Checking if AssemblyGroup table exists...');
     const tableCheck = await prisma.$queryRaw`
       SELECT EXISTS (
         SELECT FROM information_schema.tables
@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
       ) as exists
     ` as any;
     console.log('[API] AssemblyGroup table exists:', tableCheck[0]?.exists);
+
+    // Check if Prisma client has the model
+    console.log('[API] Checking if prisma.assemblyGroup exists:', typeof prisma.assemblyGroup);
 
     const groups = await prisma.assemblyGroup.findMany({
       where,

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
+    "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "node data/seeds/index.js",
     "db:seed:run": "node data/seeds/run-seed.js",
@@ -18,7 +19,8 @@
     "db:seed:assembly-groups": "node data/seeds/run-seed.js assembly-groups",
     "db:seed:templates": "node data/seeds/run-seed.js templates",
     "db:clear": "CONFIRM_DELETE=yes NODE_ENV=production node ./clear-supabase.js",
-    "db:push:supabase":"node ./push-schema-supabase.js"
+    "db:push:supabase":"node ./push-schema-supabase.js",
+    "db:fix:supabase": "node quick-schema-fix.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
