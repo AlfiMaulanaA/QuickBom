@@ -95,27 +95,18 @@ else
     exit 1
 fi
 
-# Setup environment file
-echo -e "${YELLOW}Setting up environment file...${NC}"
-if [ ! -f ".env" ]; then
-    cp .env.example .env
-    echo -e "${GREEN}✓ Created .env file from .env.example${NC}"
-else
-    echo -e "${BLUE}ℹ .env file already exists, skipping copy${NC}"
-fi
-
-# Update DATABASE_URL in .env file
-DATABASE_URL="postgresql://quickbom:quickbom_password@localhost:5432/quickbom?schema=public"
-
-if grep -q "^DATABASE_URL=" .env; then
-    # Update existing DATABASE_URL
-    sed -i.bak "s|^DATABASE_URL=.*|DATABASE_URL=\"$DATABASE_URL\"|" .env
-    echo -e "${GREEN}✓ Updated DATABASE_URL in .env${NC}"
-else
-    # Add DATABASE_URL if it doesn't exist
-    echo "DATABASE_URL=\"$DATABASE_URL\"" >> .env
-    echo -e "${GREEN}✓ Added DATABASE_URL to .env${NC}"
-fi
+# Environment setup instructions
+echo -e "${YELLOW}Environment Configuration:${NC}"
+echo -e "${BLUE}Please manually configure your .env file:${NC}"
+echo "  1. Copy .env.example to .env if you haven't already"
+echo "  2. Fill in your database and other environment variables"
+echo "  3. For development, use:"
+echo "     DATABASE_URL=\"postgresql://quickbom:quickbom_password@localhost:5432/quickbom?schema=public\""
+echo "  4. For production, configure your Supabase or other database credentials"
+echo ""
+echo -e "${YELLOW}⚠️  This script does not modify .env files automatically${NC}"
+echo -e "${YELLOW}⚠️  Environment setup must be done manually to prevent overwriting configurations${NC}"
+echo ""
 
 # Run Prisma commands
 echo -e "${YELLOW}Running Prisma setup...${NC}"
@@ -177,3 +168,4 @@ echo "  - Update JWT_SECRET in .env with a secure random string"
 echo "  - Configure other environment variables as needed"
 echo ""
 echo -e "${GREEN}Setup completed successfully! 🚀${NC}"
+echo "  3. Default login credentials will be available in the app"

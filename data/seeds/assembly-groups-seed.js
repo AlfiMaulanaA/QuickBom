@@ -5,6 +5,23 @@ async function seedAssemblyGroupsFromJson(prismaInstance = null) {
   const prisma = prismaInstance; // Use provided prisma instance
   console.log('🌱 Seeding Assembly Groups from JSON...');
 
+  // Check if required tables exist
+  try {
+    await prisma.assemblyGroup.count();
+    console.log('✅ AssemblyGroup table exists');
+  } catch (error) {
+    console.log('⚠️  AssemblyGroup table does not exist in database (skipping assembly groups seeding)');
+    return [];
+  }
+
+  try {
+    await prisma.assemblyGroupItem.count();
+    console.log('✅ AssemblyGroupItem table exists');
+  } catch (error) {
+    console.log('⚠️  AssemblyGroupItem table does not exist in database (skipping assembly groups seeding)');
+    return [];
+  }
+
   // Check if assembly categories exist first
   const categoryCount = await prisma.assemblyCategory.count();
   console.log(`Found ${categoryCount} assembly categories in database`);
@@ -77,6 +94,7 @@ async function seedAssemblyGroupsFromJson(prismaInstance = null) {
           const item = await prisma.assemblyGroupItem.upsert({
             where: { id: itemData.id },
             update: {
+              groupId: group.id, // Fix: Also update groupId in case it was wrong
               assemblyId: itemData.assemblyId,
               quantity: parseInt(itemData.quantity),
               conflictsWith: itemData.conflictsWith || [],

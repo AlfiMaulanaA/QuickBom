@@ -6,7 +6,7 @@
       "color":"#10b981",
       "icon":"Package",
       "createdAt":"2025-12-16T08:10:50.227Z",
-      "updatedAt":"2025-12-16T08:10:50.227Z",
+      "updatedAt":"2026-01-06T04:47:16.761Z",
       "assemblies":[
          
       ],
@@ -21,71 +21,101 @@
       "color":"#3b82f6",
       "icon":"Building",
       "createdAt":"2025-12-16T08:10:50.221Z",
-      "updatedAt":"2025-12-16T08:10:50.221Z",
+      "updatedAt":"2026-01-06T04:47:16.765Z",
       "assemblies":[
          {
-            "id":13,
-            "name":" [Containment] Smoke Detector (2EA / Set)",
+            "id":74,
+            "name":"[Containment] Mech - Containment Ceiling",
             "description":""
          },
          {
-            "id":14,
-            "name":"[Containment] Automatic Back Door",
+            "id":75,
+            "name":"[Containment] Mech - Containemnt Frame",
             "description":""
          },
          {
-            "id":15,
-            "name":"[Containment] Manual Back Door",
+            "id":76,
+            "name":"[Containment] Mech - Automatic Back Door",
             "description":""
          },
          {
-            "id":17,
-            "name":"[Containment] Manual Front Door",
-            "description":""
-         },
-         {
-            "id":19,
-            "name":"[Containment] Automatic Front Door",
-            "description":""
-         },
-         {
-            "id":20,
-            "name":"[Containment] Rack Cold Aisle",
-            "description":""
-         },
-         {
-            "id":21,
-            "name":"[Containment] Rack Hot Aisle",
-            "description":""
-         },
-         {
-            "id":22,
-            "name":"[Containment] Monitor",
-            "description":""
-         },
-         {
-            "id":24,
+            "id":77,
             "name":"[Containment] Motion Sensor (1 EA / 10 Racks)",
             "description":""
          },
          {
-            "id":23,
+            "id":78,
             "name":"[Containment] Material Instalation",
-            "description":null
+            "description":""
          },
          {
-            "id":16,
-            "name":" [Containment] Main Control Component",
-            "description":null
+            "id":79,
+            "name":"[Containment] Monitor",
+            "description":""
          },
          {
-            "id":18,
+            "id":80,
+            "name":"[Containment] Rack Hot Aisle",
+            "description":""
+         },
+         {
+            "id":81,
+            "name":"[Containment] Rack Cold Aisle",
+            "description":""
+         },
+         {
+            "id":82,
+            "name":"[Containment] Automatic Front Door",
+            "description":""
+         },
+         {
+            "id":83,
             "name":"[Containment] Box Junction",
-            "description":null
+            "description":""
+         },
+         {
+            "id":84,
+            "name":"[Containment] Manual Front Door",
+            "description":""
+         },
+         {
+            "id":85,
+            "name":" [Containment] Main Control Component",
+            "description":""
+         },
+         {
+            "id":86,
+            "name":"[Containment] Manual Back Door",
+            "description":""
+         },
+         {
+            "id":87,
+            "name":"[Containment] Automatic Back Door",
+            "description":""
+         },
+         {
+            "id":88,
+            "name":" [Containment] Smoke Detector (2EA / Set)",
+            "description":""
+         },
+         {
+            "id":89,
+            "name":"[DUMMY] Blank Assembly - No Materials",
+            "description":"Placeholder assembly with no materials for testing"
+         },
+         {
+            "id":90,
+            "name":"[NODE] Node Assembly - Placeholder",
+            "description":"Node placeholder assembly"
+         },
+         {
+            "id":91,
+            "name":"[TEST] Test Assembly - Blank Materials",
+            "description":"Test assembly with blank materials"
          }
       ],
       "_count":{
-         "assemblies":12
+         "assemblies":18
       }
    },
    {
@@ -95,7 +125,7 @@
       "color":"#f59e0b",
       "icon":"Server",
       "createdAt":"2025-12-16T08:10:50.230Z",
-      "updatedAt":"2025-12-16T08:10:50.230Z",
+      "updatedAt":"2026-01-06T04:47:16.767Z",
       "assemblies":[
          
       ],

@@ -39,17 +39,21 @@ async function clearDatabase() {
     const tables = [
       'User', 'Client', 'Material', 'Assembly', 'AssemblyMaterial',
       'Template', 'TemplateAssembly', 'Project', 'ProjectTimeline',
-      'ProjectMilestone', 'ProjectTask', 'TaskDependency'
+      'ProjectMilestone', 'ProjectTask', 'TaskDependency',
+      'AssemblyGroupItem', 'AssemblyGroup'
     ];
 
     let totalRecords = 0;
+    const existingTables = [];
+
     for (const table of tables) {
       try {
         const count = await prisma[table].count();
         console.log(`  ${table}: ${count} records`);
         totalRecords += count;
+        existingTables.push(table);
       } catch (err) {
-        console.log(`  ${table}: Error getting count`);
+        console.log(`  ${table}: Table does not exist in database (skipping)`);
       }
     }
 
@@ -71,7 +75,7 @@ async function clearDatabase() {
 
     console.log('\n🗑️ Clearing database...');
 
-    // Clear in correct order (respecting foreign key constraints)
+    // Filter clearOrder to only include existing tables
     const clearOrder = [
       'TaskDependency',
       'ProjectTask',
@@ -80,12 +84,14 @@ async function clearDatabase() {
       'Project',
       'TemplateAssembly',
       'Template',
+      'AssemblyGroupItem',  // Must be before Assembly (references Assembly and AssemblyGroup)
       'AssemblyMaterial',
-      'Assembly',
+      'Assembly',           // Now safe to delete after AssemblyGroupItem is cleared
+      'AssemblyGroup',      // After AssemblyGroupItem is cleared
       'Material',
       'Client',
       'User'
-    ];
+    ].filter(table => existingTables.includes(table));
 
     let deletedTotal = 0;
 

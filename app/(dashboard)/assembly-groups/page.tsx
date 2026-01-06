@@ -342,7 +342,7 @@ export default function AssemblyGroupsPage() {
         const error = await response.json();
         toast({
           title: "Error",
-          description: error.error || "Failed to delete assembly group",
+          description: error.message || error.error || "Failed to delete assembly group",
           variant: "destructive",
         });
       }

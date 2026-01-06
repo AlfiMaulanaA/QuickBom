@@ -76,7 +76,7 @@ const log = (message, data = null) => {
   }
 };
 
-const error = (message, err = null) => {
+const logError = (message, err = null) => {
   const timestamp = new Date().toISOString();
   console.error(`[${timestamp}] ERROR: ${message}`);
   if (err) {
@@ -93,7 +93,7 @@ async function testConnection() {
     log('✅ Database connection successful');
     return true;
   } catch (err) {
-    error('❌ Database connection failed:', err);
+    logError('❌ Database connection failed:', err);
     return false;
   }
 }
@@ -101,23 +101,31 @@ async function testConnection() {
 // Get seeding stats
 async function getSeedingStats() {
   try {
-    const userCount = await prisma.user.count();
-    const materialCount = await prisma.material.count();
-    const assemblyCount = await prisma.assembly.count();
-    const templateCount = await prisma.template.count();
-    const projectCount = await prisma.project.count();
-    const clientCount = await prisma.client.count();
+    const stats = {};
 
-    return {
-      users: userCount,
-      materials: materialCount,
-      assemblies: assemblyCount,
-      templates: templateCount,
-      projects: projectCount,
-      clients: clientCount,
+    // Helper function to safely count records
+    const safeCount = async (model, tableName) => {
+      try {
+        return await prisma[model].count();
+      } catch (err) {
+        log(`Table '${tableName}' does not exist in database (count skipped)`);
+        return 0; // Return 0 for missing tables
+      }
     };
+
+    stats.users = await safeCount('user', 'User');
+    stats.materials = await safeCount('material', 'Material');
+    stats.assemblies = await safeCount('assembly', 'Assembly');
+    stats.assemblyCategories = await safeCount('assemblyCategory', 'AssemblyCategory');
+    stats.assemblyGroups = await safeCount('assemblyGroup', 'AssemblyGroup');
+    stats.assemblyGroupItems = await safeCount('assemblyGroupItem', 'AssemblyGroupItem');
+    stats.templates = await safeCount('template', 'Template');
+    stats.projects = await safeCount('project', 'Project');
+    stats.clients = await safeCount('client', 'Client');
+
+    return stats;
   } catch (err) {
-    error('Failed to get seeding stats:', err);
+    logError('Failed to get seeding stats:', err);
     return null;
   }
 }
@@ -179,7 +187,9 @@ async function seedAll() {
     console.log(`   🔧 Materials: ${materials.length}`);
     console.log(`   📂 Assembly Categories: ${assemblyCategories.length}`);
     console.log(`   🏗️  Assemblies: ${assemblies.length}`);
-    console.log(`   📋 Templates: ${templates.length}`);
+    console.log(`   📋 Assembly Groups: ${assemblyGroups.length}`);
+    console.log(`   🔗 Assembly Group Items: ${assemblyGroups.reduce((sum, group) => sum + (group.itemCount || 0), 0)}`);
+    console.log(`   📄 Templates: ${templates.length}`);
 
     console.log('\n🔐 DEFAULT LOGIN CREDENTIALS:');
     console.log('Admin: admin@gmail.com / admin123');
@@ -198,7 +208,7 @@ async function seedAll() {
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    error(`❌ Database seeding failed after ${duration}ms:`, error);
+    logError(`❌ Database seeding failed after ${duration}ms:`, error);
     process.exit(1);
   }
 }

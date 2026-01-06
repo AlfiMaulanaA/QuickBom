@@ -92,6 +92,7 @@ async function seedAssemblies(prismaInstance = null) {
         update: {
           description: assemblyData.description,
           categoryId: 1, // Containment category
+          module: 'ELECTRICAL', // Required module field
           docs: [], // Empty docs array
           materials: {
             deleteMany: {}, // Remove existing materials
@@ -102,6 +103,7 @@ async function seedAssemblies(prismaInstance = null) {
           name: assemblyData.name,
           description: assemblyData.description,
           categoryId: 1, // Containment category
+          module: 'ELECTRICAL', // Required module field
           docs: [], // Empty docs array
           materials: {
             create: assemblyMaterials,

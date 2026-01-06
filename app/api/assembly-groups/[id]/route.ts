@@ -6,11 +6,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const group = await prisma.templateAssemblyGroup.findUnique({
+    const group = await prisma.assemblyGroup.findUnique({
       where: { id: params.id },
       include: {
         category: true,
-        template: true,
         items: {
           include: {
             assembly: {
@@ -31,16 +30,16 @@ export async function GET(
 
     if (!group) {
       return NextResponse.json(
-        { error: "Template group not found" },
+        { error: "Assembly group not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(group);
   } catch (error: any) {
-    console.error('API Error [GET /api/template-groups/[id]]:', error);
+    console.error('API Error [GET /api/assembly-groups/[id]]:', error);
     return NextResponse.json(
-      { error: "Failed to fetch template group" },
+      { error: "Failed to fetch assembly group" },
       { status: 500 }
     );
   }
@@ -62,14 +61,14 @@ export async function PUT(
     }
 
     // Verify group exists
-    const existingGroup = await prisma.templateAssemblyGroup.findUnique({
+    const existingGroup = await prisma.assemblyGroup.findUnique({
       where: { id: params.id },
       include: { category: true }
     });
 
     if (!existingGroup) {
       return NextResponse.json(
-        { error: "Template group not found" },
+        { error: "Assembly group not found" },
         { status: 404 }
       );
     }
@@ -99,7 +98,7 @@ export async function PUT(
     }
 
     // Update group
-    const updatedGroup = await prisma.templateAssemblyGroup.update({
+    const updatedGroup = await prisma.assemblyGroup.update({
       where: { id: params.id },
       data: {
         name,
@@ -121,7 +120,6 @@ export async function PUT(
       },
       include: {
         category: true,
-        template: true,
         items: {
           include: {
             assembly: {
@@ -142,9 +140,9 @@ export async function PUT(
 
     return NextResponse.json(updatedGroup);
   } catch (error: any) {
-    console.error('API Error [PUT /api/template-groups/[id]]:', error);
+    console.error('API Error [PUT /api/assembly-groups/[id]]:', error);
     return NextResponse.json(
-      { error: "Failed to update template group" },
+      { error: "Failed to update assembly group" },
       { status: 500 }
     );
   }
@@ -156,27 +154,42 @@ export async function DELETE(
 ) {
   try {
     // Verify group exists
-    const existingGroup = await prisma.templateAssemblyGroup.findUnique({
-      where: { id: params.id }
+    const existingGroup = await prisma.assemblyGroup.findUnique({
+      where: { id: params.id },
+      include: {
+        _count: {
+          select: { items: true }
+        }
+      }
     });
 
     if (!existingGroup) {
       return NextResponse.json(
-        { error: "Template group not found" },
+        { error: "Assembly group not found" },
         { status: 404 }
       );
     }
 
-    // Delete group (cascade will delete items)
-    await prisma.templateAssemblyGroup.delete({
+    // Delete all items in the group first (cascade delete)
+    if (existingGroup._count.items > 0) {
+      await prisma.assemblyGroupItem.deleteMany({
+        where: { groupId: params.id }
+      });
+    }
+
+    // Now delete the group
+    await prisma.assemblyGroup.delete({
       where: { id: params.id }
     });
 
-    return NextResponse.json({ message: "Template group deleted successfully" });
+    return NextResponse.json({
+      message: "Assembly group deleted successfully",
+      itemsRemoved: existingGroup._count.items
+    });
   } catch (error: any) {
-    console.error('API Error [DELETE /api/template-groups/[id]]:', error);
+    console.error('API Error [DELETE /api/assembly-groups/[id]]:', error);
     return NextResponse.json(
-      { error: "Failed to delete template group" },
+      { error: "Failed to delete assembly group" },
       { status: 500 }
     );
   }
