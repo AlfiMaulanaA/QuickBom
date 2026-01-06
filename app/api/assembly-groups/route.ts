@@ -3,14 +3,34 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API] GET /api/assembly-groups - Starting request');
+
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
+    console.log('[API] Query params:', { categoryId });
 
     const where: any = {};
 
     if (categoryId) {
       where.categoryId = parseInt(categoryId);
+      console.log('[API] Filtering by categoryId:', where.categoryId);
     }
+
+    // Test database connection first
+    console.log('[API] Testing database connection...');
+    await prisma.$queryRaw`SELECT 1 as test`;
+    console.log('[API] Database connection OK');
+
+    // Check if tables exist
+    console.log('[API] Checking if assemblyGroup table exists...');
+    const tableCheck = await prisma.$queryRaw`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'AssemblyGroup'
+      ) as exists
+    ` as any;
+    console.log('[API] AssemblyGroup table exists:', tableCheck[0]?.exists);
 
     const groups = await prisma.assemblyGroup.findMany({
       where,
@@ -38,11 +58,20 @@ export async function GET(request: NextRequest) {
       ]
     });
 
+    console.log(`[API] Successfully fetched ${groups.length} assembly groups`);
     return NextResponse.json(groups);
   } catch (error: any) {
-    console.error('API Error [GET /api/assembly-groups]:', error);
+    console.error('[API] GET /api/assembly-groups - Full error details:');
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error meta:', error.meta);
+    console.error('Stack trace:', error.stack);
+
     return NextResponse.json(
-      { error: "Failed to fetch assembly groups" },
+      {
+        error: "Failed to fetch assembly groups",
+        details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      },
       { status: 500 }
     );
   }
@@ -97,22 +126,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Create group with items
+    const groupData: any = {
+      name,
+      description: description || null,
+      groupType,
+      categoryId,
+    };
+
+    if (items && items.length > 0) {
+      groupData.items = {
+        create: items.map((item: any) => ({
+          assemblyId: item.assemblyId,
+          quantity: item.quantity || 1,
+          conflictsWith: item.conflictsWith || [],
+          isDefault: item.isDefault || false,
+          sortOrder: item.sortOrder || 0
+        }))
+      };
+    }
+
     const group = await prisma.assemblyGroup.create({
-      data: {
-        name,
-        description: description || null,
-        groupType,
-        categoryId,
-        items: items && items.length > 0 ? {
-          create: items.map((item: any) => ({
-            assemblyId: item.assemblyId,
-            quantity: item.quantity || 1,
-            conflictsWith: item.conflictsWith || [],
-            isDefault: item.isDefault || false,
-            sortOrder: item.sortOrder || 0
-          }))
-        } : undefined
-      },
+      data: groupData,
       include: {
         category: true,
         items: {

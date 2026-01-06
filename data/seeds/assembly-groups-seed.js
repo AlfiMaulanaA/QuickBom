@@ -80,10 +80,17 @@ async function seedAssemblyGroupsFromJson(prismaInstance = null) {
       const createdItems = [];
       for (const itemData of groupData.items) {
         try {
-          // Verify assembly exists
-          const assembly = await prisma.assembly.findUnique({
+          // First try to find assembly by ID (for existing data)
+          let assembly = await prisma.assembly.findUnique({
             where: { id: itemData.assemblyId }
           });
+
+          // If not found by ID, try to find by name (for JSON data with mismatched IDs)
+          if (!assembly && itemData.assembly && itemData.assembly.name) {
+            assembly = await prisma.assembly.findFirst({
+              where: { name: itemData.assembly.name }
+            });
+          }
 
           if (!assembly) {
             console.log(`⚠️  Assembly ${itemData.assemblyId} not found, skipping item`);
@@ -95,7 +102,7 @@ async function seedAssemblyGroupsFromJson(prismaInstance = null) {
             where: { id: itemData.id },
             update: {
               groupId: group.id, // Fix: Also update groupId in case it was wrong
-              assemblyId: itemData.assemblyId,
+              assemblyId: assembly.id, // Use the correct assembly ID
               quantity: parseInt(itemData.quantity),
               conflictsWith: itemData.conflictsWith || [],
               isDefault: itemData.isDefault || false,
@@ -104,7 +111,7 @@ async function seedAssemblyGroupsFromJson(prismaInstance = null) {
             create: {
               id: itemData.id,
               groupId: group.id,
-              assemblyId: itemData.assemblyId,
+              assemblyId: assembly.id, // Use the correct assembly ID
               quantity: parseInt(itemData.quantity),
               conflictsWith: itemData.conflictsWith || [],
               isDefault: itemData.isDefault || false,

@@ -97,22 +97,8 @@
             "id":88,
             "name":" [Containment] Smoke Detector (2EA / Set)",
             "description":""
-         },
-         {
-            "id":89,
-            "name":"[DUMMY] Blank Assembly - No Materials",
-            "description":"Placeholder assembly with no materials for testing"
-         },
-         {
-            "id":90,
-            "name":"[NODE] Node Assembly - Placeholder",
-            "description":"Node placeholder assembly"
-         },
-         {
-            "id":91,
-            "name":"[TEST] Test Assembly - Blank Materials",
-            "description":"Test assembly with blank materials"
          }
+        
       ],
       "_count":{
          "assemblies":18

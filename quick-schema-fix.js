@@ -27,8 +27,9 @@ async function quickSchemaFix() {
     console.log('📄 Executing SQL script...');
 
     // Execute key SQL statements individually
-    console.log('🔧 Creating AssemblyModule enum type...');
+    console.log('🔧 Creating enum types...');
     try {
+      // AssemblyModule enum
       await prisma.$queryRaw`
         DO $$ BEGIN
             CREATE TYPE "AssemblyModule" AS ENUM('ELECTRONIC', 'ELECTRICAL', 'ASSEMBLY', 'INSTALLATION', 'MECHANICAL');
@@ -37,8 +38,19 @@ async function quickSchemaFix() {
         END $$;
       `;
       console.log('✅ Created AssemblyModule enum type');
+
+      // AssemblyGroupType enum
+      await prisma.$queryRaw`
+        DO $$ BEGIN
+            CREATE TYPE "AssemblyGroupType" AS ENUM('REQUIRED', 'CHOOSE_ONE', 'OPTIONAL', 'CONFLICT');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+      `;
+      console.log('✅ Created AssemblyGroupType enum type');
+
     } catch (err) {
-      console.log('⚠️  AssemblyModule enum may already exist:', err.message);
+      console.log('⚠️  Enum creation failed:', err.message);
     }
 
     console.log('🔧 Setting up module column in Assembly table...');
@@ -123,6 +135,14 @@ async function quickSchemaFix() {
       console.log('✅ Added unique constraints');
     } catch (err) {
       console.log('⚠️  Unique constraints setup failed:', err.message);
+    }
+
+    console.log('📋 Adding assemblySelections column to Template table...');
+    try {
+      await prisma.$queryRaw`ALTER TABLE "Template" ADD COLUMN IF NOT EXISTS "assemblySelections" JSONB`;
+      console.log('✅ Added assemblySelections column to Template table');
+    } catch (err) {
+      console.log('⚠️  Template column addition failed:', err.message);
     }
 
     console.log('🎉 Schema fix completed!');

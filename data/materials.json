@@ -24,18 +24,6 @@
       "updatedAt":"2026-01-06T04:47:16.754Z"
    },
    {
-      "id":1811,
-      "name":"DUMMY MATERIAL - PLACEHOLDER",
-      "partNumber":"DUMMY-001",
-      "manufacturer":"DUMMY",
-      "unit":"EACH",
-      "price":"0",
-      "purchaseUrl":null,
-      "datasheetFile":null,
-      "createdAt":"2026-01-06T04:45:24.264Z",
-      "updatedAt":"2026-01-06T04:47:16.752Z"
-   },
-   {
       "id":1810,
       "name":"Baut L Tanam hitam M6x10",
       "partNumber":null,

@@ -36,24 +36,24 @@ async function seedAssemblies(prismaInstance = null) {
     materialMap[material.name] = material;
   });
 
-  // Add dummy/placeholder assemblies
-  const dummyAssemblies = [
-    {
-      name: "[DUMMY] Blank Assembly - No Materials",
-      description: "Placeholder assembly with no materials for testing",
-      materials: []
-    },
-    {
-      name: "[NODE] Node Assembly - Placeholder",
-      description: "Node placeholder assembly",
-      materials: []
-    },
-    {
-      name: "[TEST] Test Assembly - Blank Materials",
-      description: "Test assembly with blank materials",
-      materials: []
-    }
-  ];
+  // Add dummy/placeholder assemblies - COMMENTED OUT as requested
+  // const dummyAssemblies = [
+  //   {
+  //     name: "[DUMMY] Blank Assembly - No Materials",
+  //     description: "Placeholder assembly with no materials for testing",
+  //     materials: []
+  //   },
+  //   {
+  //     name: "[NODE] Node Assembly - Placeholder",
+  //     description: "Node placeholder assembly",
+  //     materials: []
+  //   },
+  //   {
+  //     name: "[TEST] Test Assembly - Blank Materials",
+  //     description: "Test assembly with blank materials",
+  //     materials: []
+  //   }
+  // ];
 
   const assemblies = [...assembliesData.map(assembly => ({
     name: assembly.name,
@@ -62,7 +62,7 @@ async function seedAssemblies(prismaInstance = null) {
       name: am.material.name,
       quantity: parseFloat(am.quantity) || 0,
     })),
-  })), ...dummyAssemblies];
+  }))]; // Removed ...dummyAssemblies
 
   const createdAssemblies = [];
 
