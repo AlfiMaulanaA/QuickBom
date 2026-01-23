@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Package, Search, Filter, Download, Upload, ArrowUpDown, Eye, Copy, MoreHorizontal, Check, Building, DollarSign, ChevronLeft, ChevronRight, Loader2, File } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Search, Filter, Download, Upload, ArrowUpDown, Eye, Copy, MoreHorizontal, Check, Building, DollarSign, ChevronLeft, ChevronRight, Loader2, File, FileSpreadsheet } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
@@ -127,16 +128,16 @@ export default function MaterialsPage() {
   const processedMaterials = useMemo(() => {
     let filtered = materials.filter(material => {
       const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (material.partNumber && material.partNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                           (material.manufacturer && material.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
+        (material.partNumber && material.partNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (material.manufacturer && material.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesUnit = unitFilter === "all" || material.unit === unitFilter;
       const matchesManufacturer = manufacturerFilter === "all" || material.manufacturer === manufacturerFilter;
       const matchesPrice = priceFilter === "all" ||
-                          (priceFilter === "priced" && material.price > 0) ||
-                          (priceFilter === "unpriced" && material.price === 0) ||
-                          (priceFilter === "low" && material.price > 0 && material.price <= 50000) ||
-                          (priceFilter === "medium" && material.price > 50000 && material.price <= 200000) ||
-                          (priceFilter === "high" && material.price > 200000);
+        (priceFilter === "priced" && material.price > 0) ||
+        (priceFilter === "unpriced" && material.price === 0) ||
+        (priceFilter === "low" && material.price > 0 && material.price <= 50000) ||
+        (priceFilter === "medium" && material.price > 50000 && material.price <= 200000) ||
+        (priceFilter === "high" && material.price > 200000);
 
       return matchesSearch && matchesUnit && matchesManufacturer && matchesPrice;
     });
@@ -305,27 +306,21 @@ export default function MaterialsPage() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcelHandler = () => {
     const headers = ["Name", "Part Number", "Manufacturer", "Unit", "Price", "Created"];
-    const csvContent = [
-      headers.join(","),
+    const data = [
+      headers,
       ...processedMaterials.map(material => [
-        `"${material.name}"`,
-        `"${material.partNumber || ""}"`,
-        `"${material.manufacturer || ""}"`,
+        material.name,
+        material.partNumber || "",
+        material.manufacturer || "",
         material.unit,
         material.price,
         new Date(material.createdAt).toLocaleDateString()
-      ].join(","))
-    ].join("\n");
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "materials.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, "materials", "Materials List");
   };
 
   const handleDuplicate = (material: Material) => {
@@ -514,119 +509,119 @@ export default function MaterialsPage() {
               Add Material
             </Button>
           </DialogTrigger>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Add New Material</DialogTitle>
-            <DialogDescription className="text-sm sm:text-base">
-              Add a new construction material to the database.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Row 1: Material Name (Full Width) */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm">Material Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Bata Merah"
-                required
-              />
-            </div>
-
-            {/* Row 2: Part Number and Manufacturer */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw] lg:w-[70vw] xl:w-[60vw]">
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">Add New Material</DialogTitle>
+              <DialogDescription className="text-sm sm:text-base">
+                Add a new construction material to the database.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              {/* Row 1: Material Name (Full Width) */}
               <div className="space-y-2">
-                <Label htmlFor="partNumber" className="text-sm">Part Number</Label>
+                <Label htmlFor="name" className="text-sm">Material Name *</Label>
                 <Input
-                  id="partNumber"
-                  value={formData.partNumber}
-                  onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
-                  placeholder="e.g., BR-001-40x20x10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manufacturer" className="text-sm">Manufacturer</Label>
-                <Input
-                  id="manufacturer"
-                  value={formData.manufacturer}
-                  onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                  placeholder="e.g., PT. Bata Indonesia"
-                />
-              </div>
-            </div>
-
-            {/* Row 3: Unit and Price */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="unit" className="text-sm">Unit *</Label>
-                <Input
-                  id="unit"
-                  value={formData.unit}
-                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                  placeholder="e.g., pcs, kg, m³"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Bata Merah"
                   required
                 />
               </div>
+
+              {/* Row 2: Part Number and Manufacturer */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="partNumber" className="text-sm">Part Number</Label>
+                  <Input
+                    id="partNumber"
+                    value={formData.partNumber}
+                    onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+                    placeholder="e.g., BR-001-40x20x10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manufacturer" className="text-sm">Manufacturer</Label>
+                  <Input
+                    id="manufacturer"
+                    value={formData.manufacturer}
+                    onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                    placeholder="e.g., PT. Bata Indonesia"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Unit and Price */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-sm">Unit *</Label>
+                  <Input
+                    id="unit"
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    placeholder="e.g., pcs, kg, m³"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price" className="text-sm">Price per Unit</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="e.g., 1500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Purchase URL (Full Width) */}
               <div className="space-y-2">
-                <Label htmlFor="price" className="text-sm">Price per Unit</Label>
+                <Label htmlFor="purchaseUrl" className="text-sm">Purchase URL</Label>
                 <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="e.g., 1500"
+                  id="purchaseUrl"
+                  type="url"
+                  value={formData.purchaseUrl}
+                  onChange={(e) => setFormData({ ...formData, purchaseUrl: e.target.value })}
+                  placeholder="https://example.com/buy"
                 />
               </div>
-            </div>
 
-            {/* Row 4: Purchase URL (Full Width) */}
-            <div className="space-y-2">
-              <Label htmlFor="purchaseUrl" className="text-sm">Purchase URL</Label>
-              <Input
-                id="purchaseUrl"
-                type="url"
-                value={formData.purchaseUrl}
-                onChange={(e) => setFormData({ ...formData, purchaseUrl: e.target.value })}
-                placeholder="https://example.com/buy"
-              />
-            </div>
+              {/* Row 5: Datasheet File (Full Width) */}
+              <div className="space-y-2">
+                <Label htmlFor="datasheetFile" className="text-sm">Datasheet File</Label>
+                <Input
+                  id="datasheetFile"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setFormData({ ...formData, datasheetFile: file });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upload PDF, DOC, DOCX, XLS, or XLSX files only
+                </p>
+              </div>
 
-            {/* Row 5: Datasheet File (Full Width) */}
-            <div className="space-y-2">
-              <Label htmlFor="datasheetFile" className="text-sm">Datasheet File</Label>
-              <Input
-                id="datasheetFile"
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setFormData({ ...formData, datasheetFile: file });
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload PDF, DOC, DOCX, XLS, or XLSX files only
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsCreateDialogOpen(false);
-                  setFormData({ name: "", partNumber: "", manufacturer: "", unit: "", price: "", purchaseUrl: "", datasheetFile: null });
-                }}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="w-full sm:w-auto">Add Material</Button>
-            </div>
-          </form>
-        </DialogContent>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setFormData({ name: "", partNumber: "", manufacturer: "", unit: "", price: "", purchaseUrl: "", datasheetFile: null });
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="w-full sm:w-auto">Add Material</Button>
+              </div>
+            </form>
+          </DialogContent>
         </Dialog>
       </div>
 
@@ -723,9 +718,9 @@ export default function MaterialsPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button variant="outline" onClick={exportToExcelHandler}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export Excel
                 </Button>
                 {selectedMaterials.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>

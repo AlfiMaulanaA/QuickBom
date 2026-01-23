@@ -19,8 +19,10 @@ import {
   Settings,
   Eye,
   Copy,
-  CheckCircle
+  CheckCircle,
+  FileSpreadsheet
 } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 
 interface Material {
   id: number;
@@ -229,44 +231,38 @@ export default function TemplateBOQPage() {
     }).format(amount);
   };
 
-  const exportToCSV = () => {
+  const exportToExcelHandler = () => {
     if (!template || boqData.length === 0) return;
 
     const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Assembly Name"];
 
-    const csvContent = [
-      `BILL OF QUANTITY - ${template.name.toUpperCase()}`,
-      `Generated on: ${new Date().toLocaleString()}`,
-      `Template Description: ${template.description || "No description"}`,
-      `Total Assemblies: ${template.assemblies.length}`,
-      `Total Items: ${boqData.filter(item => !item.isModuleHeader && !item.isAssemblyHeader).length}`,
-      `Total Cost: ${formatCurrency(boqData.reduce((sum, item) => sum + item.totalPrice, 0))}`,
-      "",
-      headers.join(","),
+    const data = [
+      [`BILL OF QUANTITY - ${template.name.toUpperCase()}`],
+      [`Generated on: ${new Date().toLocaleString()}`],
+      [`Template Description: ${template.description || "No description"}`],
+      [`Total Assemblies: ${template.assemblies.length}`],
+      [`Total Items: ${boqData.filter(item => !item.isModuleHeader && !item.isAssemblyHeader).length}`],
+      [`Total Cost: ${formatCurrency(boqData.reduce((sum, item) => sum + item.totalPrice, 0))}`],
+      [],
+      headers,
       ...boqData.map(item => [
         item.no,
-        `"${item.manufacturer}"`,
-        `"${item.partNumber}"`,
-        `"${item.item}"`,
+        item.manufacturer,
+        item.partNumber,
+        item.item,
         item.qty,
         item.unit,
         item.unitPrice,
         item.totalPrice,
-        `"${item.assemblyName}"`
-      ].join(","))
-    ].join("\n");
+        item.assemblyName
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_BOQ.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_BOQ`, "BOQ");
 
     toast({
       title: "BOQ Exported",
-      description: "Bill of Quantity has been exported to CSV",
+      description: "Bill of Quantity has been exported to Excel",
     });
   };
 
@@ -298,7 +294,7 @@ export default function TemplateBOQPage() {
     }
   };
 
-  const exportCombinedCSV = () => {
+  const exportCombinedExcel = () => {
     if (!template) return;
 
     // Create a map to consolidate materials
@@ -355,44 +351,38 @@ export default function TemplateBOQPage() {
       }
     });
 
-    // Convert map to array for CSV export
+    // Convert map to array for Excel export
     const consolidatedMaterials = Array.from(materialMap.values());
 
     const headers = ["No", "Manufacturer", "Part Number", "Item", "Total Qty", "Unit", "Unit Price", "Total Cost", "Used in Assemblies"];
 
-    const csvContent = [
-      `CONSOLIDATED BILL OF QUANTITY - ${template.name.toUpperCase()}`,
-      `Generated on: ${new Date().toLocaleString()}`,
-      `Template Description: ${template.description || "No description"}`,
-      `Total Assemblies: ${template.assemblies?.length || 0}`,
-      `Unique Materials: ${consolidatedMaterials.length}`,
-      `Total Estimated Cost: ${formatCurrency(consolidatedMaterials.reduce((sum, mat) => sum + mat.totalCost, 0))}`,
-      "",
-      headers.join(","),
+    const data = [
+      [`CONSOLIDATED BILL OF QUANTITY - ${template.name.toUpperCase()}`],
+      [`Generated on: ${new Date().toLocaleString()}`],
+      [`Template Description: ${template.description || "No description"}`],
+      [`Total Assemblies: ${template.assemblies?.length || 0}`],
+      [`Unique Materials: ${consolidatedMaterials.length}`],
+      [`Total Estimated Cost: ${formatCurrency(consolidatedMaterials.reduce((sum, mat) => sum + mat.totalCost, 0))}`],
+      [],
+      headers,
       ...consolidatedMaterials.map((material, index) => [
         index + 1,
-        `"${material.manufacturer}"`,
-        `"${material.partNumber}"`,
-        `"${material.name}"`,
+        material.manufacturer,
+        material.partNumber,
+        material.name,
         material.totalQuantity,
         material.unit,
         material.unitPrice,
         material.totalCost,
-        `"${material.assemblies.join('; ')}"`
-      ].join(","))
-    ].join("\n");
+        material.assemblies.join('; ')
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Combined_BOQ.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Combined_BOQ`, "Combined BOQ");
 
     toast({
       title: "Combined BOQ Exported",
-      description: "Consolidated Bill of Quantity has been exported to CSV",
+      description: "Consolidated Bill of Quantity has been exported to Excel",
     });
   };
 
@@ -461,18 +451,18 @@ export default function TemplateBOQPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={exportToCSV}
+            onClick={exportToExcelHandler}
             className="flex items-center gap-2"
           >
-            <Download className="h-4 w-4" />
-            Download BOQ
+            <FileSpreadsheet className="h-4 w-4" />
+            Download Excel
           </Button>
           <Button
-            onClick={exportCombinedCSV}
+            onClick={exportCombinedExcel}
             className="flex items-center gap-2"
           >
-            <Download className="h-4 w-4" />
-            Download Combined BOQ
+            <FileSpreadsheet className="h-4 w-4" />
+            Download Combined Excel
           </Button>
         </div>
       </div>
@@ -568,19 +558,17 @@ export default function TemplateBOQPage() {
                     return (
                       <TableRow
                         key={`${item.no}-${index}`}
-                        className={`${
-                          isModuleHeader
-                            ? 'bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold'
-                            : isAssemblyHeader
+                        className={`${isModuleHeader
+                          ? 'bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold'
+                          : isAssemblyHeader
                             ? 'bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800'
                             : 'hover:bg-muted/30'
-                        }`}
+                          }`}
                       >
-                        <TableCell className={`text-xs font-mono ${
-                          isModuleHeader ? 'text-purple-900 dark:text-purple-100 font-bold' :
+                        <TableCell className={`text-xs font-mono ${isModuleHeader ? 'text-purple-900 dark:text-purple-100 font-bold' :
                           isAssemblyHeader ? 'text-blue-900 dark:text-blue-100 font-semibold' :
-                          'text-muted-foreground'
-                        }`}>
+                            'text-muted-foreground'
+                          }`}>
                           {item.no}
                         </TableCell>
                         <TableCell className="text-xs">
@@ -597,10 +585,9 @@ export default function TemplateBOQPage() {
                             item.partNumber || <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className={`text-sm ${
-                          isModuleHeader ? 'font-bold text-purple-900 dark:text-purple-100' :
+                        <TableCell className={`text-sm ${isModuleHeader ? 'font-bold text-purple-900 dark:text-purple-100' :
                           isAssemblyHeader ? 'font-semibold text-blue-900 dark:text-blue-100' : ''
-                        }`}>
+                          }`}>
                           {isModuleHeader ? (
                             <div className="flex items-center gap-2">
                               <FileText className="h-4 w-4 text-purple-600" />
@@ -630,11 +617,10 @@ export default function TemplateBOQPage() {
                         <TableCell className="text-xs text-right font-mono text-blue-600">
                           {isModuleHeader || item.unitPrice === 0 ? '-' : formatCurrency(item.unitPrice)}
                         </TableCell>
-                        <TableCell className={`text-sm text-right font-medium ${
-                          isModuleHeader ? 'text-purple-700 dark:text-purple-300 font-bold' :
+                        <TableCell className={`text-sm text-right font-medium ${isModuleHeader ? 'text-purple-700 dark:text-purple-300 font-bold' :
                           isAssemblyHeader ? 'text-blue-700 dark:text-blue-300' :
-                          'text-green-600'
-                        }`}>
+                            'text-green-600'
+                          }`}>
                           {isModuleHeader ? '-' : formatCurrency(item.totalPrice)}
                         </TableCell>
                         <TableCell className="text-xs">

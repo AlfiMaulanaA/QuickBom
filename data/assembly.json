@@ -1,0 +1,182 @@
+[
+  {
+    "id": 80,
+    "name": "[Containment] Rack Hot Aisle",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.339Z",
+    "updatedAt": "2026-01-22T10:26:06.281Z"
+  },
+  {
+    "id": 88,
+    "name": " [Containment] Smoke Detector (2EA / Set)",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.421Z",
+    "updatedAt": "2026-01-06T04:52:25.101Z"
+  },
+  {
+    "id": 83,
+    "name": "[Containment] Box Junction",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.363Z",
+    "updatedAt": "2026-01-06T04:52:25.164Z"
+  },
+  {
+    "id": 79,
+    "name": "[Containment] Monitor",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.331Z",
+    "updatedAt": "2026-01-06T04:52:25.202Z"
+  },
+  {
+    "id": 78,
+    "name": "[Containment] Material Instalation",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.322Z",
+    "updatedAt": "2026-01-06T04:52:25.209Z"
+  },
+  {
+    "id": 77,
+    "name": "[Containment] Motion Sensor (1 EA / 10 Racks)",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.316Z",
+    "updatedAt": "2026-01-06T04:52:25.218Z"
+  },
+  {
+    "id": 76,
+    "name": "[Containment] Mech - Automatic Back Door",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.309Z",
+    "updatedAt": "2026-01-06T04:52:25.225Z"
+  },
+  {
+    "id": 75,
+    "name": "[Containment] Mech - Containemnt Frame",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.301Z",
+    "updatedAt": "2026-01-06T04:52:25.231Z"
+  },
+  {
+    "id": 74,
+    "name": "[Containment] Mech - Containment Ceiling",
+    "description": "",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.292Z",
+    "updatedAt": "2026-01-06T04:52:25.238Z"
+  },
+  {
+    "id": 89,
+    "name": "[DUMMY] Blank Assembly - No Materials",
+    "description": "Placeholder assembly with no materials for testing",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.428Z",
+    "updatedAt": "2026-01-06T04:52:25.245Z"
+  },
+  {
+    "id": 90,
+    "name": "[NODE] Node Assembly - Placeholder",
+    "description": "Node placeholder assembly",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.434Z",
+    "updatedAt": "2026-01-06T04:52:25.249Z"
+  },
+  {
+    "id": 91,
+    "name": "[TEST] Test Assembly - Blank Materials",
+    "description": "Test assembly with blank materials",
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": [],
+    "createdAt": "2026-01-06T04:45:24.442Z",
+    "updatedAt": "2026-01-06T04:52:25.255Z"
+  },
+  {
+    "id": 85,
+    "name": " [Containment] Main Control Component",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.386Z",
+    "updatedAt": "2026-01-22T09:59:06.153Z"
+  },
+  {
+    "id": 87,
+    "name": "[Containment] Automatic Back Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.411Z",
+    "updatedAt": "2026-01-22T10:14:18.454Z"
+  },
+  {
+    "id": 82,
+    "name": "[Containment] Automatic Front Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.355Z",
+    "updatedAt": "2026-01-22T10:14:44.713Z"
+  },
+  {
+    "id": 86,
+    "name": "[Containment] Manual Back Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.400Z",
+    "updatedAt": "2026-01-22T10:23:15.002Z"
+  },
+  {
+    "id": 84,
+    "name": "[Containment] Manual Front Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.376Z",
+    "updatedAt": "2026-01-22T10:23:32.100Z"
+  },
+  {
+    "id": 81,
+    "name": "[Containment] Rack Cold Aisle",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-01-06T04:45:24.347Z",
+    "updatedAt": "2026-01-22T10:25:13.470Z"
+  }
+]

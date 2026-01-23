@@ -1,0 +1,29 @@
+[
+  {
+    "id": 2,
+    "name": "Container",
+    "description": "Shipping containers and modular container solutions",
+    "color": "#10b981",
+    "icon": "Package",
+    "createdAt": "2025-12-16T08:10:50.227Z",
+    "updatedAt": "2026-01-06T04:52:25.061Z"
+  },
+  {
+    "id": 1,
+    "name": "Containment",
+    "description": "Server room containment systems and environmental controls",
+    "color": "#3b82f6",
+    "icon": "Building",
+    "createdAt": "2025-12-16T08:10:50.221Z",
+    "updatedAt": "2026-01-06T04:52:25.064Z"
+  },
+  {
+    "id": 3,
+    "name": "Smart Rack",
+    "description": "Intelligent server racks with monitoring and management systems",
+    "color": "#f59e0b",
+    "icon": "Server",
+    "createdAt": "2025-12-16T08:10:50.230Z",
+    "updatedAt": "2026-01-06T04:52:25.067Z"
+  }
+]

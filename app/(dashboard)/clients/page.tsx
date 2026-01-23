@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCSV, formatDateForCSV, formatCurrencyForCSV } from "@/lib/utils";
+import { exportToExcel } from "@/lib/excel";
 import {
   Users,
   Plus,
@@ -37,7 +37,8 @@ import {
   CreditCard,
   Briefcase,
   User as UserIcon,
-  Download
+  Download,
+  FileSpreadsheet
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -367,8 +368,8 @@ export default function ClientManagementPage() {
     return category.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  // Handle CSV export
-  const handleExportCSV = () => {
+  // Handle Excel export
+  const handleExportExcel = () => {
     if (filteredClients.length === 0) {
       toast({
         title: "No Data",
@@ -378,82 +379,61 @@ export default function ClientManagementPage() {
       return;
     }
 
-    // Prepare data for CSV export - use database column names for Supabase compatibility
-    const csvData = filteredClients.map(client => ({
-      clientType: client.clientType,
-      category: client.category,
-      status: client.status,
-      companyName: client.companyName || '',
-      companyType: client.companyType || '',
-      businessLicense: client.businessLicense || '',
-      taxId: client.taxId || '',
-      contactPerson: client.contactPerson,
-      contactTitle: client.contactTitle || '',
-      contactEmail: client.contactEmail,
-      contactPhone: client.contactPhone,
-      contactPhone2: client.contactPhone2 || '',
-      address: client.address,
-      city: client.city,
-      province: client.province,
-      postalCode: client.postalCode || '',
-      country: client.country,
-      industry: client.industry || '',
-      companySize: client.companySize || '',
-      annualRevenue: client.annualRevenue ? client.annualRevenue.toString() : '',
-      creditLimit: client.creditLimit ? client.creditLimit.toString() : '',
-      paymentTerms: client.paymentTerms || '',
-      website: client.website || '',
-      totalProjects: client.totalProjects,
-      activeProjects: client.activeProjects,
-      completedProjects: client.completedProjects,
-      totalContractValue: client.totalContractValue,
-      outstandingBalance: client.outstandingBalance,
-      specialNotes: client.specialNotes || ''
-    }));
-
-    // Define CSV headers - use database column names for Supabase import
+    // Define Headers
     const headers = [
-      'clientType',
-      'category',
-      'status',
-      'companyName',
-      'companyType',
-      'businessLicense',
-      'taxId',
-      'contactPerson',
-      'contactTitle',
-      'contactEmail',
-      'contactPhone',
-      'contactPhone2',
-      'address',
-      'city',
-      'province',
-      'postalCode',
-      'country',
-      'industry',
-      'companySize',
-      'annualRevenue',
-      'creditLimit',
-      'paymentTerms',
-      'website',
-      'totalProjects',
-      'activeProjects',
-      'completedProjects',
-      'totalContractValue',
-      'outstandingBalance',
-      'specialNotes'
+      'Type', 'Category', 'Status', 'Company Name', 'Company Type', 'Business License', 'Tax ID',
+      'Contact Person', 'Title', 'Email', 'Phone', 'Phone 2',
+      'Address', 'City', 'Province', 'Postal Code', 'Country',
+      'Industry', 'Size', 'Revenue', 'Credit Limit', 'Terms', 'Website',
+      'Total Projects', 'Active Projects', 'Completed', 'Contract Value', 'Outstanding', 'Notes'
     ];
 
-    // Generate filename with timestamp
+    // Prepare Data
+    const data: any[][] = [
+      headers,
+      ...filteredClients.map(client => [
+        client.clientType,
+        client.category,
+        client.status,
+        client.companyName || '',
+        client.companyType || '',
+        client.businessLicense || '',
+        client.taxId || '',
+        client.contactPerson,
+        client.contactTitle || '',
+        client.contactEmail,
+        client.contactPhone,
+        client.contactPhone2 || '',
+        client.address,
+        client.city,
+        client.province,
+        client.postalCode || '',
+        client.country,
+        client.industry || '',
+        client.companySize || '',
+        client.annualRevenue ? client.annualRevenue.toString() : '',
+        client.creditLimit ? client.creditLimit.toString() : '',
+        client.paymentTerms || '',
+        client.website || '',
+        client.totalProjects,
+        client.activeProjects,
+        client.completedProjects,
+        client.totalContractValue,
+        client.outstandingBalance,
+        client.specialNotes || ''
+      ])
+    ];
+
+    // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `clients_export_${timestamp}`;
 
-    // Export to CSV
-    exportToCSV(csvData, filename, headers);
+    // Export
+    exportToExcel(data, filename, "Clients");
 
     toast({
       title: "Export Successful",
-      description: `Exported ${filteredClients.length} clients to CSV (Supabase-compatible format)`,
+      description: `Exported ${filteredClients.length} clients to Excel`,
     });
   };
 
@@ -483,9 +463,9 @@ export default function ClientManagementPage() {
         </div>
 
         <div className="flex gap-2 flex-shrink-0">
-          <Button onClick={handleExportCSV} variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Export CSV</span>
+          <Button onClick={handleExportExcel} variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Export Excel</span>
             <span className="xs:hidden">Export</span>
           </Button>
           <Button onClick={() => setShowCreateDialog(true)} size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -723,9 +703,9 @@ export default function ClientManagementPage() {
                     <TableCell>
                       <Badge className={getStatusBadgeColor(client.status)}>
                         {client.status === 'PENDING_APPROVAL' ? 'Pending' :
-                         client.status === 'UNDER_REVIEW' ? 'Review' :
-                         client.status === 'ACTIVE' ? 'Active' :
-                         client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
+                          client.status === 'UNDER_REVIEW' ? 'Review' :
+                            client.status === 'ACTIVE' ? 'Active' :
+                              client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
@@ -820,9 +800,9 @@ export default function ClientManagementPage() {
                       </Badge>
                       <Badge className={`${getStatusBadgeColor(client.status)} text-xs`}>
                         {client.status === 'PENDING_APPROVAL' ? 'Pending' :
-                         client.status === 'UNDER_REVIEW' ? 'Review' :
-                         client.status === 'ACTIVE' ? 'Active' :
-                         client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
+                          client.status === 'UNDER_REVIEW' ? 'Review' :
+                            client.status === 'ACTIVE' ? 'Active' :
+                              client.status === 'INACTIVE' ? 'Inactive' : 'Blacklisted'}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         {formatCategoryName(client.category)}
@@ -904,7 +884,7 @@ export default function ClientManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label htmlFor="clientType" className="text-sm">Client Type *</Label>
-                  <Select value={formData.clientType} onValueChange={(value) => setFormData({...formData, clientType: value})}>
+                  <Select value={formData.clientType} onValueChange={(value) => setFormData({ ...formData, clientType: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -920,7 +900,7 @@ export default function ClientManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="category" className="text-sm">Category *</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -940,7 +920,7 @@ export default function ClientManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label htmlFor="status" className="text-sm">Status *</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -966,12 +946,12 @@ export default function ClientManagementPage() {
                     <Input
                       id="companyName"
                       value={formData.companyName}
-                      onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="companyType" className="text-sm">Company Type</Label>
-                    <Select value={formData.companyType} onValueChange={(value) => setFormData({...formData, companyType: value})}>
+                    <Select value={formData.companyType} onValueChange={(value) => setFormData({ ...formData, companyType: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select company type" />
                       </SelectTrigger>
@@ -993,7 +973,7 @@ export default function ClientManagementPage() {
                     <Input
                       id="businessLicense"
                       value={formData.businessLicense}
-                      onChange={(e) => setFormData({...formData, businessLicense: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, businessLicense: e.target.value })}
                     />
                   </div>
                   <div>
@@ -1001,7 +981,7 @@ export default function ClientManagementPage() {
                     <Input
                       id="taxId"
                       value={formData.taxId}
-                      onChange={(e) => setFormData({...formData, taxId: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1013,12 +993,12 @@ export default function ClientManagementPage() {
                       id="industry"
                       placeholder="e.g., Construction, Real Estate"
                       value={formData.industry}
-                      onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="companySize" className="text-sm">Company Size</Label>
-                    <Select value={formData.companySize} onValueChange={(value) => setFormData({...formData, companySize: value})}>
+                    <Select value={formData.companySize} onValueChange={(value) => setFormData({ ...formData, companySize: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select company size" />
                       </SelectTrigger>
@@ -1040,7 +1020,7 @@ export default function ClientManagementPage() {
                       type="number"
                       placeholder="e.g., 1000000000"
                       value={formData.annualRevenue}
-                      onChange={(e) => setFormData({...formData, annualRevenue: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, annualRevenue: e.target.value })}
                     />
                   </div>
                   <div>
@@ -1050,7 +1030,7 @@ export default function ClientManagementPage() {
                       type="url"
                       placeholder="https://example.com"
                       value={formData.website}
-                      onChange={(e) => setFormData({...formData, website: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1067,7 +1047,7 @@ export default function ClientManagementPage() {
                     id="contactPerson"
                     required
                     value={formData.contactPerson}
-                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1076,7 +1056,7 @@ export default function ClientManagementPage() {
                     id="contactTitle"
                     placeholder="e.g., CEO, Project Manager"
                     value={formData.contactTitle}
-                    onChange={(e) => setFormData({...formData, contactTitle: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactTitle: e.target.value })}
                   />
                 </div>
               </div>
@@ -1089,7 +1069,7 @@ export default function ClientManagementPage() {
                     type="email"
                     required
                     value={formData.contactEmail}
-                    onChange={(e) => setFormData({...formData, contactEmail: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1098,7 +1078,7 @@ export default function ClientManagementPage() {
                     id="contactPhone"
                     required
                     value={formData.contactPhone}
-                    onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                   />
                 </div>
               </div>
@@ -1108,7 +1088,7 @@ export default function ClientManagementPage() {
                 <Input
                   id="contactPhone2"
                   value={formData.contactPhone2}
-                  onChange={(e) => setFormData({...formData, contactPhone2: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, contactPhone2: e.target.value })}
                 />
               </div>
             </div>
@@ -1123,7 +1103,7 @@ export default function ClientManagementPage() {
                   required
                   rows={3}
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
               </div>
 
@@ -1134,7 +1114,7 @@ export default function ClientManagementPage() {
                     id="city"
                     required
                     value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1143,7 +1123,7 @@ export default function ClientManagementPage() {
                     id="province"
                     required
                     value={formData.province}
-                    onChange={(e) => setFormData({...formData, province: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                   />
                 </div>
               </div>
@@ -1154,7 +1134,7 @@ export default function ClientManagementPage() {
                   <Input
                     id="postalCode"
                     value={formData.postalCode}
-                    onChange={(e) => setFormData({...formData, postalCode: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1162,7 +1142,7 @@ export default function ClientManagementPage() {
                   <Input
                     id="country"
                     value={formData.country}
-                    onChange={(e) => setFormData({...formData, country: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                   />
                 </div>
               </div>
@@ -1179,12 +1159,12 @@ export default function ClientManagementPage() {
                     type="number"
                     placeholder="e.g., 50000000"
                     value={formData.creditLimit}
-                    onChange={(e) => setFormData({...formData, creditLimit: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label htmlFor="paymentTerms" className="text-sm">Payment Terms</Label>
-                  <Select value={formData.paymentTerms} onValueChange={(value) => setFormData({...formData, paymentTerms: value})}>
+                  <Select value={formData.paymentTerms} onValueChange={(value) => setFormData({ ...formData, paymentTerms: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select payment terms" />
                     </SelectTrigger>
@@ -1206,7 +1186,7 @@ export default function ClientManagementPage() {
                   rows={3}
                   placeholder="Any special requirements, preferences, or important notes about this client"
                   value={formData.specialNotes}
-                  onChange={(e) => setFormData({...formData, specialNotes: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, specialNotes: e.target.value })}
                 />
               </div>
             </div>
@@ -1238,7 +1218,7 @@ export default function ClientManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label htmlFor="edit-clientType" className="text-sm">Client Type *</Label>
-                  <Select value={formData.clientType} onValueChange={(value) => setFormData({...formData, clientType: value})}>
+                  <Select value={formData.clientType} onValueChange={(value) => setFormData({ ...formData, clientType: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1254,7 +1234,7 @@ export default function ClientManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="edit-status" className="text-sm">Status *</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1280,7 +1260,7 @@ export default function ClientManagementPage() {
                     id="edit-contactPerson"
                     required
                     value={formData.contactPerson}
-                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1290,7 +1270,7 @@ export default function ClientManagementPage() {
                     type="email"
                     required
                     value={formData.contactEmail}
-                    onChange={(e) => setFormData({...formData, contactEmail: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                   />
                 </div>
               </div>

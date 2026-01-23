@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, FolderOpen, DollarSign, Calculator, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File } from "lucide-react";
+import { Plus, Edit, Trash2, FolderOpen, DollarSign, Calculator, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File, FileSpreadsheet } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -61,8 +62,8 @@ interface Project {
   status: string;
   progress: number;
   priority: string;
-  schematicDocs: string | null;
-  qualityCheckDocs: string | null;
+  schematicDocs: DocumentFile[] | null;
+  qualityCheckDocs: DocumentFile[] | null;
   fromTemplateId: number | null;
   template: Template | null;
   createdBy: string;
@@ -224,7 +225,7 @@ export default function ProjectsPage() {
 
       // Set default quality check document for new projects
       if (!editingProject) {
-        payload.qualityCheckDocs = "/docs/Checksheet Form.docx";
+        payload.qualityCheckDocs = [{ name: "Checksheet Form.docx", url: "/docs/Checksheet Form.docx", size: 0, type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", uploadedAt: new Date().toISOString() }];
       }
 
       const response = await fetch(url, {
@@ -353,11 +354,11 @@ export default function ProjectsPage() {
       const clientName = project.client ?
         (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : '';
       const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (clientName && clientName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                           (project.template?.name && project.template.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        (clientName && clientName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (project.template?.name && project.template.name.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesTemplate = templateFilter === "all" ||
-                             (templateFilter === "none" && !project.template) ||
-                             (project.fromTemplateId?.toString() === templateFilter);
+        (templateFilter === "none" && !project.template) ||
+        (project.fromTemplateId?.toString() === templateFilter);
       return matchesSearch && matchesTemplate;
     });
 
@@ -619,18 +620,18 @@ export default function ProjectsPage() {
 
     console.log(`📊 Project "${project.name}" - Unique materials found:`, materialMap.size);
 
-    // Create CSV content for this project
+    // Create Data for Excel
     const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Project Name", "Template Name", "Description"];
-    const csvContent = [
-      `CONSOLIDATED MATERIALS FOR PROJECT: ${project.name.toUpperCase()}`,
-      `Generated on: ${new Date().toLocaleString()}`,
-      `Project Description: ${project.description || "No description"}`,
-      `Template: ${project.template?.name || 'No template'}`,
-      `Client: ${project.client ? (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : 'No client'}`,
-      `Total Assemblies: ${project.template?.assemblies?.length || 0}`,
-      `Total Estimated Cost: ${formatCurrency(Number(project.totalPrice))}`,
-      "",
-      headers.join(","),
+    const data = [
+      [`CONSOLIDATED MATERIALS FOR PROJECT: ${project.name.toUpperCase()}`],
+      [`Generated on: ${new Date().toLocaleString()}`],
+      [`Project Description: ${project.description || "No description"}`],
+      [`Template: ${project.template?.name || 'No template'}`],
+      [`Client: ${project.client ? (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : 'No client'}`],
+      [`Total Assemblies: ${project.template?.assemblies?.length || 0}`],
+      [`Total Estimated Cost: ${formatCurrency(Number(project.totalPrice))}`],
+      [],
+      headers
     ];
 
     let rowNumber = 1;
@@ -640,42 +641,36 @@ export default function ProjectsPage() {
         `${usage.assemblyName}(${usage.assemblyQuantity}x × ${usage.materialQuantityPerAssembly}ea = ${usage.totalMaterialQuantity})`
       ).join("; ");
 
-      csvContent.push([
+      data.push([
         rowNumber++,
-        `"${material.manufacturer || ""}"`,
-        `"${material.partNumber || ""}"`,
-        `"${material.name}"`,
+        material.manufacturer || "",
+        material.partNumber || "",
+        material.name,
         material.totalQuantity,
         material.unit,
         material.unitPrice,
         material.totalCost,
-        `"${project.name}"`,
-        `"${project.template?.name || 'No template'}"`,
-        `"Usage: ${usageDetails}"`
-      ].join(","));
+        project.name,
+        project.template?.name || 'No template',
+        `Usage: ${usageDetails}`
+      ]);
     });
 
     // Add summary information for this project
     const totalMaterials = materialMap.size;
-    const totalQuantity = Array.from(materialMap.values()).reduce((sum, mat) => sum + mat.totalQuantity, 0);
-    const totalValue = Array.from(materialMap.values()).reduce((sum, mat) => sum + mat.totalCost, 0);
+    const totalQuantity = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalQuantity, 0);
+    const totalValue = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalCost, 0);
 
-    csvContent.push(
-      "",
-      `"SUMMARY FOR PROJECT: ${project.name.toUpperCase()}"`,
-      `"Total Unique Materials: ${totalMaterials}"`,
-      `"Total Quantity in Project: ${totalQuantity}"`,
-      `"Total Value: ${formatCurrency(totalValue)}"`
+    data.push(
+      [],
+      [`SUMMARY FOR PROJECT: ${project.name.toUpperCase()}`],
+      [`Total Unique Materials: ${totalMaterials}`],
+      [`Total Quantity in Project: ${totalQuantity}`],
+      [`Total Value: ${formatCurrency(totalValue)}`]
     );
 
     // Download file for this project
-    const blob = new Blob([csvContent.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${project.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated_materials.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, `${project.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated_materials`, "Materials");
 
     toast({
       title: "Export completed",
@@ -974,143 +969,143 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-            {/* Status & Progress */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Status & Progress
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PLANNING">Planning</SelectItem>
-                      <SelectItem value="APPROVED">Approved</SelectItem>
-                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="ON_HOLD">On Hold</SelectItem>
-                      <SelectItem value="COMPLETED">Completed</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                      <SelectItem value="DELAYED">Delayed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="progress">Progress (%)</Label>
-                  <Input
-                    id="progress"
-                    type="number"
-                    value={formData.progress}
-                    onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
-                    placeholder="0-100"
-                    min="0"
-                    max="100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(value) => setFormData({ ...formData, priority: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LOW">Low</SelectItem>
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
-                      <SelectItem value="HIGH">High</SelectItem>
-                      <SelectItem value="CRITICAL">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Status & Progress */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Status & Progress
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PLANNING">Planning</SelectItem>
+                        <SelectItem value="APPROVED">Approved</SelectItem>
+                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                        <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                        <SelectItem value="COMPLETED">Completed</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        <SelectItem value="DELAYED">Delayed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="progress">Progress (%)</Label>
+                    <Input
+                      id="progress"
+                      type="number"
+                      value={formData.progress}
+                      onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
+                      placeholder="0-100"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LOW">Low</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="CRITICAL">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Project Documents */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Project Documents
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="schematicDocs">Schematic Documents</Label>
-                  <Input
-                    id="schematicDocs"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.dwg,.xls,.xlsx"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleFileUpload(file, editingProject?.id || "new", "schematic");
-                      }
-                    }}
-                  />
-                  {editingProject?.schematicDocs && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Current file:</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(editingProject.schematicDocs!, '_blank')}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        View Schematic
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="qualityCheckDocs">Quality Check Documents</Label>
+              {/* Project Documents */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Project Documents
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    {!editingProject && (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-blue-900 dark:text-blue-100 font-medium">
-                            Default file: Checksheet Form.docx
-                          </span>
-                        </div>
-                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          A default quality check form will be automatically attached to this project.
-                        </p>
-                      </div>
-                    )}
+                    <Label htmlFor="schematicDocs">Schematic Documents</Label>
                     <Input
-                      id="qualityCheckDocs"
+                      id="schematicDocs"
                       type="file"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      accept=".pdf,.doc,.docx,.dwg,.xls,.xlsx"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          handleFileUpload(file, editingProject?.id || "new", "qualityCheck");
+                          handleFileUpload(file, editingProject?.id || "new", "schematic");
                         }
                       }}
                     />
-                    {editingProject?.qualityCheckDocs && (
+                    {editingProject?.schematicDocs && Array.isArray(editingProject.schematicDocs) && editingProject.schematicDocs.length > 0 && (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Current file:</span>
+                        <span className="text-sm text-muted-foreground">Current files: {editingProject.schematicDocs.length}</span>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(editingProject.qualityCheckDocs!, '_blank')}
+                          onClick={() => window.open(editingProject.schematicDocs![0].url, '_blank')}
                         >
                           <Download className="h-4 w-4 mr-1" />
-                          View Quality Check
+                          View First Schematic
                         </Button>
                       </div>
                     )}
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qualityCheckDocs">Quality Check Documents</Label>
+                    <div className="space-y-2">
+                      {!editingProject && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-blue-900 dark:text-blue-100 font-medium">
+                              Default file: Checksheet Form.docx
+                            </span>
+                          </div>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                            A default quality check form will be automatically attached to this project.
+                          </p>
+                        </div>
+                      )}
+                      <Input
+                        id="qualityCheckDocs"
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, editingProject?.id || "new", "qualityCheck");
+                          }
+                        }}
+                      />
+                      {editingProject?.qualityCheckDocs && Array.isArray(editingProject.qualityCheckDocs) && editingProject.qualityCheckDocs.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Current files: {editingProject.qualityCheckDocs.length}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(editingProject.qualityCheckDocs![0].url, '_blank')}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            View First Quality Check
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
               <div className="flex justify-end space-x-2 pt-6 border-t">
                 <Button
@@ -1364,16 +1359,16 @@ export default function ProjectsPage() {
                         {new Date(project.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-center">
-                        {project.schematicDocs ? (
+                        {project.schematicDocs && Array.isArray(project.schematicDocs) && project.schematicDocs.length > 0 ? (
                           <div className="flex gap-1 justify-center">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(project.schematicDocs!, '_blank')}
+                              onClick={() => window.open(project.schematicDocs![0].url, '_blank')}
                               title="Download Schematic Document"
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              Download
+                              Download ({project.schematicDocs.length})
                             </Button>
                             <Button
                               variant="outline"
@@ -1383,8 +1378,8 @@ export default function ProjectsPage() {
                                   projectId: project.id,
                                   projectName: project.name,
                                   docType: "schematic",
-                                  fileUrl: project.schematicDocs!,
-                                  fileName: project.schematicDocs!.split('/').pop() || 'Unknown',
+                                  fileUrl: project.schematicDocs![0].url,
+                                  fileName: project.schematicDocs![0].name,
                                   uploadDate: project.updatedAt
                                 });
                                 setIsDocumentDetailsOpen(true);
@@ -1421,16 +1416,16 @@ export default function ProjectsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {project.qualityCheckDocs ? (
+                        {project.qualityCheckDocs && Array.isArray(project.qualityCheckDocs) && project.qualityCheckDocs.length > 0 ? (
                           <div className="flex gap-1 justify-center">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(project.qualityCheckDocs!, '_blank')}
+                              onClick={() => window.open(project.qualityCheckDocs![0].url, '_blank')}
                               title="Download Quality Check Document"
                             >
                               <Download className="h-4 w-4 mr-1" />
-                              Download
+                              Download ({project.qualityCheckDocs.length})
                             </Button>
                             <Button
                               variant="outline"
@@ -1440,8 +1435,8 @@ export default function ProjectsPage() {
                                   projectId: project.id,
                                   projectName: project.name,
                                   docType: "qualityCheck",
-                                  fileUrl: project.qualityCheckDocs!,
-                                  fileName: project.qualityCheckDocs!.split('/').pop() || 'Unknown',
+                                  fileUrl: project.qualityCheckDocs![0].url,
+                                  fileName: project.qualityCheckDocs![0].name,
                                   uploadDate: project.updatedAt
                                 });
                                 setIsDocumentDetailsOpen(true);
@@ -2427,12 +2422,12 @@ export default function ProjectsPage() {
                   <p className="text-lg">
                     {selectedDocument.uploadDate
                       ? new Date(selectedDocument.uploadDate).toLocaleDateString('id-ID', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
                       : 'Unknown'
                     }
                   </p>

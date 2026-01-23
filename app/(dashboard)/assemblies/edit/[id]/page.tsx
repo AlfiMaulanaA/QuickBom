@@ -393,7 +393,7 @@ export default function EditAssemblyPage() {
                           )}
                         </div>
                       </SelectItem>
-                    ))}
+                    ))} 
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
@@ -503,35 +503,27 @@ export default function EditAssemblyPage() {
               <div>
                 <CardTitle>Material Selection</CardTitle>
                 <CardDescription>
-                  Update materials and quantities for this assembly
+                  Choose materials and set quantities for this assembly
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="text-sm text-muted-foreground">Total Cost</div>
-                  <div className="text-xl font-bold text-green-600">
-                    {formatCurrency(calculateTotalCost())}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsCreateMaterialOpen(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Material
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsMaterialSelectorOpen(true)}
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    Select Materials
-                  </Button>
-                </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCreateMaterialOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Material
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsMaterialSelectorOpen(true)}
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Select Materials
+                </Button>
               </div>
             </div>
           </CardHeader>

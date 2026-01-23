@@ -1064,7 +1064,7 @@ export default function CreateTemplatePage() {
             </div>
 
             {/* Assembly Selection Breakdown - Clean & Improved */}
-            {validationResult && (
+            {selectedAssemblies.length > 0 && (
               <Card className="shadow-sm">
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
@@ -1082,92 +1082,137 @@ export default function CreateTemplatePage() {
                 <CardContent>
                   <ScrollArea className="h-[600px]">
                     <div className="space-y-6">
-                      {validationResult.breakdown.map((category, categoryIndex) => (
-                        <div key={category.categoryId} className="space-y-4">
-                          {/* Category Header - Clean */}
-                          <div className="bg-muted/30 rounded-lg border p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                                <Package className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{category.categoryName}</h3>
-                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                  <span>{category.groups.length} groups</span>
-                                  <span className="text-muted-foreground/50">•</span>
-                                  <span>{category.groups.reduce((sum, g) => sum + g.assemblies.length, 0)} assemblies</span>
-                                  <span className="text-muted-foreground/50">•</span>
-                                  <span className="font-medium text-green-600 dark:text-green-400">
-                                    {formatCurrency(category.groups.reduce((sum, g) => sum + g.cost, 0))}
-                                  </span>
+                      {(() => {
+                        // Group selectedAssemblies by category and group
+                        const groupedAssemblies: Record<number, {
+                          categoryName: string;
+                          categoryColor?: string;
+                          groups: Record<number, {
+                            groupName: string;
+                            assemblies: any[];
+                            totalCost: number;
+                          }>;
+                          totalCost: number;
+                        }> = {};
+
+                        selectedAssemblies.forEach((sa) => {
+                          const category = categories.find(c => c.id === sa.assembly.categoryId);
+                          if (!category) return;
+
+                          if (!groupedAssemblies[category.id]) {
+                            groupedAssemblies[category.id] = {
+                              categoryName: category.name,
+                              categoryColor: category.color,
+                              groups: {},
+                              totalCost: 0
+                            };
+                          }
+
+                          // For now, we'll put all assemblies in a single "Configured" group
+                          // since we don't have group information in selectedAssemblies
+                          const groupKey = 0; // Default group
+                          const groupName = "Configured Assemblies";
+
+                          if (!groupedAssemblies[category.id].groups[groupKey]) {
+                            groupedAssemblies[category.id].groups[groupKey] = {
+                              groupName,
+                              assemblies: [],
+                              totalCost: 0
+                            };
+                          }
+
+                          groupedAssemblies[category.id].groups[groupKey].assemblies.push(sa);
+                          groupedAssemblies[category.id].groups[groupKey].totalCost += sa.estimatedCost;
+                          groupedAssemblies[category.id].totalCost += sa.estimatedCost;
+                        });
+
+                        return Object.entries(groupedAssemblies).map(([categoryId, categoryData], categoryIndex) => (
+                          <div key={categoryId} className="space-y-4">
+                            {/* Category Header - Clean */}
+                            <div className="bg-muted/30 rounded-lg border p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <Package className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{categoryData.categoryName}</h3>
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <span>{Object.keys(categoryData.groups).length} groups</span>
+                                    <span className="text-muted-foreground/50">•</span>
+                                    <span>{Object.values(categoryData.groups).reduce((sum, g) => sum + g.assemblies.length, 0)} assemblies</span>
+                                    <span className="text-muted-foreground/50">•</span>
+                                    <span className="font-medium text-green-600 dark:text-green-400">
+                                      {formatCurrency(categoryData.totalCost)}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Groups within Category - Clean Layout */}
-                          <div className="space-y-4">
-                            {category.groups.map((group) => (
-                              <div key={group.groupId} className="border border-border rounded-lg overflow-hidden">
-                                {/* Group Header - Clean */}
-                                <div className="bg-muted/20 px-4 py-3 border-b border-border">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                        <Settings className="h-4 w-4 text-primary" />
+                            {/* Groups within Category - Clean Layout */}
+                            <div className="space-y-4">
+                              {Object.entries(categoryData.groups).map(([groupId, group]) => (
+                                <div key={groupId} className="border border-border rounded-lg overflow-hidden">
+                                  {/* Group Header - Clean */}
+                                  <div className="bg-muted/20 px-4 py-3 border-b border-border">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                          <Settings className="h-4 w-4 text-primary" />
+                                        </div>
+                                        <div>
+                                          <h4 className="font-medium text-gray-900 dark:text-gray-100">{group.groupName}</h4>
+                                          <p className="text-xs text-muted-foreground">
+                                            {group.assemblies.length} assemblies
+                                          </p>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{group.groupName}</h4>
-                                        <p className="text-xs text-muted-foreground">
-                                          {group.assemblies.length} assemblies
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right mr-4">
-                                      <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                        {formatCurrency(group.cost)}
+                                      <div className="text-right mr-4">
+                                        <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                          {formatCurrency(group.totalCost)}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
+
+                                  {/* Assemblies within Group - Numbered List */}
+                                  <div className="divide-y divide-border">
+                                    {group.assemblies.map((assembly, assemblyIndex) => (
+                                      <div key={assembly.assemblyId} className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors">
+                                        <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                          <span className="text-xs font-medium text-primary">
+                                            {assemblyIndex + 1}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <h5 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                              {assembly.assembly.name}
+                                            </h5>
+                                            <Badge variant="secondary" className="text-xs px-2 py-0">
+                                              ×{assembly.quantity}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                            <span>Unit: {formatCurrency(calculateAssemblyCost(assembly.assembly))}</span>
+                                          </div>
+                                        </div>
+
+                                        <div className="text-right flex-shrink-0 mr-4">
+                                          <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                            {formatCurrency(assembly.estimatedCost)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-
-                                {/* Assemblies within Group - Numbered List */}
-                                <div className="divide-y divide-border">
-                                  {group.assemblies.map((assembly, assemblyIndex) => (
-                                    <div key={assembly.assemblyId} className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors">
-                                      <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span className="text-xs font-medium text-primary">
-                                          {assemblyIndex + 1}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <h5 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                                            {assembly.name}
-                                          </h5>
-                                          <Badge variant="secondary" className="text-xs px-2 py-0">
-                                            ×{assembly.quantity}
-                                          </Badge>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                          <span>Unit: {formatCurrency(assembly.cost / assembly.quantity)}</span>
-                                        </div>
-                                      </div>
-
-                                      <div className="text-right flex-shrink-0 mr-4">
-                                        <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                          {formatCurrency(assembly.cost)}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ));
+                      })()}
                     </div>
                   </ScrollArea>
                 </CardContent>

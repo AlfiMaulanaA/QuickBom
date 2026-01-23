@@ -1,0 +1,68 @@
+[
+  {
+    "id": 34,
+    "name": "[Containment] CAC Manual Door Full System",
+    "description": null,
+    "docs": [],
+    "assemblySelections": null,
+    "createdAt": "2026-01-06T04:45:24.522Z",
+    "updatedAt": "2026-01-06T04:52:25.373Z"
+  },
+  {
+    "id": 33,
+    "name": "[Containment] CAC Automatic Door Full System",
+    "description": null,
+    "docs": [],
+    "assemblySelections": null,
+    "createdAt": "2026-01-06T04:45:24.515Z",
+    "updatedAt": "2026-01-06T04:52:25.383Z"
+  },
+  {
+    "id": 32,
+    "name": "[Containment] HAC Manual Door Full System",
+    "description": null,
+    "docs": [],
+    "assemblySelections": null,
+    "createdAt": "2026-01-06T04:45:24.508Z",
+    "updatedAt": "2026-01-06T04:52:25.393Z"
+  },
+  {
+    "id": 31,
+    "name": "[Containment] HAC Automatic Door Full System",
+    "description": null,
+    "docs": [],
+    "assemblySelections": null,
+    "createdAt": "2026-01-06T04:45:24.494Z",
+    "updatedAt": "2026-01-06T04:52:25.398Z"
+  },
+  {
+    "id": 35,
+    "name": "[HAC] CGK1 Monitor Automatic Door",
+    "description": null,
+    "docs": null,
+    "assemblySelections": {
+      "1": {
+        "cmk21wiya0001gvnbeq97iwo4": [
+          85,
+          83
+        ],
+        "cmk21x6vg0006gvnbrvwuvs3t": [
+          82
+        ],
+        "cmk21xot4000bgvnbqf8c267e": [
+          87
+        ],
+        "cmk21yisl000ggvnb1ucge7it": [
+          80
+        ],
+        "cmk21zbdt000lgvnblstxp8mw": [
+          77,
+          78,
+          79
+        ]
+      }
+    },
+    "createdAt": "2026-01-22T10:31:08.080Z",
+    "updatedAt": "2026-01-22T10:32:23.953Z"
+  }
+]

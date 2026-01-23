@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, FileText, Settings, DollarSign, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Package, BarChart3, Clock, X, ChevronLeft, ChevronRight, Eye, Upload, File, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, Settings, DollarSign, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Package, BarChart3, Clock, X, ChevronLeft, ChevronRight, Eye, Upload, File, Calendar, FileSpreadsheet } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -228,33 +229,33 @@ export default function TemplatesPage() {
   const processedTemplates = useMemo(() => {
     let filtered = templates.filter(template => {
       const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (template.description && template.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        (template.description && template.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const assembliesCount = template.assemblies.length;
       const matchesAssembliesCount = assembliesCountFilter === "all" ||
-                                    (assembliesCountFilter === "low" && assembliesCount >= 1 && assembliesCount <= 2) ||
-                                    (assembliesCountFilter === "medium" && assembliesCount >= 3 && assembliesCount <= 5) ||
-                                    (assembliesCountFilter === "high" && assembliesCount >= 6);
+        (assembliesCountFilter === "low" && assembliesCount >= 1 && assembliesCount <= 2) ||
+        (assembliesCountFilter === "medium" && assembliesCount >= 3 && assembliesCount <= 5) ||
+        (assembliesCountFilter === "high" && assembliesCount >= 6);
 
       const estimatedCost = calculateEstimatedCost(template);
       const matchesCost = costFilter === "all" ||
-                         (costFilter === "low" && estimatedCost >= 0 && estimatedCost <= 100000) ||
-                         (costFilter === "medium" && estimatedCost > 100000 && estimatedCost <= 500000) ||
-                         (costFilter === "high" && estimatedCost > 500000);
+        (costFilter === "low" && estimatedCost >= 0 && estimatedCost <= 100000) ||
+        (costFilter === "medium" && estimatedCost > 100000 && estimatedCost <= 500000) ||
+        (costFilter === "high" && estimatedCost > 500000);
 
       const projectsCount = template.projects.length;
       const matchesProjectsCount = projectsCountFilter === "all" ||
-                                  (projectsCountFilter === "low" && projectsCount >= 0 && projectsCount <= 1) ||
-                                  (projectsCountFilter === "medium" && projectsCount >= 2 && projectsCount <= 5) ||
-                                  (projectsCountFilter === "high" && projectsCount >= 6);
+        (projectsCountFilter === "low" && projectsCount >= 0 && projectsCount <= 1) ||
+        (projectsCountFilter === "medium" && projectsCount >= 2 && projectsCount <= 5) ||
+        (projectsCountFilter === "high" && projectsCount >= 6);
 
       const createdDate = new Date(template.createdAt);
       const now = new Date();
       const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
       const matchesDate = dateFilter === "all" ||
-                         (dateFilter === "recent" && daysDiff <= 7) ||
-                         (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
-                         (dateFilter === "old" && daysDiff > 30);
+        (dateFilter === "recent" && daysDiff <= 7) ||
+        (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
+        (dateFilter === "old" && daysDiff > 30);
 
       return matchesSearch && matchesAssembliesCount && matchesCost && matchesProjectsCount && matchesDate;
     });
@@ -391,64 +392,58 @@ export default function TemplatesPage() {
 
   const exportTemplatesBasic = () => {
     const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
-    const csvContent = [
-      "TEMPLATES LIST",
-      "",
-      headers.join(","),
+    const data: any[][] = [
+      ["TEMPLATES LIST"],
+      [],
+      headers
     ];
 
     let rowNumber = 1;
     processedTemplates.forEach(template => {
-      csvContent.push([
+      data.push([
         rowNumber++,
         "-",
         "-",
-        `"${template.name}"`,
+        template.name,
         1,
         "Template",
         calculateEstimatedCost(template),
         calculateEstimatedCost(template),
-        `"${template.name}"`,
-        `"${template.description || ""}"`
-      ].join(","));
+        template.name,
+        template.description || ""
+      ]);
     });
 
-    const blob = new Blob([csvContent.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = processedTemplates.length === 1
-      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_basic.csv`
-      : "all_templates_basic.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, processedTemplates.length === 1
+      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_basic`
+      : "all_templates_basic", "Templates");
     setIsExportDialogOpen(false);
   };
 
   const exportTemplatesWithAssemblies = () => {
     const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
-    const csvContent = [
-      "TEMPLATES WITH ASSEMBLIES",
-      "",
-      headers.join(","),
+    const data: any[][] = [
+      ["TEMPLATES WITH ASSEMBLIES"],
+      [],
+      headers
     ];
 
     let rowNumber = 1;
 
     processedTemplates.forEach(template => {
       // Template entry
-      csvContent.push([
+      data.push([
         rowNumber++,
         "-",
         "-",
-        `"${template.name}"`,
+        template.name,
         1,
         "Template",
         calculateEstimatedCost(template),
         calculateEstimatedCost(template),
-        `"${template.name}"`,
-        `"${template.description || ""}"`
-      ].join(","));
+        template.name,
+        template.description || ""
+      ]);
 
       // Assembly entries for this template
       template.assemblies.forEach(assembly => {
@@ -458,57 +453,51 @@ export default function TemplatesPage() {
         }, 0);
         const totalCost = unitCost * quantity;
 
-        csvContent.push([
+        data.push([
           rowNumber++,
           "-",
           "-",
-          `"${assembly.assembly.name}"`,
+          assembly.assembly.name,
           quantity,
           "Assembly",
           unitCost,
           totalCost,
-          `"${template.name}"`,
-          `"${assembly.assembly.description || ""}"`
-        ].join(","));
+          template.name,
+          assembly.assembly.description || ""
+        ]);
       });
     });
 
-    const blob = new Blob([csvContent.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = processedTemplates.length === 1
-      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_with_assemblies.csv`
-      : "all_templates_with_assemblies.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, processedTemplates.length === 1
+      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_with_assemblies`
+      : "all_templates_with_assemblies", "Templates with Assemblies");
     setIsExportDialogOpen(false);
   };
 
   const exportTemplatesWithMaterials = () => {
     const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
-    const csvContent = [
-      "TEMPLATES WITH COMPLETE MATERIALS BREAKDOWN",
-      "",
-      headers.join(","),
+    const data: any[][] = [
+      ["TEMPLATES WITH COMPLETE MATERIALS BREAKDOWN"],
+      [],
+      headers
     ];
 
     let rowNumber = 1;
 
     processedTemplates.forEach(template => {
       // Template entry
-      csvContent.push([
+      data.push([
         rowNumber++,
         "-",
         "-",
-        `"${template.name}"`,
+        template.name,
         1,
         "Template",
         calculateEstimatedCost(template),
         calculateEstimatedCost(template),
-        `"${template.name}"`,
-        `"${template.description || ""}"`
-      ].join(","));
+        template.name,
+        template.description || ""
+      ]);
 
       // Assembly entries for this template
       template.assemblies.forEach(assembly => {
@@ -519,48 +508,42 @@ export default function TemplatesPage() {
         const assemblyTotalCost = assemblyUnitCost * assemblyQuantity;
 
         // Assembly entry
-        csvContent.push([
+        data.push([
           rowNumber++,
           "-",
           "-",
-          `"${assembly.assembly.name}"`,
+          assembly.assembly.name,
           assemblyQuantity,
           "Assembly",
           assemblyUnitCost,
           assemblyTotalCost,
-          `"${template.name}"`,
-          `"${assembly.assembly.description || ""}"`
-        ].join(","));
+          template.name,
+          assembly.assembly.description || ""
+        ]);
 
         // Material entries for this assembly
         assembly.assembly.materials.forEach(material => {
           const materialTotalCost = Number(material.material.price) * Number(material.quantity);
 
-          csvContent.push([
+          data.push([
             rowNumber++,
-            `"${material.material.manufacturer || ""}"`,
-            `"${material.material.partNumber || ""}"`,
-            `"${material.material.name}"`,
+            material.material.manufacturer || "",
+            material.material.partNumber || "",
+            material.material.name,
             Number(material.quantity),
             material.material.unit,
             material.material.price,
             materialTotalCost,
-            `"${template.name}"`,
-            `"Material in ${assembly.assembly.name}"`
-          ].join(","));
+            template.name,
+            `Material in ${assembly.assembly.name}`
+          ]);
         });
       });
     });
 
-    const blob = new Blob([csvContent.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = processedTemplates.length === 1
-      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_with_materials.csv`
-      : "all_templates_with_materials.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, processedTemplates.length === 1
+      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_with_materials`
+      : "all_templates_with_materials", "Templates Breakdown");
     setIsExportDialogOpen(false);
   };
 
@@ -632,14 +615,14 @@ export default function TemplatesPage() {
       console.log(`📊 Template "${template.name}" - Unique materials found:`, materialMap.size);
 
       // Create CSV content for this template
-      const csvContent = [
-        `CONSOLIDATED MATERIALS FOR TEMPLATE: ${template.name.toUpperCase()}`,
-        `Generated on: ${new Date().toLocaleString()}`,
-        `Template Description: ${template.description || "No description"}`,
-        `Total Assemblies: ${template.assemblies.length}`,
-        `Total Estimated Cost: ${formatCurrency(calculateEstimatedCost(template))}`,
-        "",
-        headers.join(","),
+      const data: any[][] = [
+        [`CONSOLIDATED MATERIALS FOR TEMPLATE: ${template.name.toUpperCase()}`],
+        [`Generated on: ${new Date().toLocaleString()}`],
+        [`Template Description: ${template.description || "No description"}`],
+        [`Total Assemblies: ${template.assemblies.length}`],
+        [`Total Estimated Cost: ${formatCurrency(calculateEstimatedCost(template))}`],
+        [],
+        headers
       ];
 
       let rowNumber = 1;
@@ -649,42 +632,36 @@ export default function TemplatesPage() {
           `${usage.assemblyName}(${usage.assemblyQuantity}x × ${usage.materialQuantityPerAssembly}ea = ${usage.totalMaterialQuantity})`
         ).join("; ");
 
-        csvContent.push([
+        data.push([
           rowNumber++,
-          `"${material.manufacturer || ""}"`,
-          `"${material.partNumber || ""}"`,
-          `"${material.name}"`,
+          material.manufacturer || "",
+          material.partNumber || "",
+          material.name,
           material.totalQuantity,
           material.unit,
           material.unitPrice,
           material.totalCost,
-          `"${template.name}"`,
-          `"Usage: ${usageDetails}"`
-        ].join(","));
+          template.name,
+          `Usage: ${usageDetails}`
+        ]);
       });
 
       // Add summary information for this template
       const totalMaterials = materialMap.size;
-      const totalQuantity = Array.from(materialMap.values()).reduce((sum, mat) => sum + mat.totalQuantity, 0);
-      const totalValue = Array.from(materialMap.values()).reduce((sum, mat) => sum + mat.totalCost, 0);
+      const totalQuantity = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalQuantity, 0);
+      const totalValue = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalCost, 0);
 
-      csvContent.push(
-        "",
-        `"SUMMARY FOR TEMPLATE: ${template.name.toUpperCase()}"`,
-        `"Total Unique Materials: ${totalMaterials}"`,
-        `"Total Quantity in Template: ${totalQuantity}"`,
-        `"Total Value: ${formatCurrency(totalValue)}"`
+      data.push(
+        [],
+        [`SUMMARY FOR TEMPLATE: ${template.name.toUpperCase()}`],
+        [`Total Unique Materials: ${totalMaterials}`],
+        [`Total Quantity in Template: ${totalQuantity}`],
+        [`Total Value: ${formatCurrency(totalValue)}`]
       );
 
       // Download file for this template with delay to avoid browser blocking
       setTimeout(() => {
-        const blob = new Blob([csvContent.join("\n")], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated_materials.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated_materials`, "Consolidated Materials");
       }, templateIndex * 500); // 500ms delay between downloads
     });
 
@@ -1097,13 +1074,13 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex gap-2">
-              {selectedTemplates.length > 0 && (
-                <Button variant="destructive" onClick={handleBulkDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete ({selectedTemplates.length})
-                </Button>
-              )}
-            </div>
+                {selectedTemplates.length > 0 && (
+                  <Button variant="destructive" onClick={handleBulkDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete ({selectedTemplates.length})
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Active Filters Display */}

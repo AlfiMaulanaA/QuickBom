@@ -178,6 +178,11 @@ export async function DELETE(
       );
     }
 
+    // Delete all material associations first to avoid foreign key constraint
+    await prisma.assemblyMaterial.deleteMany({
+      where: { assemblyId: assemblyId }
+    });
+
     // Delete assembly
     await prisma.assembly.delete({
       where: { id: assemblyId }

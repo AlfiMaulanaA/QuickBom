@@ -1,0 +1,547 @@
+[
+  {
+    "assemblyId": 88,
+    "materialId": 1745,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 1696,
+    "quantity": "5"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 1720,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 1719,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 1731,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 1748,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 81,
+    "materialId": 2080,
+    "quantity": "3.2"
+  },
+  {
+    "assemblyId": 80,
+    "materialId": 1696,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 80,
+    "materialId": 1719,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 80,
+    "materialId": 1731,
+    "quantity": "3"
+  },
+  {
+    "assemblyId": 80,
+    "materialId": 1748,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 80,
+    "materialId": 2080,
+    "quantity": "3.2"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1733,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1735,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1708,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1718,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1717,
+    "quantity": "8"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1715,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 83,
+    "materialId": 1714,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 79,
+    "materialId": 1728,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1695,
+    "quantity": "25"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1731,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1698,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1697,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1689,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1686,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1684,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1683,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1687,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1685,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1730,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1729,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 78,
+    "materialId": 1705,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 77,
+    "materialId": 1725,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 76,
+    "materialId": 1695,
+    "quantity": "25"
+  },
+  {
+    "assemblyId": 75,
+    "materialId": 1695,
+    "quantity": "25"
+  },
+  {
+    "assemblyId": 74,
+    "materialId": 1695,
+    "quantity": "25"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1744,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1742,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1743,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1734,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1732,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1731,
+    "quantity": "10"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1730,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1729,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1727,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1718,
+    "quantity": "20"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1717,
+    "quantity": "16"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1714,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1715,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1713,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1712,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1709,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1706,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1696,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1694,
+    "quantity": "8"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1693,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1688,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1723,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1720,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1719,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1704,
+    "quantity": "10"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1703,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1702,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1701,
+    "quantity": "100"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1700,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1699,
+    "quantity": "50"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1690,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1689,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1692,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1691,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 1711,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 85,
+    "materialId": 2079,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1710,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1737,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1736,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1738,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1739,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1731,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1730,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1729,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1720,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1703,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1702,
+    "quantity": "12"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1700,
+    "quantity": "5"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 1699,
+    "quantity": "5"
+  },
+  {
+    "assemblyId": 87,
+    "materialId": 2080,
+    "quantity": "16"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1710,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1737,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1736,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1738,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1739,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1731,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1730,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1729,
+    "quantity": "4"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1720,
+    "quantity": "2"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1703,
+    "quantity": "6"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1702,
+    "quantity": "12"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1700,
+    "quantity": "5"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 1699,
+    "quantity": "5"
+  },
+  {
+    "assemblyId": 82,
+    "materialId": 2080,
+    "quantity": "16"
+  },
+  {
+    "assemblyId": 86,
+    "materialId": 1702,
+    "quantity": "10"
+  },
+  {
+    "assemblyId": 86,
+    "materialId": 1710,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 86,
+    "materialId": 1736,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 86,
+    "materialId": 1737,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 84,
+    "materialId": 1702,
+    "quantity": "10"
+  },
+  {
+    "assemblyId": 84,
+    "materialId": 1710,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 84,
+    "materialId": 1736,
+    "quantity": "1"
+  },
+  {
+    "assemblyId": 84,
+    "materialId": 1737,
+    "quantity": "1"
+  }
+]

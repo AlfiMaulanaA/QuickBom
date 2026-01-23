@@ -1,0 +1,27 @@
+[
+  {
+    "id": 2,
+    "name": "aswwda",
+    "description": "asa",
+    "clientId": "cmk2452w2000cgvavarlya3oo",
+    "projectType": "Industrial",
+    "location": "asaqq",
+    "area": "1000",
+    "budget": null,
+    "totalPrice": "22557235",
+    "startDate": null,
+    "endDate": null,
+    "actualStart": null,
+    "actualEnd": null,
+    "status": "PLANNING",
+    "progress": "0",
+    "priority": "MEDIUM",
+    "schematicDocs": null,
+    "qualityCheckDocs": "/docs/Checksheet Form.docx",
+    "fromTemplateId": 34,
+    "createdBy": "cmk23w25o0000gv803eepaaed",
+    "assignedUsers": [],
+    "createdAt": "2026-01-14T07:50:05.561Z",
+    "updatedAt": "2026-01-14T07:50:05.561Z"
+  }
+]

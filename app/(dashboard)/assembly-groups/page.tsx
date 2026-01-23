@@ -20,7 +20,6 @@ import {
   Settings,
   Package,
   Search,
-  Download,
   ArrowUpDown,
   MoreHorizontal,
   Eye,
@@ -30,8 +29,10 @@ import {
   ArrowRight,
   Calculator,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileSpreadsheet
 } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -209,7 +210,7 @@ export default function AssemblyGroupsPage() {
   const processedGroups = useMemo(() => {
     let filtered = groups.filter(group => {
       const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesCategory = categoryFilter === "all" || group.categoryId.toString() === categoryFilter;
       const matchesType = groupTypeFilter === "all" || group.groupType === groupTypeFilter;
@@ -483,29 +484,23 @@ export default function AssemblyGroupsPage() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcelHandler = () => {
     const headers = ["Category", "Group Name", "Type", "Assemblies Count", "Created", "Description"];
-    const csvContent = [
-      "ASSEMBLY GROUPS",
-      "",
-      headers.join(","),
+
+    // Prepare Data
+    const data: any[][] = [
+      headers,
       ...processedGroups.map(group => [
-        `"${group.category.name}"`,
-        `"${group.name}"`,
+        group.category.name,
+        group.name,
         group.groupType,
         group.items.length,
         new Date(group.createdAt).toLocaleDateString(),
-        `"${group.description || ""}"`
-      ].join(","))
-    ].join("\n");
+        group.description || ""
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "assembly_groups.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, "assembly_groups", "Groups");
     setIsExportDialogOpen(false);
   };
 
@@ -641,8 +636,8 @@ export default function AssemblyGroupsPage() {
                   size="sm"
                   onClick={() => setIsExportDialogOpen(true)}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export Excel
                 </Button>
               </div>
             </div>
@@ -1498,18 +1493,18 @@ export default function AssemblyGroupsPage() {
         <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto sm:w-[90vw] md:w-[80vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Download className="h-4 w-4 sm:h-5 sm:w-5" />
-              Export Assembly Groups CSV
+              <FileSpreadsheet className="h-4 w-4 sm:h-5 sm:w-5" />
+              Export Assembly Groups Excel
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
-              Export all assembly groups data to CSV file
+              Export all assembly groups data to Excel file
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 sm:space-y-6">
             <div className="space-y-3">
               <Button
-                onClick={exportToCSV}
+                onClick={exportToExcelHandler}
                 className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >

@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, DollarSign, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X } from "lucide-react";
+import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, DollarSign, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X, FileSpreadsheet } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -222,29 +223,29 @@ export default function AssembliesPage() {
   const processedAssemblies = useMemo(() => {
     let filtered = assemblies.filter(assembly => {
       const matchesSearch = assembly.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (assembly.description && assembly.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        (assembly.description && assembly.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesModule = moduleFilter === "all" || assembly.module === moduleFilter;
 
       const materialsCount = assembly.materials.length;
       const matchesMaterialsCount = materialsCountFilter === "all" ||
-                                   (materialsCountFilter === "low" && materialsCount >= 1 && materialsCount <= 2) ||
-                                   (materialsCountFilter === "medium" && materialsCount >= 3 && materialsCount <= 5) ||
-                                   (materialsCountFilter === "high" && materialsCount >= 6);
+        (materialsCountFilter === "low" && materialsCount >= 1 && materialsCount <= 2) ||
+        (materialsCountFilter === "medium" && materialsCount >= 3 && materialsCount <= 5) ||
+        (materialsCountFilter === "high" && materialsCount >= 6);
 
       const totalCost = calculateTotalCost(assembly);
       const matchesCost = costFilter === "all" ||
-                         (costFilter === "low" && totalCost >= 0 && totalCost <= 50000) ||
-                         (costFilter === "medium" && totalCost > 50000 && totalCost <= 200000) ||
-                         (costFilter === "high" && totalCost > 200000);
+        (costFilter === "low" && totalCost >= 0 && totalCost <= 50000) ||
+        (costFilter === "medium" && totalCost > 50000 && totalCost <= 200000) ||
+        (costFilter === "high" && totalCost > 200000);
 
       const createdDate = new Date(assembly.createdAt);
       const now = new Date();
       const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
       const matchesDate = dateFilter === "all" ||
-                         (dateFilter === "recent" && daysDiff <= 7) ||
-                         (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
-                         (dateFilter === "old" && daysDiff > 30);
+        (dateFilter === "recent" && daysDiff <= 7) ||
+        (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
+        (dateFilter === "old" && daysDiff > 30);
 
       return matchesSearch && matchesModule && matchesMaterialsCount && matchesCost && matchesDate;
     });
@@ -373,26 +374,20 @@ export default function AssembliesPage() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcelHandler = () => {
     const headers = ["Name", "Description", "Materials Count", "Total Cost", "Created"];
-    const csvContent = [
-      headers.join(","),
+    const data = [
+      headers,
       ...processedAssemblies.map(assembly => [
-        `"${assembly.name}"`,
-        `"${assembly.description || ""}"`,
+        assembly.name,
+        assembly.description || "",
         assembly.materials.length,
         calculateTotalCost(assembly),
         new Date(assembly.createdAt).toLocaleDateString()
-      ].join(","))
-    ].join("\n");
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "assemblies.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, "assemblies", "Assemblies List");
   };
 
   const handleDuplicate = async (assembly: Assembly) => {
@@ -438,12 +433,12 @@ export default function AssembliesPage() {
     }
   };
 
-  const exportMaterialsToCSV = () => {
+  const exportMaterialsToExcel = () => {
     if (!selectedAssembly) return;
 
     const headers = ["#", "Material Name", "Part Number", "Manufacturer", "Unit", "Quantity", "Unit Price", "Total Cost", "Percentage"];
-    const csvContent = [
-      headers.join(","),
+    const data = [
+      headers,
       ...selectedAssembly.materials.map((assemblyMaterial, index) => {
         const totalCost = Number(assemblyMaterial.material.price) * Number(assemblyMaterial.quantity);
         const assemblyTotalCost = calculateTotalCost(selectedAssembly);
@@ -451,30 +446,24 @@ export default function AssembliesPage() {
 
         return [
           index + 1,
-          `"${assemblyMaterial.material.name}"`,
-          `"${assemblyMaterial.material.partNumber || ""}"`,
-          `"${assemblyMaterial.material.manufacturer || ""}"`,
+          assemblyMaterial.material.name,
+          assemblyMaterial.material.partNumber || "",
+          assemblyMaterial.material.manufacturer || "",
           assemblyMaterial.material.unit,
           Number(assemblyMaterial.quantity),
           assemblyMaterial.material.price,
           totalCost,
-          `${percentage.toFixed(1)}%`
-        ].join(",");
+          percentage // Excel can format this as % if we set style, but raw number 0-100 is fine, or string "X%"
+        ];
       }),
-      "", // Empty row
-      `"Assembly: ${selectedAssembly.name}"`,
-      `"Total Materials: ${selectedAssembly.materials.length}"`,
-      `"Total Cost: ${calculateTotalCost(selectedAssembly)}"`,
-      `"Description: ${selectedAssembly.description || "No description"}"`
-    ].join("\n");
+      [],
+      [`Assembly: ${selectedAssembly.name}`],
+      [`Total Materials: ${selectedAssembly.materials.length}`],
+      [`Total Cost: ${calculateTotalCost(selectedAssembly)}`],
+      [`Description: ${selectedAssembly.description || "No description"}`]
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selectedAssembly.name.replace(/[^a-zA-Z0-9]/g, '_')}_materials.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, `${selectedAssembly.name.replace(/[^a-zA-Z0-9]/g, '_')}_materials`, "Assembly Materials");
   };
 
   const loadMoreItems = async () => {
@@ -665,9 +654,9 @@ export default function AssembliesPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button variant="outline" onClick={exportToExcelHandler}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export Excel
                 </Button>
                 {selectedAssemblies.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>
@@ -732,8 +721,8 @@ export default function AssembliesPage() {
                 {dateFilter !== "all" && (
                   <Badge variant="secondary" className="gap-1">
                     Date: {dateFilter === "recent" ? "≤7 days" :
-                          dateFilter === "normal" ? "8-30 days" :
-                          dateFilter === "old" ? ">30 days" : dateFilter}
+                      dateFilter === "normal" ? "8-30 days" :
+                        dateFilter === "old" ? ">30 days" : dateFilter}
                     <button
                       onClick={() => setDateFilter("all")}
                       className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
@@ -811,182 +800,182 @@ export default function AssembliesPage() {
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                <TableBody>
-                  {processedAssemblies.slice(0, displayMode === 'lazy' ? visibleItemsCount : processedAssemblies.length).map((assembly) => (
-                    <ContextMenu key={assembly.id}>
-                      <ContextMenuTrigger asChild>
-                        <TableRow className="cursor-context-menu hover:bg-muted/50">
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedAssemblies.includes(assembly.id)}
-                              onCheckedChange={(checked) => handleSelectAssembly(assembly.id, checked as boolean)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span>{assembly.name}</span>
-                                {isNewItem(assembly.createdAt) && (
-                                  <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
-                                    New
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
+                  <TableBody>
+                    {processedAssemblies.slice(0, displayMode === 'lazy' ? visibleItemsCount : processedAssemblies.length).map((assembly) => (
+                      <ContextMenu key={assembly.id}>
+                        <ContextMenuTrigger asChild>
+                          <TableRow className="cursor-context-menu hover:bg-muted/50">
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedAssemblies.includes(assembly.id)}
+                                onCheckedChange={(checked) => handleSelectAssembly(assembly.id, checked as boolean)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded"
-                                    style={{ backgroundColor: assembly.category.color || '#3b82f6' }}
-                                  />
-                                  <span className="text-sm font-medium">{assembly.category.name}</span>
+                                  <span>{assembly.name}</span>
+                                  {isNewItem(assembly.createdAt) && (
+                                    <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                                      New
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-3 h-3 rounded"
+                                      style={{ backgroundColor: assembly.category.color || '#3b82f6' }}
+                                    />
+                                    <span className="text-sm font-medium">{assembly.category.name}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {assembly.module}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <Badge variant="secondary" className="text-xs">
-                                {assembly.materials.length} materials
-                              </Badge>
-                              <div className="text-xs font-semibold text-green-600">
-                                {formatCurrency(calculateTotalCost(assembly))}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {assembly.docs && assembly.docs.length > 0 ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedAssembly(assembly);
-                                  setIsDocumentsDialogOpen(true);
-                                }}
-                                className="h-auto p-2 rounded-full border border-gray-500 text-xs hover:bg-muted"
-                              >
-                                <FileText className="h-3 w-3 mr-1" />
-                                {assembly.docs.length} docs
-                              </Button>
-                            ) : (
+                            </TableCell>
+                            <TableCell>
                               <Badge variant="outline" className="text-xs">
-                                0 docs
+                                {assembly.module}
                               </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(assembly.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <TooltipProvider>
-                              <div className="flex gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => router.push(`/assemblies/edit/${assembly.id}`)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Edit Assembly</p>
-                                  </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDuplicate(assembly)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Duplicate Assembly</p>
-                                  </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedAssembly(assembly);
-                                        setIsMaterialsDialogOpen(true);
-                                      }}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View Materials</p>
-                                  </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDelete(assembly.id)}
-                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Delete Assembly</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {assembly.materials.length} materials
+                                </Badge>
+                                <div className="text-xs font-semibold text-green-600">
+                                  {formatCurrency(calculateTotalCost(assembly))}
+                                </div>
                               </div>
-                            </TooltipProvider>
-                          </TableCell>
-                        </TableRow>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent className="w-48">
-                        <ContextMenuLabel>Quick Actions</ContextMenuLabel>
-                        <ContextMenuItem onClick={() => router.push(`/assemblies/edit/${assembly.id}`)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Assembly
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleDuplicate(assembly)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          Duplicate Assembly
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          onClick={() => {
-                            setSelectedAssembly(assembly);
-                            setIsMaterialsDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Materials
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          onClick={() => handleDelete(assembly.id)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Assembly
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  ))}
-                </TableBody>
-              </Table>
+                            </TableCell>
+                            <TableCell>
+                              {assembly.docs && assembly.docs.length > 0 ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedAssembly(assembly);
+                                    setIsDocumentsDialogOpen(true);
+                                  }}
+                                  className="h-auto p-2 rounded-full border border-gray-500 text-xs hover:bg-muted"
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  {assembly.docs.length} docs
+                                </Button>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">
+                                  0 docs
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(assembly.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <TooltipProvider>
+                                <div className="flex gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => router.push(`/assemblies/edit/${assembly.id}`)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Edit Assembly</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDuplicate(assembly)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Duplicate Assembly</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedAssembly(assembly);
+                                          setIsMaterialsDialogOpen(true);
+                                        }}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View Materials</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDelete(assembly.id)}
+                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Delete Assembly</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </TooltipProvider>
+                            </TableCell>
+                          </TableRow>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent className="w-48">
+                          <ContextMenuLabel>Quick Actions</ContextMenuLabel>
+                          <ContextMenuItem onClick={() => router.push(`/assemblies/edit/${assembly.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Assembly
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => handleDuplicate(assembly)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate Assembly
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => {
+                              setSelectedAssembly(assembly);
+                              setIsMaterialsDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Materials
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem
+                            onClick={() => handleDelete(assembly.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Assembly
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
@@ -1213,9 +1202,9 @@ export default function AssembliesPage() {
             </DialogTitle>
             <DialogDescription className="flex items-center justify-between">
               <span>Detailed breakdown of materials and quantities for this assembly</span>
-              <Button variant="outline" size="sm" onClick={exportMaterialsToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+              <Button variant="outline" size="sm" onClick={exportMaterialsToExcel}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export Excel
               </Button>
             </DialogDescription>
           </DialogHeader>

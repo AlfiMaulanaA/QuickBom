@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         progress: progress ? Number(progress) : 0,
         priority: priority || "MEDIUM",
         schematicDocs: schematicDocs || null,
-        qualityCheckDocs: qualityCheckDocs || "/docs/Checksheet Form.docx",
+        qualityCheckDocs: qualityCheckDocs || null,
         fromTemplateId,
         totalPrice,
         createdBy: auth.userId,

@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, FolderOpen, Search, Download, ArrowUpDown, MoreHorizontal, Settings, Eye, Edit, Loader2, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { Plus, Trash2, FolderOpen, Search, ArrowUpDown, MoreHorizontal, Settings, Eye, Edit, Loader2, ChevronLeft, ChevronRight, Save, FileSpreadsheet } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -234,27 +235,23 @@ export default function AssemblyCategoriesPage() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcelHandler = () => {
     const headers = ["Name", "Description", "Color", "Icon", "Assembly Count", "Created"];
-    const csvContent = [
-      headers.join(","),
+
+    // Prepare Data
+    const data: any[][] = [
+      headers,
       ...processedCategories.map(category => [
-        `"${category.name}"`,
-        `"${category.description || ""}"`,
-        `"${category.color || ""}"`,
-        `"${category.icon || ""}"`,
+        category.name,
+        category.description || "",
+        category.color || "",
+        category.icon || "",
         category._count.assemblies,
         new Date(category.createdAt).toLocaleDateString()
-      ].join(","))
-    ].join("\n");
+      ])
+    ];
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "assembly-categories.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToExcel(data, "assembly-categories", "Categories");
   };
 
   const isNewItem = (createdAt: string) => {
@@ -269,13 +266,13 @@ export default function AssemblyCategoriesPage() {
   const processedCategories = useMemo(() => {
     let filtered = categories.filter(category => {
       const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const assemblyCount = category._count.assemblies;
       const matchesAssemblyCount = assemblyCountFilter === "all" ||
-                                   (assemblyCountFilter === "empty" && assemblyCount === 0) ||
-                                   (assemblyCountFilter === "few" && assemblyCount >= 1 && assemblyCount <= 5) ||
-                                   (assemblyCountFilter === "many" && assemblyCount >= 6);
+        (assemblyCountFilter === "empty" && assemblyCount === 0) ||
+        (assemblyCountFilter === "few" && assemblyCount >= 1 && assemblyCount <= 5) ||
+        (assemblyCountFilter === "many" && assemblyCount >= 6);
 
       return matchesSearch && matchesAssemblyCount;
     });
@@ -410,9 +407,9 @@ export default function AssemblyCategoriesPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button variant="outline" onClick={exportToExcelHandler}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export Excel
                 </Button>
                 {selectedCategories.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>
@@ -1004,11 +1001,10 @@ export default function AssemblyCategoriesPage() {
                       key={color}
                       type="button"
                       onClick={() => setCreateFormData(prev => ({ ...prev, color }))}
-                      className={`w-12 h-12 rounded-lg border-2 transition-all ${
-                        createFormData.color === color
+                      className={`w-12 h-12 rounded-lg border-2 transition-all ${createFormData.color === color
                           ? "border-primary scale-110"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                       style={{ backgroundColor: color }}
                       title={`Select color ${color}`}
                     />
@@ -1039,11 +1035,10 @@ export default function AssemblyCategoriesPage() {
                       key={icon}
                       type="button"
                       onClick={() => setCreateFormData(prev => ({ ...prev, icon }))}
-                      className={`p-3 border rounded-lg transition-all ${
-                        createFormData.icon === icon
+                      className={`p-3 border rounded-lg transition-all ${createFormData.icon === icon
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                       title={`Select icon ${icon}`}
                     >
                       <span className="text-sm font-medium">{icon}</span>
@@ -1208,11 +1203,10 @@ export default function AssemblyCategoriesPage() {
                       key={color}
                       type="button"
                       onClick={() => setEditFormData(prev => ({ ...prev, color }))}
-                      className={`w-12 h-12 rounded-lg border-2 transition-all ${
-                        editFormData.color === color
+                      className={`w-12 h-12 rounded-lg border-2 transition-all ${editFormData.color === color
                           ? "border-primary scale-110"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                       style={{ backgroundColor: color }}
                       title={`Select color ${color}`}
                     />
@@ -1243,11 +1237,10 @@ export default function AssemblyCategoriesPage() {
                       key={icon}
                       type="button"
                       onClick={() => setEditFormData(prev => ({ ...prev, icon }))}
-                      className={`p-3 border rounded-lg transition-all ${
-                        editFormData.icon === icon
+                      className={`p-3 border rounded-lg transition-all ${editFormData.icon === icon
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                       title={`Select icon ${icon}`}
                     >
                       <span className="text-sm font-medium">{icon}</span>

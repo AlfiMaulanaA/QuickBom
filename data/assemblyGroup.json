@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cmk21zbdt000lgvnblstxp8mw",
+    "name": "Optional",
+    "description": null,
+    "groupType": "OPTIONAL",
+    "categoryId": 1,
+    "sortOrder": 0,
+    "createdAt": "2026-01-06T04:45:24.481Z",
+    "updatedAt": "2026-01-06T04:52:25.270Z"
+  },
+  {
+    "id": "cmk21yisl000ggvnb1ucge7it",
+    "name": "Containment Type",
+    "description": null,
+    "groupType": "CHOOSE_ONE",
+    "categoryId": 1,
+    "sortOrder": 0,
+    "createdAt": "2026-01-06T04:45:24.475Z",
+    "updatedAt": "2026-01-06T04:52:25.301Z"
+  },
+  {
+    "id": "cmk21xot4000bgvnbqf8c267e",
+    "name": "Back Door",
+    "description": null,
+    "groupType": "CHOOSE_ONE",
+    "categoryId": 1,
+    "sortOrder": 0,
+    "createdAt": "2026-01-06T04:45:24.469Z",
+    "updatedAt": "2026-01-06T04:52:25.321Z"
+  },
+  {
+    "id": "cmk21x6vg0006gvnbrvwuvs3t",
+    "name": "Front Door",
+    "description": null,
+    "groupType": "CHOOSE_ONE",
+    "categoryId": 1,
+    "sortOrder": 0,
+    "createdAt": "2026-01-06T04:45:24.462Z",
+    "updatedAt": "2026-01-06T04:52:25.337Z"
+  },
+  {
+    "id": "cmk21wiya0001gvnbeq97iwo4",
+    "name": "Main Component",
+    "description": null,
+    "groupType": "REQUIRED",
+    "categoryId": 1,
+    "sortOrder": 0,
+    "createdAt": "2026-01-06T04:45:24.455Z",
+    "updatedAt": "2026-01-06T04:52:25.352Z"
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "cmji86rgg0002gv66600ivf0c",
+    "overrideId": "cmji86rfx0001gv66016y7qia",
+    "projectId": 1,
+    "changeType": "CREATED",
+    "fieldChanged": "price",
+    "oldValue": null,
+    "newValue": "15000000",
+    "reason": null,
+    "notes": null,
+    "changedBy": "system",
+    "createdAt": "2025-12-23T06:50:18.112Z"
+  }
+]

@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCSV, formatDateForCSV } from "@/lib/utils";
+
+import { exportToExcel } from "@/lib/excel";
 import {
   Users,
   Plus,
@@ -32,7 +33,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Download
+  FileSpreadsheet
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -305,8 +306,8 @@ export default function UserManagementPage() {
     return diffDays <= 3;
   };
 
-  // Handle CSV export
-  const handleExportCSV = () => {
+  // Handle Excel export
+  const handleExportExcel = () => {
     if (filteredUsers.length === 0) {
       toast({
         title: "No Data",
@@ -316,68 +317,51 @@ export default function UserManagementPage() {
       return;
     }
 
-    // For Supabase CSV import, we need to include ONLY the columns that exist in the database
-    // and can be manually set. Auto-generated columns (id, createdAt, updatedAt) must be excluded.
-    // The CSV must match exactly with the database schema columns that can be imported.
-
-    const csvData = filteredUsers.map(user => ({
-      // Required fields
-      email: user.email,
-      password: '', // Empty - will be set manually after import
-
-      // Basic info
-      name: user.name || '',
-
-      // Enums (must match database enum values)
-      role: user.role,
-      status: user.status,
-
-      // Contact info
-      phone: user.phone || '',
-
-      // Employment info
-      employeeId: user.employeeId || '',
-      department: user.department || '',
-      position: user.position || '',
-      hireDate: user.hireDate ? formatDateForCSV(user.hireDate) : '', // Format as YYYY-MM-DD
-      salary: user.salary ? user.salary.toString() : '',
-
-      // System flags
-      isEmailVerified: user.isEmailVerified,
-
-      // Optional fields
-      avatar: user.avatar || ''
-    }));
-
-    // Headers must exactly match database column names that can be imported
-    // Exclude: id, createdAt, updatedAt, lastLogin, emailVerificationToken, passwordResetToken, passwordResetExpires
-    // Also exclude: dateOfBirth, address (not in current User interface)
+    // Headers
     const headers = [
-      'email',
-      'password',
-      'name',
-      'role',
-      'status',
-      'phone',
-      'employeeId',
-      'department',
-      'position',
-      'hireDate',
-      'salary',
-      'isEmailVerified',
-      'avatar'
+      'Email',
+      'Name',
+      'Role',
+      'Status',
+      'Phone',
+      'Employee ID',
+      'Department',
+      'Position',
+      'Hire Date',
+      'Salary',
+      'Email Verified',
+      'Avatar'
+    ];
+
+    // Data
+    const data: any[][] = [
+      headers,
+      ...filteredUsers.map(user => [
+        user.email,
+        user.name || '',
+        user.role,
+        user.status,
+        user.phone || '',
+        user.employeeId || '',
+        user.department || '',
+        user.position || '',
+        user.hireDate ? new Date(user.hireDate).toLocaleDateString() : '',
+        user.salary ? user.salary.toString() : '',
+        user.isEmailVerified ? 'Yes' : 'No',
+        user.avatar || ''
+      ])
     ];
 
     // Generate filename with timestamp
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `users_export_${timestamp}`;
 
-    // Export to CSV
-    exportToCSV(csvData, filename, headers);
+    // Export to Excel
+    exportToExcel(data, filename, "Users");
 
     toast({
       title: "Export Successful",
-      description: `Exported ${filteredUsers.length} users to CSV (Supabase-compatible format)`,
+      description: `Exported ${filteredUsers.length} users to Excel`,
     });
   };
 
@@ -407,9 +391,9 @@ export default function UserManagementPage() {
         </div>
 
         <div className="flex gap-2 flex-shrink-0">
-          <Button onClick={handleExportCSV} variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Export CSV</span>
+          <Button onClick={handleExportExcel} variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Export Excel</span>
             <span className="xs:hidden">Export</span>
           </Button>
           <Button onClick={() => setShowCreateDialog(true)} size="sm" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -643,8 +627,8 @@ export default function UserManagementPage() {
                     <TableCell>
                       <Badge className={getStatusBadgeColor(user.status)}>
                         {user.status === 'PENDING_VERIFICATION' ? 'Pending' :
-                         user.status === 'ACTIVE' ? 'Active' :
-                         user.status === 'INACTIVE' ? 'Inactive' : 'Suspended'}
+                          user.status === 'ACTIVE' ? 'Active' :
+                            user.status === 'INACTIVE' ? 'Inactive' : 'Suspended'}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">{user.department || '-'}</TableCell>
@@ -717,8 +701,8 @@ export default function UserManagementPage() {
                       </Badge>
                       <Badge className={`${getStatusBadgeColor(user.status)} text-xs`}>
                         {user.status === 'PENDING_VERIFICATION' ? 'Pending' :
-                         user.status === 'ACTIVE' ? 'Active' :
-                         user.status === 'INACTIVE' ? 'Inactive' : 'Suspended'}
+                          user.status === 'ACTIVE' ? 'Active' :
+                            user.status === 'INACTIVE' ? 'Inactive' : 'Suspended'}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -799,7 +783,7 @@ export default function UserManagementPage() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
               <div>
@@ -807,7 +791,7 @@ export default function UserManagementPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
             </div>
@@ -815,7 +799,7 @@ export default function UserManagementPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -835,7 +819,7 @@ export default function UserManagementPage() {
               </div>
               <div>
                 <Label htmlFor="status">Status *</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -855,7 +839,7 @@ export default function UserManagementPage() {
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
               <div>
@@ -863,7 +847,7 @@ export default function UserManagementPage() {
                 <Input
                   id="employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                 />
               </div>
             </div>
@@ -874,7 +858,7 @@ export default function UserManagementPage() {
                 <Input
                   id="department"
                   value={formData.department}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 />
               </div>
               <div>
@@ -882,7 +866,7 @@ export default function UserManagementPage() {
                 <Input
                   id="position"
                   value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                 />
               </div>
             </div>
@@ -894,7 +878,7 @@ export default function UserManagementPage() {
                   id="hireDate"
                   type="date"
                   value={formData.hireDate}
-                  onChange={(e) => setFormData({...formData, hireDate: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
                 />
               </div>
               <div>
@@ -903,7 +887,7 @@ export default function UserManagementPage() {
                   id="salary"
                   type="number"
                   value={formData.salary}
-                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
                 />
               </div>
             </div>
@@ -915,7 +899,7 @@ export default function UserManagementPage() {
                 type="password"
                 required
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
 
@@ -948,7 +932,7 @@ export default function UserManagementPage() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
               <div>
@@ -956,7 +940,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
             </div>
@@ -964,7 +948,7 @@ export default function UserManagementPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="edit-role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -984,7 +968,7 @@ export default function UserManagementPage() {
               </div>
               <div>
                 <Label htmlFor="edit-status">Status *</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1004,7 +988,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
               <div>
@@ -1012,7 +996,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-employeeId"
                   value={formData.employeeId}
-                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                 />
               </div>
             </div>
@@ -1023,7 +1007,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-department"
                   value={formData.department}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 />
               </div>
               <div>
@@ -1031,7 +1015,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-position"
                   value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                 />
               </div>
             </div>
@@ -1043,7 +1027,7 @@ export default function UserManagementPage() {
                   id="edit-hireDate"
                   type="date"
                   value={formData.hireDate}
-                  onChange={(e) => setFormData({...formData, hireDate: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
                 />
               </div>
               <div>
@@ -1052,7 +1036,7 @@ export default function UserManagementPage() {
                   id="edit-salary"
                   type="number"
                   value={formData.salary}
-                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
                 />
               </div>
             </div>

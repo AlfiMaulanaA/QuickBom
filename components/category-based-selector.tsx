@@ -29,12 +29,14 @@ import type { AssemblyGroup, ValidationResult, Assembly } from "@/lib/types/asse
 
 interface CategoryBasedSelectorProps {
   groups: AssemblyGroup[];
+  initialSelections?: Record<number, Record<string, number[]>>;
   onSelectionChange?: (selections: Record<number, Record<string, number[]>>) => void;
   onValidationChange?: (result: ValidationResult | null) => void;
 }
 
 export default function CategoryBasedSelector({
   groups,
+  initialSelections: providedSelections,
   onSelectionChange,
   onValidationChange
 }: CategoryBasedSelectorProps) {
@@ -49,12 +51,12 @@ export default function CategoryBasedSelector({
       // Get the primary module from the first assembly in the group
       // In a real scenario, you might want to ensure all assemblies have the same module
       const primaryAssembly = group.items[0]?.assembly;
-      const module = primaryAssembly?.module || 'ELECTRICAL'; // fallback
+      const assemblyModule = primaryAssembly?.module || 'ELECTRICAL'; // fallback
 
-      if (!acc[module]) {
-        acc[module] = [];
+      if (!acc[assemblyModule]) {
+        acc[assemblyModule] = [];
       }
-      acc[module].push(group);
+      acc[assemblyModule].push(group);
       return acc;
     }, {} as Record<string, AssemblyGroup[]>);
   }, [groups]);
@@ -95,9 +97,13 @@ export default function CategoryBasedSelector({
     };
     return moduleMap[module] || moduleMap['ELECTRICAL'];
   };
-
-  // Initialize selections with defaults
   useEffect(() => {
+    // If we have provided selections and they are not empty, use them
+    if (providedSelections && Object.keys(providedSelections).length > 0) {
+      setSelections(providedSelections);
+      return;
+    }
+
     const initialSelections: Record<number, Record<string, number[]>> = {};
 
     groups.forEach(group => {
@@ -125,7 +131,7 @@ export default function CategoryBasedSelector({
     });
 
     setSelections(initialSelections);
-  }, [groups]);
+  }, [groups, providedSelections]);
 
   // Validate selections whenever they change
   useEffect(() => {
@@ -340,11 +346,11 @@ export default function CategoryBasedSelector({
       )}
 
       {/* Modules */}
-      {Object.entries(groupsByModule).map(([module, moduleGroups]) => {
-        const moduleInfo = getModuleInfo(module);
+      {Object.entries(groupsByModule).map(([moduleKey, moduleGroups]) => {
+        const moduleInfo = getModuleInfo(moduleKey);
 
         return (
-          <Card key={module}>
+          <Card key={moduleKey}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${moduleInfo.color}`}>
@@ -398,22 +404,20 @@ export default function CategoryBasedSelector({
                         return (
                           <div
                             key={item.assemblyId}
-                            className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                              isSelected
-                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                : isDisabled
+                            className={`border rounded-lg p-4 cursor-pointer transition-all ${isSelected
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              : isDisabled
                                 ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800/50'
                                 : 'border-gray-200 hover:border-primary/50 hover:bg-primary/5 dark:border-gray-700 dark:hover:border-primary/50 dark:hover:bg-primary/5'
-                            }`}
+                              }`}
                             onClick={() => !isDisabled && handleItemToggle(group.categoryId, group.id, item.assemblyId)}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 flex-1 min-w-0">
-                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                  isSelected
-                                    ? 'border-primary bg-primary text-primary-foreground'
-                                    : 'border-gray-300 dark:border-gray-600'
-                                }`}>
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${isSelected
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'border-gray-300 dark:border-gray-600'
+                                  }`}>
                                   {isSelected && <CheckCircle className="h-3 w-3" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -502,9 +506,8 @@ export default function CategoryBasedSelector({
               </div>
 
               <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <div className={`text-2xl font-bold mb-1 ${
-                  validationResult.isValid ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <div className={`text-2xl font-bold mb-1 ${validationResult.isValid ? 'text-green-600' : 'text-red-600'
+                  }`}>
                   {validationResult.isValid ? 'Valid' : 'Invalid'}
                 </div>
                 <div className="text-sm text-muted-foreground">Status</div>

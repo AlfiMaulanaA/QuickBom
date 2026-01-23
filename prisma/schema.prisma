@@ -356,8 +356,8 @@ model Project {
   priority    ProjectPriority @default(MEDIUM)
 
   // File uploads
-  schematicDocs   String?  // Path/URL for schematic documents
-  qualityCheckDocs String? // Path/URL for quality check documents
+  schematicDocs   Json?  // Array of schematic documents
+  qualityCheckDocs Json? // Array of quality check documents
 
   // Mengambil referensi dari Template mana (opsional)
   fromTemplateId Int?
