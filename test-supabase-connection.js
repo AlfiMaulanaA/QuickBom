@@ -17,20 +17,18 @@ async function testConnection() {
     await prisma.$queryRaw`SELECT 1 as test`;
     console.log('✅ Database connection successful');
 
-    // List existing tables
-    console.log('\n📋 Existing tables:');
-    const tables = await prisma.$queryRaw`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      ORDER BY table_name
+    // Check Column Types for Project and Template
+    console.log('\n🔍 Checking Column Types:');
+
+    const result = await prisma.$queryRaw`
+      SELECT table_name, column_name, data_type, udt_name
+      FROM information_schema.columns 
+      WHERE table_name IN ('Project', 'Template') 
+      AND column_name IN ('qualityCheckDocs', 'docs', 'schematicDocs', 'assemblySelections')
+      ORDER BY table_name, column_name;
     `;
 
-    tables.forEach(table => {
-      console.log(`  - ${table.table_name}`);
-    });
-
-    console.log(`\n📊 Total tables: ${tables.length}`);
+    console.table(result);
 
   } catch (error) {
     console.error('❌ Connection failed:', error.message);

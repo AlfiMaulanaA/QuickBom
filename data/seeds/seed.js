@@ -40,6 +40,42 @@ const createPrismaClient = () => {
     return new PrismaClient({ datasourceUrl: config.datasourceUrl });
 };
 
+// --- HELPER FOR SMART UPSERT ---
+async function smartUpsert(prisma, modelName, data, uniqueField = null) {
+    const model = prisma[modelName];
+    try {
+        // 1. Try standard upsert first (covers ID match or clean insert)
+        await model.upsert({ where: { id: data.id }, update: data, create: data });
+    } catch (error) {
+        // 2. Catch Unique Constraint Violation
+        if (error.code === 'P2002' && uniqueField) {
+            console.log(`   ⚠️  Conflict on ${modelName}.${uniqueField} = ${data[uniqueField]}`);
+
+            // Find the conflicting record
+            const existing = await model.findUnique({ where: { [uniqueField]: data[uniqueField] } });
+
+            if (existing && existing.id !== data.id) {
+                console.log(`      Mismatch: DB ID ${existing.id} vs Dump ID ${data.id}. Attempting replace...`);
+                try {
+                    // Delete generic record to make way for the correct Dump ID
+                    await model.delete({ where: { id: existing.id } });
+                    console.log(`      🗑️  Deleted conflicting record ${existing.id}`);
+                    // Retry create with correct ID
+                    await model.create({ data });
+                    console.log(`      ✅ Re-created with correct ID`);
+                } catch (delError) {
+                    console.log(`      ❌ Could not replace: ${delError.message.split('\n')[0]}`);
+                    console.log(`      (This record likely has dependent data preventing deletion. Run db:clear first or fix manually.)`);
+                }
+            } else {
+                console.log(`      Unknown conflict state.`);
+            }
+        } else {
+            throw error; // Rethrow other errors
+        }
+    }
+}
+
 // --- DATA SEEDING FUNCTIONS ---
 
 async function seedUsers(prisma) {
@@ -52,7 +88,7 @@ async function seedUsers(prisma) {
         try {
             ['dateOfBirth', 'hireDate', 'lastLogin', 'createdAt', 'updatedAt'].forEach(f => { if (u[f]) u[f] = new Date(u[f]); });
             if (u.salary) u.salary = u.salary.toString();
-            await prisma.user.upsert({ where: { id: u.id }, update: u, create: u });
+            await smartUpsert(prisma, 'user', u, 'email');
         } catch (e) { console.log(`Error user ${u.email}: ${e.message}`); }
     }
 }
@@ -67,7 +103,7 @@ async function seedClients(prisma) {
         try {
             ['lastPaymentDate', 'createdAt', 'updatedAt'].forEach(f => { if (c[f]) c[f] = new Date(c[f]); });
             ['annualRevenue', 'creditLimit', 'totalContractValue', 'outstandingBalance'].forEach(f => { if (c[f]) c[f] = c[f].toString(); });
-            await prisma.client.upsert({ where: { id: c.id }, update: c, create: c });
+            await smartUpsert(prisma, 'client', c); // No unique field other than ID easily usable, maybe contactEmail but typically we rely on ID
         } catch (e) { console.log(`Error client ${c.contactPerson}: ${e.message}`); }
     }
 }
@@ -82,7 +118,7 @@ async function seedMaterials(prisma) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (m[f]) m[f] = new Date(m[f]); });
             if (m.price) m.price = m.price.toString();
-            await prisma.material.upsert({ where: { id: m.id }, update: m, create: m });
+            await smartUpsert(prisma, 'material', m, 'name');
         } catch (e) { console.log(`Error material ${m.name}: ${e.message}`); }
     }
 }
@@ -96,7 +132,7 @@ async function seedAssemblyCategories(prisma) {
     for (const i of items) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await prisma.assemblyCategory.upsert({ where: { id: i.id }, update: i, create: i });
+            await smartUpsert(prisma, 'assemblyCategory', i, 'name');
         } catch (e) { console.log(`Error category ${i.name}: ${e.message}`); }
     }
 }
@@ -111,7 +147,7 @@ async function seedAssemblies(prisma) {
     for (const i of items) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await prisma.assembly.upsert({ where: { id: i.id }, update: i, create: i });
+            await smartUpsert(prisma, 'assembly', i, 'name');
         } catch (e) { console.log(`Error assembly ${i.name}: ${e.message}`); }
     }
 
@@ -139,7 +175,7 @@ async function seedAssemblyGroups(prisma) {
     for (const i of items) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await prisma.assemblyGroup.upsert({ where: { id: i.id }, update: i, create: i });
+            await smartUpsert(prisma, 'assemblyGroup', i); // Often no unique name enforced strictly or not critical
         } catch (e) { console.log(`Error group ${i.name}: ${e.message}`); }
     }
 
@@ -168,7 +204,7 @@ async function seedTemplates(prisma) {
     for (const i of items) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await prisma.template.upsert({ where: { id: i.id }, update: i, create: i });
+            await smartUpsert(prisma, 'template', i, 'name');
         } catch (e) { console.log(`Error template ${i.name}: ${e.message}`); }
     }
 
@@ -204,7 +240,7 @@ async function seedProjects(prisma) {
         try {
             ['createdAt', 'updatedAt', 'startDate', 'endDate', 'actualStart', 'actualEnd'].forEach(f => { if (p[f]) p[f] = new Date(p[f]); });
             ['area', 'budget', 'totalPrice', 'progress'].forEach(f => { if (p[f]) p[f] = p[f].toString(); });
-            await prisma.project.upsert({ where: { id: p.id }, update: p, create: p });
+            await smartUpsert(prisma, 'project', p);
         } catch (e) { }
     }
 

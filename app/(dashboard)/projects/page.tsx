@@ -223,10 +223,8 @@ export default function ProjectsPage() {
         }
       }
 
-      // Set default quality check document for new projects
-      if (!editingProject) {
-        payload.qualityCheckDocs = [{ name: "Checksheet Form.docx", url: "/docs/Checksheet Form.docx", size: 0, type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", uploadedAt: new Date().toISOString() }];
-      }
+      // Note: Default quality check documents should be uploaded manually by users
+      // Removed automatic assignment of default document to avoid path issues
 
       const response = await fetch(url, {
         method,
@@ -1065,19 +1063,7 @@ export default function ProjectsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="qualityCheckDocs">Quality Check Documents</Label>
                     <div className="space-y-2">
-                      {!editingProject && (
-                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="text-blue-900 dark:text-blue-100 font-medium">
-                              Default file: Checksheet Form.docx
-                            </span>
-                          </div>
-                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                            A default quality check form will be automatically attached to this project.
-                          </p>
-                        </div>
-                      )}
+
                       <Input
                         id="qualityCheckDocs"
                         type="file"
