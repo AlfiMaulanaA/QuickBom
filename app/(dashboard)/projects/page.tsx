@@ -205,22 +205,8 @@ export default function ProjectsPage() {
 
       if (formData.fromTemplateId && formData.fromTemplateId !== "none") {
         payload.fromTemplateId = parseInt(formData.fromTemplateId);
-
-        // If editing an existing project and template changed, copy template docs
-        if (editingProject && editingProject.fromTemplateId !== parseInt(formData.fromTemplateId)) {
-          const selectedTemplate = templates.find(t => t.id.toString() === formData.fromTemplateId);
-          if (selectedTemplate?.docs && Array.isArray(selectedTemplate.docs) && selectedTemplate.docs.length > 0) {
-            // Copy template docs to schematicDocs
-            payload.schematicDocs = selectedTemplate.docs;
-          }
-        } else if (!editingProject) {
-          // For new projects, copy template docs
-          const selectedTemplate = templates.find(t => t.id.toString() === formData.fromTemplateId);
-          if (selectedTemplate?.docs && Array.isArray(selectedTemplate.docs) && selectedTemplate.docs.length > 0) {
-            // Copy template docs to schematicDocs
-            payload.schematicDocs = selectedTemplate.docs;
-          }
-        }
+        // Removed automatic copying of template docs to project
+        // Users should upload project documents manually
       }
 
       // Note: Default quality check documents should be uploaded manually by users
@@ -2052,65 +2038,7 @@ export default function ProjectsPage() {
                                 <Eye className="h-4 w-4" />
                               </Button>
 
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-                                  if (!selectedProject) return;
 
-                                  try {
-                                    const response = await fetch(`/api/projects/${selectedProject.id}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        id: selectedProject.id,
-                                        name: selectedProject.name, // Required field for API validation
-                                        schematicDocs: doc.url
-                                      }),
-                                    });
-
-                                    if (response.ok) {
-                                      const updatedProject = await response.json();
-
-                                      toast({
-                                        title: "Document Set as Schematic",
-                                        description: `"${doc.name}" has been set as schematic document for this project.`,
-                                      });
-
-                                      // Update the projects list with the updated project
-                                      setProjects(prevProjects =>
-                                        prevProjects.map(p =>
-                                          p.id === updatedProject.id ? updatedProject : p
-                                        )
-                                      );
-
-                                      // Update local state for the dialog
-                                      if (selectedProject) {
-                                        setSelectedProject(updatedProject);
-                                      }
-                                    } else {
-                                      const error = await response.json();
-                                      toast({
-                                        title: "Failed to Set Document",
-                                        description: error.error || "Failed to set document as schematic",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  } catch (error) {
-                                    toast({
-                                      title: "Error",
-                                      description: "Network error occurred",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                                className="hover:bg-purple-50 hover:text-purple-600"
-                                title={`Set "${doc.name}" as schematic document`}
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
                             </div>
                           </div>
                         );
@@ -2119,24 +2047,6 @@ export default function ProjectsPage() {
 
                     {/* Quick Actions */}
                     <div className="flex gap-2 pt-2 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Copy all template documents to project documents
-                          if (selectedProject?.template?.docs) {
-                            toast({
-                              title: "Feature Coming Soon",
-                              description: "Copy template documents to project feature will be available soon.",
-                            });
-                          }
-                        }}
-                        disabled={!selectedProject?.template?.docs?.length}
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy to Project Docs
-                      </Button>
-
                       <Button
                         variant="outline"
                         size="sm"
