@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 interface DashboardAnalytics {
   materials: {
     total: number;
@@ -60,9 +62,9 @@ export async function GET() {
   try {
     console.log('[DASHBOARD-ANALYTICS] Starting analytics calculation');
 
-    // Fetch all data in parallel for better performance
+    // Fetch from parallel sources
+    // Note: materials now come from External CRM, not local DB
     const [
-      materials,
       assemblies,
       templates,
       projects,
@@ -70,9 +72,6 @@ export async function GET() {
       assemblyMaterials,
       templateAssemblies
     ] = await Promise.all([
-      prisma.material.findMany({
-        select: { id: true, name: true, price: true, manufacturer: true, unit: true, createdAt: true }
-      }),
       prisma.assembly.findMany({
         select: { id: true, name: true, createdAt: true }
       }),
@@ -107,53 +106,47 @@ export async function GET() {
 
     console.log('[DASHBOARD-ANALYTICS] Data fetched successfully');
 
-    // Calculate materials analytics
-    const materialsTotal = materials.length;
-    const materialsValue = materials.reduce((sum, m) => sum + Number(m.price || 0), 0);
-    const materialsWithPrices = materials.filter(m => Number(m.price || 0) > 0).length;
-    const materialsWithoutPrices = materialsTotal - materialsWithPrices;
+    // Materials Analytics (Derived from AssemblyMaterial snapshots)
+    // @ts-ignore
+    const materialsTotal = assemblyMaterials.length > 0
+      ? new Set(assemblyMaterials.map((am: any) => am.externalId)).size
+      : 0;
 
-    const topExpensive = materials
-      .filter(m => Number(m.price || 0) > 0)
-      .sort((a, b) => Number(b.price) - Number(a.price))
+    // @ts-ignore
+    const materialsValue = assemblyMaterials.reduce((sum: number, am: any) => sum + (Number(am.price || 0) * Number(am.quantity || 0)), 0);
+
+    // @ts-ignore
+    const materialsWithPrices = assemblyMaterials.filter((am: any) => Number(am.price || 0) > 0).length;
+
+    // @ts-ignore
+    const topExpensive = assemblyMaterials
+      .sort((a, b) => Number((b as any).price || 0) - Number((a as any).price || 0))
       .slice(0, 5)
-      .map(m => ({ name: m.name, price: Number(m.price) }));
+      .map((am: any) => ({
+        name: am.name || `Material ${am.externalId}`,
+        price: Number(am.price || 0)
+      }));
 
-    const uniqueManufacturers = [...new Set(materials.map(m => m.manufacturer).filter(Boolean))];
-    const uniqueUnits = [...new Set(materials.map(m => m.unit))];
+    // @ts-ignore
+    const uniqueManufacturers = [...new Set(assemblyMaterials.map((am: any) => am.manufacturer).filter(Boolean))];
+    // @ts-ignore
+    const uniqueUnits = [...new Set(assemblyMaterials.map((am: any) => am.unit))];
 
-    // Calculate recent materials (last 30 days)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentMaterials = materials.filter(m => new Date(m.createdAt) > thirtyDaysAgo);
-
-    // Calculate assemblies analytics
+    // Assemblies
     const assembliesTotal = assemblies.length;
+    const assembliesValue = materialsValue; // Simple sum for dashboard
+    const avgComplexity = assembliesTotal > 0 ? assemblyMaterials.length / assembliesTotal : 0;
 
-    // Calculate assembly values (sum of material costs * quantities)
-    const assembliesValue = assemblyMaterials.reduce((sum, am) => {
-      const material = materials.find(m => m.id === am.materialId);
-      if (material) {
-        return sum + (Number(material.price || 0) * Number(am.quantity || 0));
-      }
-      return sum;
-    }, 0);
-
-    // Calculate average complexity (materials per assembly)
-    const avgComplexity = assembliesTotal > 0 ?
-      assemblyMaterials.length / assembliesTotal : 0;
-
-    // Calculate templates analytics
+    // Templates
     const templatesTotal = templates.length;
-    const activeProjects = projects.length; // All projects are considered active for now
-    const avgAssemblies = templatesTotal > 0 ?
-      templateAssemblies.length / templatesTotal : 0;
+    const activeProjects = projects.length;
+    const avgAssemblies = templatesTotal > 0 ? templateAssemblies.length / templatesTotal : 0;
 
-    // Calculate projects analytics
+    // Projects
     const projectsTotal = projects.length;
     const projectsValue = projects.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
     const avgProjectValue = projectsTotal > 0 ? projectsValue / projectsTotal : 0;
 
-    // Calculate project status breakdown
     const statusBreakdown = {
       completed: projects.filter(p => p.status === 'COMPLETED').length,
       inProgress: projects.filter(p => p.status === 'IN_PROGRESS').length,
@@ -162,20 +155,17 @@ export async function GET() {
       delayed: projects.filter(p => p.status === 'DELAYED').length
     };
 
-    // Calculate monthly growth (last 6 months)
+    // Monthly Growth
     const monthlyGrowth = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-
       const monthProjects = projects.filter(p => {
         const created = new Date(p.createdAt);
         return created >= monthStart && created <= monthEnd;
       });
-
       const monthValue = monthProjects.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
-
       monthlyGrowth.push({
         month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
         count: monthProjects.length,
@@ -183,22 +173,18 @@ export async function GET() {
       });
     }
 
-    // Calculate users analytics
+    // Users
     const usersTotal = users.length;
     const activeUsers = users.filter(u => u.status === 'ACTIVE').length;
-
     const byRole = users.reduce((acc, user) => {
       acc[user.role] = (acc[user.role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Recent logins (last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recentLogins = users.filter(u =>
-      u.lastLogin && new Date(u.lastLogin) > sevenDaysAgo
-    ).length;
+    const recentLogins = users.filter(u => u.lastLogin && new Date(u.lastLogin) > sevenDaysAgo).length;
 
-    // Generate recent activities (mock for now - in real app, this would come from audit logs)
+    // Activities
     const activities = [
       {
         id: '1',
@@ -211,15 +197,6 @@ export async function GET() {
       },
       {
         id: '2',
-        type: 'update' as const,
-        entity: 'material' as const,
-        name: materials[0]?.name || 'Updated Material',
-        timestamp: materials[0]?.createdAt.toISOString() || new Date().toISOString(),
-        user: 'Admin',
-        impact: 'medium' as const
-      },
-      {
-        id: '3',
         type: 'create' as const,
         entity: 'template' as const,
         name: templates[0]?.name || 'New Template',
@@ -228,7 +205,7 @@ export async function GET() {
         impact: 'high' as const
       },
       {
-        id: '4',
+        id: '3',
         type: 'update' as const,
         entity: 'assembly' as const,
         name: assemblies[0]?.name || 'Updated Assembly',
@@ -243,24 +220,24 @@ export async function GET() {
         total: materialsTotal,
         totalValue: materialsValue,
         topExpensive,
-        recentCount: recentMaterials.length,
+        recentCount: 0,
         withPrices: materialsWithPrices,
-        withoutPrices: materialsWithoutPrices,
+        withoutPrices: materialsTotal - materialsWithPrices,
         manufacturersCount: uniqueManufacturers.length,
         unitTypesCount: uniqueUnits.length,
-        categoriesCount: Math.max(1, Math.ceil(materialsTotal / 10)) // Rough estimate
+        categoriesCount: 0
       },
       assemblies: {
         total: assembliesTotal,
         totalValue: assembliesValue,
         avgComplexity,
-        topUsed: [] // Would need more complex query to calculate usage
+        topUsed: []
       },
       templates: {
         total: templatesTotal,
         activeProjects,
         avgAssemblies,
-        mostPopular: [] // Would need more complex query
+        mostPopular: []
       },
       projects: {
         total: projectsTotal,
@@ -286,12 +263,10 @@ export async function GET() {
     };
 
     console.log('[DASHBOARD-ANALYTICS] Analytics calculated successfully');
-
     return NextResponse.json(analytics);
 
   } catch (error: any) {
     console.error('[DASHBOARD-ANALYTICS] Error calculating analytics:', error);
-
     return NextResponse.json({
       error: "Failed to calculate dashboard analytics",
       details: process.env.NODE_ENV === 'development' ? error.message : undefined

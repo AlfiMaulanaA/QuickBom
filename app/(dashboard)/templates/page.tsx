@@ -29,10 +29,14 @@ interface Material {
 }
 
 interface AssemblyMaterial {
-  id?: number;
-  materialId: number;
+  id?: string;
+  externalId: string;
+  name: string;
+  partNumber: string | null;
+  manufacturer: string | null;
+  unit: string;
+  price: number;
   quantity: number;
-  material: Material;
 }
 
 interface Assembly {
@@ -197,26 +201,8 @@ export default function TemplatesPage() {
 
 
 
-  const calculateEstimatedCost = (template: Template) => {
-    let totalCost = 0;
+  // calculateEstimatedCost removed as per request to hide price logic from UI
 
-    for (const templateAssembly of template.assemblies) {
-      const assembly = templateAssembly.assembly;
-
-      // Calculate cost per assembly
-      let assemblyCost = 0;
-      if (assembly.materials) {
-        for (const material of assembly.materials) {
-          assemblyCost += Number(material.material.price) * Number(material.quantity);
-        }
-      }
-
-      // Multiply by template quantity
-      totalCost += assemblyCost * Number(templateAssembly.quantity);
-    }
-
-    return totalCost;
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -237,12 +223,6 @@ export default function TemplatesPage() {
         (assembliesCountFilter === "medium" && assembliesCount >= 3 && assembliesCount <= 5) ||
         (assembliesCountFilter === "high" && assembliesCount >= 6);
 
-      const estimatedCost = calculateEstimatedCost(template);
-      const matchesCost = costFilter === "all" ||
-        (costFilter === "low" && estimatedCost >= 0 && estimatedCost <= 100000) ||
-        (costFilter === "medium" && estimatedCost > 100000 && estimatedCost <= 500000) ||
-        (costFilter === "high" && estimatedCost > 500000);
-
       const projectsCount = template.projects.length;
       const matchesProjectsCount = projectsCountFilter === "all" ||
         (projectsCountFilter === "low" && projectsCount >= 0 && projectsCount <= 1) ||
@@ -257,7 +237,7 @@ export default function TemplatesPage() {
         (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
         (dateFilter === "old" && daysDiff > 30);
 
-      return matchesSearch && matchesAssembliesCount && matchesCost && matchesProjectsCount && matchesDate;
+      return matchesSearch && matchesAssembliesCount && matchesProjectsCount && matchesDate;
     });
 
     // Sort templates
@@ -391,7 +371,7 @@ export default function TemplatesPage() {
   };
 
   const exportTemplatesBasic = () => {
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Template Name", "Description"];
     const data: any[][] = [
       ["TEMPLATES LIST"],
       [],
@@ -407,8 +387,8 @@ export default function TemplatesPage() {
         template.name,
         1,
         "Template",
-        calculateEstimatedCost(template),
-        calculateEstimatedCost(template),
+        0,
+        0,
         template.name,
         template.description || ""
       ]);
@@ -421,7 +401,7 @@ export default function TemplatesPage() {
   };
 
   const exportTemplatesWithAssemblies = () => {
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Template Name", "Description"];
     const data: any[][] = [
       ["TEMPLATES WITH ASSEMBLIES"],
       [],
@@ -439,8 +419,8 @@ export default function TemplatesPage() {
         template.name,
         1,
         "Template",
-        calculateEstimatedCost(template),
-        calculateEstimatedCost(template),
+        0,
+        0,
         template.name,
         template.description || ""
       ]);
@@ -448,10 +428,8 @@ export default function TemplatesPage() {
       // Assembly entries for this template
       template.assemblies.forEach(assembly => {
         const quantity = Number(assembly.quantity);
-        const unitCost = assembly.assembly.materials.reduce((total, am) => {
-          return total + (Number(am.material.price) * Number(am.quantity));
-        }, 0);
-        const totalCost = unitCost * quantity;
+        const unitCost = 0;
+        const totalCost = 0;
 
         data.push([
           rowNumber++,
@@ -460,8 +438,6 @@ export default function TemplatesPage() {
           assembly.assembly.name,
           quantity,
           "Assembly",
-          unitCost,
-          totalCost,
           template.name,
           assembly.assembly.description || ""
         ]);
@@ -475,7 +451,7 @@ export default function TemplatesPage() {
   };
 
   const exportTemplatesWithMaterials = () => {
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Template Name", "Description"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Template Name", "Description"];
     const data: any[][] = [
       ["TEMPLATES WITH COMPLETE MATERIALS BREAKDOWN"],
       [],
@@ -493,8 +469,8 @@ export default function TemplatesPage() {
         template.name,
         1,
         "Template",
-        calculateEstimatedCost(template),
-        calculateEstimatedCost(template),
+        0,
+        0,
         template.name,
         template.description || ""
       ]);
@@ -502,10 +478,8 @@ export default function TemplatesPage() {
       // Assembly entries for this template
       template.assemblies.forEach(assembly => {
         const assemblyQuantity = Number(assembly.quantity);
-        const assemblyUnitCost = assembly.assembly.materials.reduce((total, am) => {
-          return total + (Number(am.material.price) * Number(am.quantity));
-        }, 0);
-        const assemblyTotalCost = assemblyUnitCost * assemblyQuantity;
+        const assemblyUnitCost = 0;
+        const assemblyTotalCost = 0;
 
         // Assembly entry
         data.push([
@@ -515,25 +489,22 @@ export default function TemplatesPage() {
           assembly.assembly.name,
           assemblyQuantity,
           "Assembly",
-          assemblyUnitCost,
-          assemblyTotalCost,
           template.name,
           assembly.assembly.description || ""
         ]);
 
         // Material entries for this assembly
         assembly.assembly.materials.forEach(material => {
-          const materialTotalCost = Number(material.material.price) * Number(material.quantity);
-
+          const materialTotalCost = 0;
           data.push([
             rowNumber++,
-            material.material.manufacturer || "",
-            material.material.partNumber || "",
-            material.material.name,
+            material.manufacturer || "",
+            material.partNumber || "",
+            material.name,
             Number(material.quantity),
-            material.material.unit,
-            material.material.price,
-            materialTotalCost,
+            material.unit,
+            0,
+            0,
             template.name,
             `Material in ${assembly.assembly.name}`
           ]);
@@ -548,71 +519,37 @@ export default function TemplatesPage() {
   };
 
   const exportConsolidatedMaterials = () => {
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Assembly Name", "Description"];
-
-    console.log('🔍 Consolidated Materials Export - Processing Templates:');
-    console.log('Templates to process:', processedTemplates.length);
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Assembly Name", "Description"];
 
     // Process each template separately
-    processedTemplates.forEach((template, templateIndex) => {
-      console.log(`📋 Processing Template: ${template.name}`);
-
+    processedTemplates.forEach((template) => {
       // Create a map to consolidate materials within THIS template only
       const materialMap = new Map();
 
       template.assemblies.forEach(templateAssembly => {
         const assembly = templateAssembly.assembly;
-        const assemblyQuantity = Number(templateAssembly.quantity); // How many times this assembly is used in this template
+        const assemblyQuantity = Number(templateAssembly.quantity);
 
-        console.log(`   🏗️  Assembly: ${assembly.name} (Qty: ${assemblyQuantity})`);
+        assembly.materials.forEach(material => {
+          const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}`;
 
-        assembly.materials.forEach(assemblyMaterial => {
-          const material = assemblyMaterial.material;
-          // Create unique key based on material properties (name, part number, manufacturer, unit, price)
-          const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}_${material.price}`;
-
-          // 🧮 CALCULATION LOGIC:
-          // Material quantity needed = (material quantity per assembly) × (assembly quantity in template)
-          const materialQuantityPerAssembly = Number(assemblyMaterial.quantity);
+          const materialQuantityPerAssembly = Number(material.quantity);
           const materialQuantity = materialQuantityPerAssembly * assemblyQuantity;
-          const totalCost = materialQuantity * Number(material.price);
 
-          console.log(`      📦 Material: ${material.name} | Qty per assembly: ${materialQuantityPerAssembly} | Assembly qty: ${assemblyQuantity} | Total qty: ${materialQuantity}`);
-
-          // Check if this material already exists in our consolidation map for this template
           if (materialMap.has(materialKey)) {
-            // ✅ MATERIAL EXISTS: Add to existing totals
             const existing = materialMap.get(materialKey);
-            existing.totalQuantity += materialQuantity; // Sum quantities across all assemblies in this template
-            existing.totalCost += totalCost; // Sum costs
-            existing.usedInAssemblies.push({
-              assemblyName: assembly.name,
-              assemblyQuantity: assemblyQuantity,
-              materialQuantityPerAssembly: materialQuantityPerAssembly,
-              totalMaterialQuantity: materialQuantity
-            });
+            existing.totalQuantity += materialQuantity;
           } else {
-            // 🆕 NEW MATERIAL: Create new entry
             materialMap.set(materialKey, {
               name: material.name,
               partNumber: material.partNumber,
               manufacturer: material.manufacturer,
               unit: material.unit,
-              unitPrice: material.price,
               totalQuantity: materialQuantity,
-              totalCost: totalCost,
-              usedInAssemblies: [{
-                assemblyName: assembly.name,
-                assemblyQuantity: assemblyQuantity,
-                materialQuantityPerAssembly: materialQuantityPerAssembly,
-                totalMaterialQuantity: materialQuantity
-              }]
             });
           }
         });
       });
-
-      console.log(`📊 Template "${template.name}" - Unique materials found:`, materialMap.size);
 
       // Create CSV content for this template
       const data: any[][] = [
@@ -620,18 +557,12 @@ export default function TemplatesPage() {
         [`Generated on: ${new Date().toLocaleString()}`],
         [`Template Description: ${template.description || "No description"}`],
         [`Total Assemblies: ${template.assemblies.length}`],
-        [`Total Estimated Cost: ${formatCurrency(calculateEstimatedCost(template))}`],
         [],
         headers
       ];
 
       let rowNumber = 1;
       materialMap.forEach((material: any) => {
-        // Create detailed usage description within this template
-        const usageDetails = material.usedInAssemblies.map((usage: any) =>
-          `${usage.assemblyName}(${usage.assemblyQuantity}x × ${usage.materialQuantityPerAssembly}ea = ${usage.totalMaterialQuantity})`
-        ).join("; ");
-
         data.push([
           rowNumber++,
           material.manufacturer || "",
@@ -639,34 +570,29 @@ export default function TemplatesPage() {
           material.name,
           material.totalQuantity,
           material.unit,
-          material.unitPrice,
-          material.totalCost,
           template.name,
-          `Usage: ${usageDetails}`
+          "-"
         ]);
       });
 
       // Add summary information for this template
       const totalMaterials = materialMap.size;
       const totalQuantity = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalQuantity, 0);
-      const totalValue = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalCost, 0);
 
       data.push(
         [],
         [`SUMMARY FOR TEMPLATE: ${template.name.toUpperCase()}`],
         [`Total Unique Materials: ${totalMaterials}`],
-        [`Total Quantity in Template: ${totalQuantity}`],
-        [`Total Value: ${formatCurrency(totalValue)}`]
+        [`Total Quantity in Template: ${totalQuantity}`]
       );
 
-      // Download file for this template with delay to avoid browser blocking
-      setTimeout(() => {
-        exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated_materials`, "Consolidated Materials");
-      }, templateIndex * 500); // 500ms delay between downloads
+      exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_consolidated`, "Consolidated Materials");
     });
 
     setIsExportDialogOpen(false);
   };
+
+
 
   const handleDuplicate = async (template: Template) => {
     try {
@@ -815,41 +741,25 @@ export default function TemplatesPage() {
   const exportTemplateDetailsToCSV = () => {
     if (!selectedTemplate) return;
 
-    const headers = ["#", "Assembly Name", "Description", "Quantity", "Materials Count", "Unit Cost", "Total Cost", "Percentage"];
+    const headers = ["#", "Assembly Name", "Description", "Quantity", "Materials Count"];
     const csvContent = [
       headers.join(","),
       ...selectedTemplate.assemblies.map((templateAssembly, index) => {
         const assembly = templateAssembly.assembly;
         const quantity = Number(templateAssembly.quantity);
 
-        // Calculate assembly unit cost (cost of all materials in assembly)
-        const assemblyUnitCost = assembly.materials.reduce((total, am) => {
-          return total + (Number(am.material.price) * Number(am.quantity));
-        }, 0);
-
-        // Calculate total cost for this assembly in template
-        const totalCost = assemblyUnitCost * quantity;
-
-        // Calculate percentage of total template cost
-        const templateTotalCost = calculateEstimatedCost(selectedTemplate);
-        const percentage = templateTotalCost > 0 ? (totalCost / templateTotalCost) * 100 : 0;
-
         return [
           index + 1,
           `"${assembly.name}"`,
           `"${assembly.description || ""}"`,
           quantity,
-          assembly.materials.length,
-          assemblyUnitCost,
-          totalCost,
-          `${percentage.toFixed(1)}%`
+          assembly.materials.length
         ].join(",");
       }),
       "", // Empty row
       `"Template: ${selectedTemplate.name}"`,
       `"Total Assemblies: ${selectedTemplate.assemblies.length}"`,
       `"Total Projects: ${selectedTemplate.projects.length}"`,
-      `"Total Cost: ${calculateEstimatedCost(selectedTemplate)}"`,
       `"Description: ${selectedTemplate.description || "No description"}"`
     ].join("\n");
 
@@ -1028,20 +938,8 @@ export default function TemplatesPage() {
                 </Select>
               </div>
 
-              <div className="sm:w-48">
-                <Select value={costFilter} onValueChange={setCostFilter}>
-                  <SelectTrigger>
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by estimated cost" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Costs</SelectItem>
-                    <SelectItem value="low">Low (≤100K)</SelectItem>
-                    <SelectItem value="medium">Medium (100K-500K)</SelectItem>
-                    <SelectItem value="high">High (&gt;500K)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               <div className="sm:w-48">
                 <Select value={projectsCountFilter} onValueChange={setProjectsCountFilter}>
@@ -1089,7 +987,7 @@ export default function TemplatesPage() {
                 <span className="text-sm text-muted-foreground">Active filters:</span>
                 {searchTerm && (
                   <Badge variant="secondary" className="gap-1">
-                    Search: "{searchTerm}"
+                    Search: &quot;{searchTerm}&quot;
                     <button
                       onClick={() => setSearchTerm("")}
                       className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
@@ -1116,24 +1014,8 @@ export default function TemplatesPage() {
                     </button>
                   </Badge>
                 )}
-                {costFilter !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Cost: {(() => {
-                      switch (costFilter) {
-                        case "low": return "≤100K";
-                        case "medium": return "100K-500K";
-                        case "high": return ">500K";
-                        default: return costFilter;
-                      }
-                    })()}
-                    <button
-                      onClick={() => setCostFilter("all")}
-                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                )}
+
+
                 {projectsCountFilter !== "all" && (
                   <Badge variant="secondary" className="gap-1">
                     Projects: {(() => {
@@ -1230,7 +1112,7 @@ export default function TemplatesPage() {
                       <TableHead className="min-w-[100px]">Documents</TableHead>
                       <TableHead className="min-w-[120px]">Assemblies</TableHead>
                       <TableHead className="min-w-[100px]">Projects</TableHead>
-                      <TableHead className="min-w-[120px]">Est. Cost</TableHead>
+                      {/* Est. Cost column removed */}
                       <TableHead className="min-w-[100px]">
                         <Button variant="ghost" onClick={() => handleSort("createdAt")} className="h-auto p-0 font-semibold">
                           Created
@@ -1304,9 +1186,7 @@ export default function TemplatesPage() {
                             {template.projects.length} projects
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-semibold text-green-600">
-                          {formatCurrency(calculateEstimatedCost(template))}
-                        </TableCell>
+                        {/* Cost cell removed */}
                         <TableCell className="text-sm">
                           {new Date(template.createdAt).toLocaleDateString()}
                         </TableCell>
@@ -1509,7 +1389,7 @@ export default function TemplatesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Template Details: "{selectedTemplate?.name}"
+              Template Details: &quot;{selectedTemplate?.name}&quot;
             </DialogTitle>
             <DialogDescription className="flex items-center justify-between">
               <span>Detailed breakdown of assemblies and materials in this template</span>
@@ -1528,12 +1408,6 @@ export default function TemplatesPage() {
                   {selectedTemplate?.assemblies.length || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Assemblies</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {selectedTemplate ? formatCurrency(calculateEstimatedCost(selectedTemplate)) : formatCurrency(0)}
-                </div>
-                <div className="text-sm text-muted-foreground">Total Cost</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
@@ -1578,9 +1452,6 @@ export default function TemplatesPage() {
                       <TableHead className="text-xs font-medium">Description</TableHead>
                       <TableHead className="text-xs font-medium">Quantity</TableHead>
                       <TableHead className="text-xs font-medium">Materials Count</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Unit Cost</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Total Cost</TableHead>
-                      <TableHead className="text-xs font-medium text-right">% of Template</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1588,17 +1459,8 @@ export default function TemplatesPage() {
                       const assembly = templateAssembly.assembly;
                       const quantity = Number(templateAssembly.quantity);
 
-                      // Calculate assembly unit cost (cost of all materials in assembly)
-                      const assemblyUnitCost = assembly.materials.reduce((total, am) => {
-                        return total + (Number(am.material.price) * Number(am.quantity));
-                      }, 0);
+                      // Cost calculation logic removed
 
-                      // Calculate total cost for this assembly in template
-                      const totalCost = assemblyUnitCost * quantity;
-
-                      // Calculate percentage of total template cost
-                      const templateTotalCost = selectedTemplate ? calculateEstimatedCost(selectedTemplate) : 1;
-                      const percentage = templateTotalCost > 0 ? (totalCost / templateTotalCost) * 100 : 0;
 
                       return (
                         <TableRow key={templateAssembly.id} className="hover:bg-muted/30">
@@ -1629,25 +1491,6 @@ export default function TemplatesPage() {
                             <Badge variant="secondary" className="text-xs">
                               {assembly.materials.length} materials
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-right text-blue-600">
-                            {formatCurrency(assemblyUnitCost)}
-                          </TableCell>
-                          <TableCell className="text-sm text-right font-medium text-green-600">
-                            {formatCurrency(totalCost)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-xs font-medium">
-                                {percentage.toFixed(1)}%
-                              </span>
-                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                                />
-                              </div>
-                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -1883,7 +1726,7 @@ export default function TemplatesPage() {
                 <div className="p-8 text-center">
                   <File className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click "Upload" to add documents to this template</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click &quot;Upload&quot; to add documents to this template</p>
                 </div>
               )}
             </div>
@@ -1892,12 +1735,6 @@ export default function TemplatesPage() {
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-muted-foreground">
                 Showing {selectedTemplate?.assemblies.length || 0} assemblies in this template
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Total Cost:</span>
-                <span className="text-lg font-bold text-green-600">
-                  {selectedTemplate ? formatCurrency(calculateEstimatedCost(selectedTemplate)) : formatCurrency(0)}
-                </span>
               </div>
             </div>
           </div>
@@ -1930,7 +1767,7 @@ export default function TemplatesPage() {
               Template Description
             </DialogTitle>
             <DialogDescription className="text-sm">
-              Full description for "{selectedTemplate?.name}"
+              Full description for &quot;{selectedTemplate?.name}&quot;
             </DialogDescription>
           </DialogHeader>
 
@@ -1980,24 +1817,22 @@ export default function TemplatesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Assembly Materials: "{selectedAssembly?.name}"
+              Assembly Materials: &quot;{selectedAssembly?.name}&quot;
             </DialogTitle>
             <DialogDescription className="flex items-center justify-between">
               <span>Detailed breakdown of materials in this assembly</span>
               <Button variant="outline" size="sm" onClick={() => {
                 if (!selectedAssembly) return;
 
-                const headers = ["Material Name", "Part Number", "Manufacturer", "Unit", "Quantity", "Unit Price", "Total Cost"];
+                const headers = ["Material Name", "Part Number", "Manufacturer", "Unit", "Quantity"];
                 const csvContent = [
                   headers.join(","),
-                  ...selectedAssembly.materials.map(material => [
-                    `"${material.material.name}"`,
-                    `"${material.material.partNumber || ""}"`,
-                    `"${material.material.manufacturer || ""}"`,
-                    material.material.unit,
-                    Number(material.quantity),
-                    material.material.price,
-                    Number(material.material.price) * Number(material.quantity)
+                  ...selectedAssembly.materials.map(am => [
+                    `"${am.name}"`,
+                    `"${am.partNumber || ""}"`,
+                    `"${am.manufacturer || ""}"`,
+                    am.unit,
+                    Number(am.quantity)
                   ].join(","))
                 ].join("\n");
 
@@ -2024,25 +1859,11 @@ export default function TemplatesPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">Total Materials</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {selectedAssembly ? formatCurrency(
-                    selectedAssembly.materials.reduce((total, am) => {
-                      return total + (Number(am.material.price) * Number(am.quantity));
-                    }, 0)
-                  ) : formatCurrency(0)}
+              <div className="text-center col-span-3">
+                <div className="text-2xl font-bold text-primary">
+                  {selectedAssembly?.materials.length || 0}
                 </div>
-                <div className="text-sm text-muted-foreground">Total Cost</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {selectedAssembly ? Math.round(
-                    selectedAssembly.materials.reduce((total, am) => {
-                      return total + (Number(am.material.price) * Number(am.quantity));
-                    }, 0) / (selectedAssembly.materials.length || 1)
-                  ) : 0}
-                </div>
-                <div className="text-sm text-muted-foreground">Avg per Material</div>
+                <div className="text-sm text-muted-foreground">Total Materials</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
@@ -2082,63 +1903,23 @@ export default function TemplatesPage() {
                       <TableHead className="text-xs font-medium">Manufacturer</TableHead>
                       <TableHead className="text-xs font-medium">Unit</TableHead>
                       <TableHead className="text-xs font-medium text-right">Quantity</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Unit Price</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Total Cost</TableHead>
-                      <TableHead className="text-xs font-medium text-right">% of Assembly</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedAssembly?.materials.map((assemblyMaterial, index) => {
-                      const totalCost = Number(assemblyMaterial.material.price) * Number(assemblyMaterial.quantity);
-                      const assemblyTotalCost = selectedAssembly ? selectedAssembly.materials.reduce((total, am) => {
-                        return total + (Number(am.material.price) * Number(am.quantity));
-                      }, 0) : 1;
-                      const percentage = assemblyTotalCost > 0 ? (totalCost / assemblyTotalCost) * 100 : 0;
-
-                      return (
-                        <TableRow key={assemblyMaterial.id} className="hover:bg-muted/30">
-                          <TableCell className="text-xs text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">
-                            {assemblyMaterial.material.name}
-                          </TableCell>
-                          <TableCell className="text-xs font-mono">
-                            {assemblyMaterial.material.partNumber || "-"}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {assemblyMaterial.material.manufacturer || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {assemblyMaterial.material.unit}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-right">
-                            {Number(assemblyMaterial.quantity).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-xs text-right text-blue-600">
-                            {formatCurrency(assemblyMaterial.material.price)}
-                          </TableCell>
-                          <TableCell className="text-sm text-right font-medium text-green-600">
-                            {formatCurrency(totalCost)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-xs font-medium">
-                                {percentage.toFixed(1)}%
-                              </span>
-                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {selectedAssembly?.materials.map((am, index) => (
+                      <TableRow key={am.id || index} className="hover:bg-muted/30">
+                        <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell className="text-sm">{am.name}</TableCell>
+                        <TableCell className="text-xs font-mono">{am.partNumber || "-"}</TableCell>
+                        <TableCell className="text-xs">{am.manufacturer || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">{am.unit}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-right">
+                          {Number(am.quantity).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -2148,16 +1929,6 @@ export default function TemplatesPage() {
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-muted-foreground">
                 Showing {selectedAssembly?.materials.length || 0} materials in this assembly
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Total Cost:</span>
-                <span className="text-lg font-bold text-green-600">
-                  {selectedAssembly ? formatCurrency(
-                    selectedAssembly.materials.reduce((total, am) => {
-                      return total + (Number(am.material.price) * Number(am.quantity));
-                    }, 0)
-                  ) : formatCurrency(0)}
-                </span>
               </div>
             </div>
           </div>
@@ -2184,7 +1955,7 @@ export default function TemplatesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-              Template Documents: "{selectedTemplate?.name}"
+              Template Documents: &quot;{selectedTemplate?.name}&quot;
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
               All documents uploaded to this template
@@ -2401,7 +2172,7 @@ export default function TemplatesPage() {
                     <File className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
                     <h3 className="text-lg font-medium text-muted-foreground mb-2">No documents uploaded</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      This template doesn't have any documents yet. Upload some documents to get started.
+                      This template doesn&apos;t have any documents yet. Upload some documents to get started.
                     </p>
                     <Button
                       variant="outline"
@@ -2645,6 +2416,6 @@ export default function TemplatesPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

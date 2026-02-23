@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Plus, Minus, Package, X, Check } from "lucide-react";
+import { Search, Plus, Minus, Package, X, Check, Loader2 } from "lucide-react";
 
 interface Material {
   id: number;
@@ -38,40 +38,106 @@ export default function MaterialSelector({
   onClose
 }: MaterialSelectorProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Only for initial load
+  const [isSearching, setIsSearching] = useState(false); // For search operations
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMaterials, setSelectedMaterials] = useState<SelectedMaterial[]>(initialSelectedMaterials);
+  const [totalElements, setTotalElements] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true);
+  const pageSize = 100;
 
-  useEffect(() => {
-    fetchMaterials();
-  }, []);
-
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async (page = 0, search = "", append = false) => {
     try {
-      const response = await fetch("/api/materials");
+      if (append) {
+        setLoadingMore(true);
+      } else if (page === 0 && search === "" && isInitialMount.current) {
+        // Only show full loading on initial mount
+        setLoading(true);
+      } else {
+        // For search, use isSearching instead
+        setIsSearching(true);
+      }
+
+      // Use server-side search with larger page size
+      const response = await fetch(`/api/materials?page=${page}&size=${pageSize}&search=${encodeURIComponent(search)}`);
       if (response.ok) {
         const data = await response.json();
-        setMaterials(data);
+        // Map CRM data to component interface
+        const mappedMaterials: Material[] = (data.content || []).map((m: any) => ({
+          id: m.id,
+          name: m.partName,
+          partNumber: m.partNumber,
+          manufacturer: m.mfr,
+          unit: m.unitMeasure,
+          price: m.priceToIDR
+        }));
+
+        if (append) {
+          setMaterials(prev => [...prev, ...mappedMaterials]);
+        } else {
+          setMaterials(mappedMaterials);
+        }
+
+        setTotalElements(data.totalElements || 0);
+        setCurrentPage(page);
+        setHasMore(!data.last && mappedMaterials.length > 0);
       }
     } catch (error) {
       console.error("Failed to fetch materials:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      setIsSearching(false);
+      isInitialMount.current = false;
     }
-  };
+  }, []);
 
-  // Filter materials based on search term
-  const filteredMaterials = useMemo(() => {
-    if (!searchTerm) return materials;
+  // Initial load only
+  useEffect(() => {
+    fetchMaterials(0, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const term = searchTerm.toLowerCase();
-    return materials.filter(material =>
-      material.name.toLowerCase().includes(term) ||
-      (material.partNumber && material.partNumber.toLowerCase().includes(term)) ||
-      (material.manufacturer && material.manufacturer.toLowerCase().includes(term)) ||
-      material.unit.toLowerCase().includes(term)
-    );
-  }, [materials, searchTerm]);
+  // Debounced search - only triggered when searchTerm changes after initial mount
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchMaterials(0, searchTerm);
+    }, 500); // Increased debounce time for better UX
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, fetchMaterials]);
+
+  // Load more materials
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchMaterials(currentPage + 1, searchTerm, true);
+    }
+  }, [loadingMore, hasMore, currentPage, searchTerm, fetchMaterials]);
+
+  // Handle scroll for infinite loading
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const scrollPercentage = (target.scrollTop + target.clientHeight) / target.scrollHeight;
+
+    if (scrollPercentage > 0.8 && hasMore && !loadingMore) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loadMore]);
 
   const isMaterialSelected = (materialId: number) => {
     return selectedMaterials.some(sm => sm.materialId === materialId);
@@ -141,15 +207,6 @@ export default function MaterialSelector({
     }, 0);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-2 text-muted-foreground">Loading materials...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-[90vh] max-h-[800px]">
       {/* Header - Fixed */}
@@ -173,6 +230,11 @@ export default function MaterialSelector({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -181,11 +243,19 @@ export default function MaterialSelector({
         {/* Materials List */}
         <div className="flex-1 border-r flex flex-col">
           <div className="flex-shrink-0 p-4 border-b bg-muted/50">
-            <h3 className="font-semibold">Available Materials ({filteredMaterials.length})</h3>
+            <h3 className="font-semibold">Available Materials ({materials.length} of {totalElements.toLocaleString()})</h3>
           </div>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1" onScrollCapture={handleScroll}>
             <div className="p-4 space-y-2">
-              {filteredMaterials.map((material) => {
+              {/* Initial Loading State */}
+              {loading && materials.length === 0 && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span className="text-muted-foreground">Loading materials...</span>
+                </div>
+              )}
+
+              {materials.map((material) => {
                 const isSelected = isMaterialSelected(material.id);
                 const selectedMaterial = getSelectedMaterial(material.id);
 
@@ -256,6 +326,30 @@ export default function MaterialSelector({
                   </Card>
                 );
               })}
+
+              {/* Load More Indicator */}
+              {loadingMore && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading more materials...</span>
+                </div>
+              )}
+
+              {/* End of List Indicator */}
+              {!hasMore && materials.length > 0 && (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  All {totalElements.toLocaleString()} materials loaded
+                </div>
+              )}
+
+              {/* No Results */}
+              {materials.length === 0 && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                  <p>No materials found</p>
+                  {searchTerm && <p className="text-sm">Try a different search term</p>}
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>

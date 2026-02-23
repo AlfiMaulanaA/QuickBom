@@ -1,80 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { CrmService } from "@/lib/services/crm";
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: NextRequest) {
   try {
-    const materials = await prisma.material.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '0');
+    const size = parseInt(searchParams.get('size') || '10');
+    const search = searchParams.get('search') || '';
 
-    // Ensure we return an array even if database is empty
-    if (!materials) {
-      return NextResponse.json([]);
-    }
+    // Fetch from External CRM Service
+    const crmData = await CrmService.getMaterials(page, size, search);
 
-    return NextResponse.json(materials);
+    return NextResponse.json(crmData);
   } catch (error: any) {
-    console.error('API Error [GET /api/materials]:', error);
-
-    // Handle specific Prisma errors
-    if (error.code === 'P1001') {
-      return NextResponse.json(
-        { error: "Database server unreachable", details: "Please check database connection" },
-        { status: 503 }
-      );
-    }
-
-    if (error.code === 'P2028') {
-      return NextResponse.json(
-        { error: "Database operation timeout", details: "Request took too long to process" },
-        { status: 504 }
-      );
-    }
-
-    // Generic error response
+    console.error("Failed to fetch materials from external API:", error);
     return NextResponse.json(
-      {
-        error: "Failed to fetch materials",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
-      { status: 500 }
+      { error: "Failed to fetch materials from external system" },
+      { status: 502 } // Bad Gateway as we are proxying
     );
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name, partNumber, manufacturer, unit, price } = body;
-
-    if (!name || !unit) {
-      return NextResponse.json(
-        { error: "Name and unit are required" },
-        { status: 400 }
-      );
-    }
-
-    const material = await prisma.material.create({
-      data: {
-        name,
-        partNumber,
-        manufacturer,
-        unit,
-        price: price || 0
-      }
-    });
-
-    return NextResponse.json(material, { status: 201 });
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: "Material with this name already exists" },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Failed to create material" },
-      { status: 500 }
-    );
-  }
-}
+// POST, PUT, DELETE are disabled since we are reading from external source
+// Unless we want to support local "overrides" or syncing into a local cache table?
+// For now, let's keep it read-only from the source as requested ("replace with api external").

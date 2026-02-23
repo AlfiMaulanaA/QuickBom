@@ -40,7 +40,7 @@ export async function PUT(
           items: {
             deleteMany: {}, // Remove existing items
             create: items.map((item: any) => ({
-              assemblyId: item.assemblyId,
+              assembly: { connect: { id: Number(item.assemblyId) } },
               quantity: item.quantity || 1,
               conflictsWith: item.conflictsWith || [],
               isDefault: item.isDefault || false,
@@ -55,11 +55,7 @@ export async function PUT(
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           },

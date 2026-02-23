@@ -24,10 +24,10 @@ const RealtimeClockWithRefresh = dynamic(
 
 function generateTitleFromPathname(pathname: string): string {
   // Handle root dashboard
-  if (pathname === "/" || pathname === "/dashboard") return "QuickBom Dashboard";
+  if (pathname === "/" || pathname === "/dashboard") return "Product Configurator Dashboard";
 
-  // Handle QuickBom specific routes with better coverage
-  const quickbomRoutes: Record<string, string> = {
+  // Handle Product Configurator specific routes
+  const appRoutes: Record<string, string> = {
     "/materials": "Materials Management",
     "/assemblies": "Assemblies Management",
     "/templates": "Templates Management",
@@ -35,12 +35,13 @@ function generateTitleFromPathname(pathname: string): string {
     "/users": "User Management",
     "/clients": "Client Management",
     "/whatsapp": "WhatsApp Integration",
-    "/gantt": "Global Gantt Chart",
+    "/ai": "AI Assistant",
+    "/questionnaire": "Smart Questionnaire",
   };
 
-  // Check if it's a direct QuickBom route
-  if (quickbomRoutes[pathname]) {
-    return quickbomRoutes[pathname];
+  // Check if it's a direct app route
+  if (appRoutes[pathname]) {
+    return appRoutes[pathname];
   }
 
   // Handle dynamic routes
@@ -51,17 +52,12 @@ function generateTitleFromPathname(pathname: string): string {
     if (segments.length === 2 && /^\d+$/.test(segments[1])) {
       return `Project #${segments[1]}`;
     }
-    if (segments[2] === "timeline") {
-      if (segments[3] === "gantt") {
-        return `Project #${segments[1]} - Gantt Chart`;
-      }
-      return `Project #${segments[1]} - Timeline`;
-    }
+
   }
 
   // Handle dashboard routes
   if (segments[0] === "dashboard") {
-    if (segments.length === 1) return "QuickBom Dashboard";
+    if (segments.length === 1) return "Product Configurator Dashboard";
     if (segments[1] === "projects") return "Projects Management";
     if (segments[1] === "materials") return "Materials Management";
     if (segments[1] === "assemblies") return "Assemblies Management";
@@ -70,23 +66,22 @@ function generateTitleFromPathname(pathname: string): string {
     if (segments[1] === "clients") return "Client Management";
   }
 
-  // Handle remaining QuickBom routes
+  // Handle remaining routes
   const lastSegment = segments[segments.length - 1];
-  const quickbomFallbackRoutes: Record<string, string> = {
+  const fallbackRoutes: Record<string, string> = {
     "login": "Login",
     "register": "Register",
     "unauthorized": "Access Denied",
     "not-found": "Page Not Found",
     "test-db": "Database Test",
-    "timeline": "Project Timeline",
-    "gantt": "Gantt Chart",
     "whatsapp": "WhatsApp Integration",
     "auth": "Authentication",
     "api": "API Routes",
+    "ai": "AI Assistant",
   };
 
-  return quickbomFallbackRoutes[lastSegment] ||
-         lastSegment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return fallbackRoutes[lastSegment] ||
+    lastSegment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export default function DashboardHeader() {
@@ -155,7 +150,7 @@ export default function DashboardHeader() {
         <Button variant="ghost" size="icon" onClick={handleZoomIn} title="Zoom In">
           <ZoomIn className="h-4 w-4" />
         </Button>
-       
+
         <Button variant="ghost" size="icon" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4" />
         </Button>

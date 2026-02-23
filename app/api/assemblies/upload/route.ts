@@ -95,11 +95,7 @@ export async function POST(request: NextRequest) {
       where: { id: Number(assemblyId) },
       data: { docs: updatedDocs },
       include: {
-        materials: {
-          include: {
-            material: true
-          }
-        }
+        materials: true
       }
     });
 
@@ -182,11 +178,7 @@ export async function DELETE(request: NextRequest) {
       where: { id: Number(assemblyId) },
       data: updatedDocs.length > 0 ? { docs: updatedDocs } : { docs: [] },
       include: {
-        materials: {
-          include: {
-            material: true
-          }
-        }
+        materials: true
       }
     });
 

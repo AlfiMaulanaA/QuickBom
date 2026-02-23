@@ -20,11 +20,7 @@ export async function GET(
       where: { id: assemblyId },
       include: {
         category: true,
-        materials: {
-          include: {
-            material: true
-          }
-        }
+        materials: true
       }
     });
 
@@ -118,11 +114,7 @@ export async function PUT(
       where: { id: assemblyId },
       data: updateData,
       include: {
-        materials: {
-          include: {
-            material: true
-          }
-        },
+        materials: true,
         category: true
       }
     });
@@ -178,12 +170,27 @@ export async function DELETE(
       );
     }
 
-    // Delete all material associations first to avoid foreign key constraint
+    // Check if assembly is used in any assembly groups
+    const groupItemCount = await prisma.assemblyGroupItem.count({
+      where: { assemblyId: assemblyId }
+    });
+
+    if (groupItemCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete assembly",
+          message: `This assembly is used in ${groupItemCount} assembly group(s). Remove it from all groups first.`
+        },
+        { status: 409 }
+      );
+    }
+
+    // Delete assembly (cascade will handle assemblyMaterials if schema is correct, 
+    // but the deleteMany here is a safe fallback)
     await prisma.assemblyMaterial.deleteMany({
       where: { assemblyId: assemblyId }
     });
 
-    // Delete assembly
     await prisma.assembly.delete({
       where: { id: assemblyId }
     });

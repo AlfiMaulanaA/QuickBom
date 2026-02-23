@@ -193,7 +193,7 @@ export default function TemplateDemoPage() {
                   <div>
                     <h4 className="font-semibold mb-2">1. Setup Groups (Admin Tab)</h4>
                     <ul className="text-sm space-y-1 text-muted-foreground">
-                      <li>• Klik "Create Group" untuk membuat group baru</li>
+                      <li>• Klik &quot;Create Group&quot; untuk membuat group baru</li>
                       <li>• Pilih category (Sanitary, Wall, Electrical, dll)</li>
                       <li>• Pilih group type (REQUIRED, CHOOSE_ONE, OPTIONAL, CONFLICT)</li>
                       <li>• Pilih assemblies yang akan dimasukkan ke group</li>

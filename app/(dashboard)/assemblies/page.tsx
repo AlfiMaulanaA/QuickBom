@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, DollarSign, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X, FileSpreadsheet } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,14 +27,16 @@ interface Material {
   partNumber: string | null;
   manufacturer: string | null;
   unit: string;
-  price: number;
 }
 
 interface AssemblyMaterial {
-  id?: number;
-  materialId: number;
+  id?: string;
+  externalId: string;
+  name: string;
+  partNumber: string | null;
+  manufacturer: string | null;
+  unit: string;
   quantity: number;
-  material: Material;
 }
 
 interface DocumentFile {
@@ -74,7 +76,7 @@ export default function AssembliesPage() {
   const [selectedAssemblies, setSelectedAssemblies] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [materialsCountFilter, setMaterialsCountFilter] = useState("all");
-  const [costFilter, setCostFilter] = useState("all");
+
   const [dateFilter, setDateFilter] = useState("all");
   const [moduleFilter, setModuleFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "createdAt">("createdAt");
@@ -147,7 +149,7 @@ export default function AssembliesPage() {
   useEffect(() => {
     setVisibleItemsCount(20);
     setHasMoreData(true);
-  }, [searchTerm, materialsCountFilter, costFilter, dateFilter, sortBy, sortOrder]);
+  }, [searchTerm, materialsCountFilter, dateFilter, sortBy, sortOrder]);
 
 
 
@@ -198,18 +200,6 @@ export default function AssembliesPage() {
     }
   };
 
-  const calculateTotalCost = (assembly: Assembly) => {
-    return assembly.materials.reduce((total, am) => {
-      return total + (Number(am.material.price) * Number(am.quantity));
-    }, 0);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
 
   const isNewItem = (createdAt: string) => {
     const createdDate = new Date(createdAt);
@@ -233,12 +223,6 @@ export default function AssembliesPage() {
         (materialsCountFilter === "medium" && materialsCount >= 3 && materialsCount <= 5) ||
         (materialsCountFilter === "high" && materialsCount >= 6);
 
-      const totalCost = calculateTotalCost(assembly);
-      const matchesCost = costFilter === "all" ||
-        (costFilter === "low" && totalCost >= 0 && totalCost <= 50000) ||
-        (costFilter === "medium" && totalCost > 50000 && totalCost <= 200000) ||
-        (costFilter === "high" && totalCost > 200000);
-
       const createdDate = new Date(assembly.createdAt);
       const now = new Date();
       const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -247,7 +231,7 @@ export default function AssembliesPage() {
         (dateFilter === "normal" && daysDiff > 7 && daysDiff <= 30) ||
         (dateFilter === "old" && daysDiff > 30);
 
-      return matchesSearch && matchesModule && matchesMaterialsCount && matchesCost && matchesDate;
+      return matchesSearch && matchesModule && matchesMaterialsCount && matchesDate;
     });
 
     // Sort assemblies
@@ -275,7 +259,7 @@ export default function AssembliesPage() {
     });
 
     return filtered;
-  }, [assemblies, searchTerm, materialsCountFilter, costFilter, dateFilter, sortBy, sortOrder]);
+  }, [assemblies, searchTerm, materialsCountFilter, dateFilter, sortBy, sortOrder]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -375,14 +359,13 @@ export default function AssembliesPage() {
   };
 
   const exportToExcelHandler = () => {
-    const headers = ["Name", "Description", "Materials Count", "Total Cost", "Created"];
+    const headers = ["Name", "Description", "Materials Count", "Created"];
     const data = [
       headers,
       ...processedAssemblies.map(assembly => [
         assembly.name,
         assembly.description || "",
         assembly.materials.length,
-        calculateTotalCost(assembly),
         new Date(assembly.createdAt).toLocaleDateString()
       ])
     ];
@@ -397,7 +380,7 @@ export default function AssembliesPage() {
         name: `${assembly.name} (Copy)`,
         description: assembly.description,
         materials: assembly.materials.map(am => ({
-          materialId: am.materialId,
+          externalId: am.externalId,
           quantity: am.quantity
         }))
       };
@@ -436,30 +419,22 @@ export default function AssembliesPage() {
   const exportMaterialsToExcel = () => {
     if (!selectedAssembly) return;
 
-    const headers = ["#", "Material Name", "Part Number", "Manufacturer", "Unit", "Quantity", "Unit Price", "Total Cost", "Percentage"];
+    const headers = ["#", "Material Name", "Part Number", "Manufacturer", "Unit", "Quantity"];
     const data = [
       headers,
-      ...selectedAssembly.materials.map((assemblyMaterial, index) => {
-        const totalCost = Number(assemblyMaterial.material.price) * Number(assemblyMaterial.quantity);
-        const assemblyTotalCost = calculateTotalCost(selectedAssembly);
-        const percentage = assemblyTotalCost > 0 ? (totalCost / assemblyTotalCost) * 100 : 0;
-
+      ...selectedAssembly.materials.map((am, index) => {
         return [
           index + 1,
-          assemblyMaterial.material.name,
-          assemblyMaterial.material.partNumber || "",
-          assemblyMaterial.material.manufacturer || "",
-          assemblyMaterial.material.unit,
-          Number(assemblyMaterial.quantity),
-          assemblyMaterial.material.price,
-          totalCost,
-          percentage // Excel can format this as % if we set style, but raw number 0-100 is fine, or string "X%"
+          am.name,
+          am.partNumber || "",
+          am.manufacturer || "",
+          am.unit,
+          Number(am.quantity)
         ];
       }),
       [],
       [`Assembly: ${selectedAssembly.name}`],
       [`Total Materials: ${selectedAssembly.materials.length}`],
-      [`Total Cost: ${calculateTotalCost(selectedAssembly)}`],
       [`Description: ${selectedAssembly.description || "No description"}`]
     ];
 
@@ -580,7 +555,6 @@ export default function AssembliesPage() {
                   onClick={() => {
                     setSearchTerm("");
                     setMaterialsCountFilter("all");
-                    setCostFilter("all");
                     setDateFilter("all");
                   }}
                 >
@@ -623,20 +597,8 @@ export default function AssembliesPage() {
                 </Select>
               </div>
 
-              <div className="sm:w-48">
-                <Select value={costFilter} onValueChange={setCostFilter}>
-                  <SelectTrigger>
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by total cost" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Costs</SelectItem>
-                    <SelectItem value="low">Low (≤50K)</SelectItem>
-                    <SelectItem value="medium">Medium (50K-200K)</SelectItem>
-                    <SelectItem value="high">High (200K)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               <div className="sm:w-48">
                 <Select value={dateFilter} onValueChange={setDateFilter}>
@@ -668,12 +630,12 @@ export default function AssembliesPage() {
             </div>
 
             {/* Active Filters Display */}
-            {(searchTerm || materialsCountFilter !== "all" || costFilter !== "all" || dateFilter !== "all") && (
+            {(searchTerm || materialsCountFilter !== "all" || dateFilter !== "all") && (
               <div className="flex flex-wrap gap-2 pt-2 border-t">
                 <span className="text-sm text-muted-foreground">Active filters:</span>
                 {searchTerm && (
                   <Badge variant="secondary" className="gap-1">
-                    Search: "{searchTerm}"
+                    Search: &quot;{searchTerm}&quot;
                     <button
                       onClick={() => setSearchTerm("")}
                       className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
@@ -700,24 +662,8 @@ export default function AssembliesPage() {
                     </button>
                   </Badge>
                 )}
-                {costFilter !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Cost: {(() => {
-                      switch (costFilter) {
-                        case "low": return "≤50K";
-                        case "medium": return "50K-200K";
-                        case "high": return ">200K";
-                        default: return costFilter;
-                      }
-                    })()}
-                    <button
-                      onClick={() => setCostFilter("all")}
-                      className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                )}
+
+
                 {dateFilter !== "all" && (
                   <Badge variant="secondary" className="gap-1">
                     Date: {dateFilter === "recent" ? "≤7 days" :
@@ -789,7 +735,7 @@ export default function AssembliesPage() {
                         </Button>
                       </TableHead>
                       <TableHead>Module</TableHead>
-                      <TableHead>Materials & Cost</TableHead>
+                      <TableHead>Materials</TableHead>
                       <TableHead>Documents</TableHead>
                       <TableHead>
                         <Button variant="ghost" onClick={() => handleSort("createdAt")} className="h-auto p-0 font-semibold">
@@ -842,9 +788,6 @@ export default function AssembliesPage() {
                                 <Badge variant="secondary" className="text-xs">
                                   {assembly.materials.length} materials
                                 </Badge>
-                                <div className="text-xs font-semibold text-green-600">
-                                  {formatCurrency(calculateTotalCost(assembly))}
-                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -1021,10 +964,6 @@ export default function AssembliesPage() {
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="font-medium text-green-600">{formatCurrency(calculateTotalCost(assembly))}</span>
-                        <span className="text-muted-foreground ml-1">total</span>
-                      </div>
                       <div className="text-muted-foreground">
                         {new Date(assembly.createdAt).toLocaleDateString()}
                       </div>
@@ -1211,30 +1150,18 @@ export default function AssembliesPage() {
 
           <div className="space-y-4">
             {/* Assembly Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">
                   {selectedAssembly?.materials.length || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Total Materials</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {selectedAssembly ? formatCurrency(calculateTotalCost(selectedAssembly)) : formatCurrency(0)}
-                </div>
-                <div className="text-sm text-muted-foreground">Total Cost</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {selectedAssembly ? Math.round(calculateTotalCost(selectedAssembly) / (selectedAssembly.materials.length || 1)) : 0}
-                </div>
-                <div className="text-sm text-muted-foreground">Avg per Material</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+              <div className="text-center col-span-3">
+                <div className="text-sm font-medium text-purple-600">
                   {selectedAssembly?.description || "No description"}
                 </div>
-                <div className="text-sm text-muted-foreground">Description</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Description</div>
               </div>
             </div>
 
@@ -1250,61 +1177,23 @@ export default function AssembliesPage() {
                       <TableHead className="text-xs font-medium">Manufacturer</TableHead>
                       <TableHead className="text-xs font-medium">Unit</TableHead>
                       <TableHead className="text-xs font-medium text-right">Quantity</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Unit Price</TableHead>
-                      <TableHead className="text-xs font-medium text-right">Total Cost</TableHead>
-                      <TableHead className="text-xs font-medium text-right">% of Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedAssembly?.materials.map((assemblyMaterial, index) => {
-                      const totalCost = Number(assemblyMaterial.material.price) * Number(assemblyMaterial.quantity);
-                      const assemblyTotalCost = selectedAssembly ? calculateTotalCost(selectedAssembly) : 1;
-                      const percentage = assemblyTotalCost > 0 ? (totalCost / assemblyTotalCost) * 100 : 0;
-
-                      return (
-                        <TableRow key={assemblyMaterial.id} className="hover:bg-muted/30">
-                          <TableCell className="text-xs text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {assemblyMaterial.material.name}
-                          </TableCell>
-                          <TableCell className="text-xs font-mono">
-                            {assemblyMaterial.material.partNumber || "-"}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {assemblyMaterial.material.manufacturer || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {assemblyMaterial.material.unit}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-right">
-                            {Number(assemblyMaterial.quantity).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-xs text-right text-blue-600">
-                            {formatCurrency(assemblyMaterial.material.price)}
-                          </TableCell>
-                          <TableCell className="text-sm text-right font-medium text-green-600">
-                            {formatCurrency(totalCost)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-xs font-medium">
-                                {percentage.toFixed(1)}%
-                              </span>
-                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {selectedAssembly?.materials.map((am, index) => (
+                      <TableRow key={am.id || index} className="hover:bg-muted/30">
+                        <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell className="text-sm">{am.name}</TableCell>
+                        <TableCell className="text-xs font-mono">{am.partNumber || "-"}</TableCell>
+                        <TableCell className="text-xs">{am.manufacturer || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">{am.unit}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-right">
+                          {Number(am.quantity).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -1468,12 +1357,6 @@ export default function AssembliesPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {selectedAssembly?.materials.length || 0} materials for this assembly
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Total Cost:</span>
-                <span className="text-lg font-bold text-green-600">
-                  {selectedAssembly ? formatCurrency(calculateTotalCost(selectedAssembly)) : formatCurrency(0)}
-                </span>
-              </div>
             </div>
           </div>
         </DialogContent>
@@ -1623,6 +1506,6 @@ export default function AssembliesPage() {
         onCancel={() => setIsBulkDeleteDialogOpen(false)}
         destructive
       />
-    </div>
+    </div >
   );
 }

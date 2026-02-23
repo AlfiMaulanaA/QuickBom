@@ -6,11 +6,7 @@ export async function GET() {
     console.log('[API] GET /api/assemblies - Starting fetch');
     const assemblies = await prisma.assembly.findMany({
       include: {
-        materials: {
-          include: {
-            material: true
-          }
-        },
+        materials: true,
         category: true
       },
       orderBy: { createdAt: 'desc' }
@@ -93,21 +89,20 @@ export async function POST(request: NextRequest) {
         module: module || 'ELECTRICAL', // Default to ELECTRICAL if not provided
         categoryId,
         docs: docs || null,
-        ...(materials && materials.length > 0 ? {
-          materials: {
-            create: materials.map((m: any) => ({
-              materialId: m.materialId,
-              quantity: m.quantity
-            }))
-          }
-        } : {})
+        materials: {
+          create: materials?.map((m: any) => ({
+            externalId: m.externalId.toString(), // Ensure string
+            name: m.name,
+            partNumber: m.partNumber || null,
+            manufacturer: m.manufacturer || null,
+            unit: m.unit,
+            price: Number(m.price),
+            quantity: Number(m.quantity)
+          })) || []
+        }
       },
       include: {
-        materials: {
-          include: {
-            material: true
-          }
-        },
+        materials: true, // No nested include material needed anymore
         category: true
       }
     });

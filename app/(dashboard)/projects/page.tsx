@@ -53,8 +53,6 @@ interface Project {
   projectType: string | null;
   location: string | null;
   area: number | null;
-  budget: number | null;
-  totalPrice: number;
   startDate: Date | null;
   endDate: Date | null;
   actualStart: Date | null;
@@ -73,6 +71,7 @@ interface Project {
     email: string;
   };
   assignedUsers: string[];
+  crmInquiryId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,6 +90,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState<"name" | "createdAt">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [clients, setClients] = useState<Client[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -98,7 +98,6 @@ export default function ProjectsPage() {
     projectType: "",
     location: "",
     area: "",
-    budget: "",
     startDate: "",
     endDate: "",
     actualStart: "",
@@ -107,6 +106,7 @@ export default function ProjectsPage() {
     progress: "0",
     priority: "MEDIUM",
     fromTemplateId: "",
+    crmInquiryId: "",
     assignedUsers: [] as string[]
   });
 
@@ -122,10 +122,23 @@ export default function ProjectsPage() {
     }
   };
 
+  const fetchInquiries = async () => {
+    try {
+      const response = await fetch("/api/crm/inquiries?role=Estimator&id=0");
+      if (response.ok) {
+        const data = await response.json();
+        setInquiries(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch inquiries:", error);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
     fetchTemplates();
     fetchClients();
+    fetchInquiries();
   }, []);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -169,6 +182,7 @@ export default function ProjectsPage() {
 
 
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -192,7 +206,6 @@ export default function ProjectsPage() {
         projectType: formData.projectType || null,
         location: formData.location || null,
         area: formData.area ? Number(formData.area) : null,
-        budget: formData.budget ? Number(formData.budget) : null,
         startDate: formData.startDate || null,
         endDate: formData.endDate || null,
         actualStart: formData.actualStart || null,
@@ -200,7 +213,8 @@ export default function ProjectsPage() {
         status: formData.status || "PLANNING",
         progress: formData.progress ? Number(formData.progress) : 0,
         priority: formData.priority || "MEDIUM",
-        assignedUsers: formData.assignedUsers || []
+        assignedUsers: formData.assignedUsers || [],
+        crmInquiryId: formData.crmInquiryId ? parseInt(formData.crmInquiryId) : null
       };
 
       if (formData.fromTemplateId && formData.fromTemplateId !== "none") {
@@ -236,7 +250,6 @@ export default function ProjectsPage() {
           projectType: "",
           location: "",
           area: "",
-          budget: "",
           startDate: "",
           endDate: "",
           actualStart: "",
@@ -245,6 +258,7 @@ export default function ProjectsPage() {
           progress: "0",
           priority: "MEDIUM",
           fromTemplateId: "",
+          crmInquiryId: "",
           assignedUsers: []
         });
       } else {
@@ -273,7 +287,6 @@ export default function ProjectsPage() {
       projectType: project.projectType || "",
       location: project.location || "",
       area: project.area?.toString() || "",
-      budget: project.budget?.toString() || "",
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
       actualStart: project.actualStart ? new Date(project.actualStart).toISOString().split('T')[0] : "",
@@ -282,6 +295,7 @@ export default function ProjectsPage() {
       progress: project.progress?.toString() || "0",
       priority: project.priority || "MEDIUM",
       fromTemplateId: project.fromTemplateId?.toString() || "",
+      crmInquiryId: project.crmInquiryId?.toString() || "",
       assignedUsers: project.assignedUsers || []
     });
     setIsEditDialogOpen(true);
@@ -317,12 +331,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
+
 
   const isNewItem = (createdAt: string) => {
     const createdDate = new Date(createdAt);
@@ -435,7 +444,6 @@ export default function ProjectsPage() {
       projectType: project.projectType || "",
       location: project.location || "",
       area: project.area?.toString() || "",
-      budget: project.budget?.toString() || "",
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
       actualStart: project.actualStart ? new Date(project.actualStart).toISOString().split('T')[0] : "",
@@ -444,6 +452,7 @@ export default function ProjectsPage() {
       progress: project.progress?.toString() || "0",
       priority: project.priority || "MEDIUM",
       fromTemplateId: project.fromTemplateId?.toString() || "",
+      crmInquiryId: project.crmInquiryId?.toString() || "",
       assignedUsers: project.assignedUsers || []
     });
     setIsCreateDialogOpen(true);
@@ -488,9 +497,7 @@ export default function ProjectsPage() {
 
   // Calculate cost for an assembly
   const calculateAssemblyCost = (assembly: any) => {
-    return assembly.materials.reduce((total: number, am: any) => {
-      return total + (Number(am.material.price) * Number(am.quantity));
-    }, 0);
+    return 0; // Cost calculations removed
   };
 
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -557,15 +564,14 @@ export default function ProjectsPage() {
       console.log(`   🏗️  Assembly: ${assembly.name} (Qty: ${assemblyQuantity})`);
 
       assembly.materials.forEach((assemblyMaterial: any) => {
-        const material = assemblyMaterial.material;
+        const material = assemblyMaterial; // Use snapshot directly
         // Create unique key based on material properties
-        const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}_${material.price}`;
+        const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}`;
 
         // 🧮 CALCULATION LOGIC:
         // Material quantity needed = (material quantity per assembly) × (assembly quantity in template)
         const materialQuantityPerAssembly = Number(assemblyMaterial.quantity);
         const materialQuantity = materialQuantityPerAssembly * assemblyQuantity;
-        const totalCost = materialQuantity * Number(material.price);
 
         console.log(`      📦 Material: ${material.name} | Qty per assembly: ${materialQuantityPerAssembly} | Assembly qty: ${assemblyQuantity} | Total qty: ${materialQuantity}`);
 
@@ -574,7 +580,6 @@ export default function ProjectsPage() {
           // ✅ MATERIAL EXISTS: Add to existing totals
           const existing = materialMap.get(materialKey);
           existing.totalQuantity += materialQuantity; // Sum quantities across all assemblies in this project
-          existing.totalCost += totalCost; // Sum costs
           existing.usedInAssemblies.push({
             assemblyName: assembly.name,
             assemblyQuantity: assemblyQuantity,
@@ -588,9 +593,7 @@ export default function ProjectsPage() {
             partNumber: material.partNumber,
             manufacturer: material.manufacturer,
             unit: material.unit,
-            unitPrice: material.price,
             totalQuantity: materialQuantity,
-            totalCost: totalCost,
             usedInAssemblies: [{
               assemblyName: assembly.name,
               assemblyQuantity: assemblyQuantity,
@@ -605,7 +608,7 @@ export default function ProjectsPage() {
     console.log(`📊 Project "${project.name}" - Unique materials found:`, materialMap.size);
 
     // Create Data for Excel
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Project Name", "Template Name", "Description"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Project Name", "Template Name", "Description"];
     const data = [
       [`CONSOLIDATED MATERIALS FOR PROJECT: ${project.name.toUpperCase()}`],
       [`Generated on: ${new Date().toLocaleString()}`],
@@ -613,7 +616,6 @@ export default function ProjectsPage() {
       [`Template: ${project.template?.name || 'No template'}`],
       [`Client: ${project.client ? (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : 'No client'}`],
       [`Total Assemblies: ${project.template?.assemblies?.length || 0}`],
-      [`Total Estimated Cost: ${formatCurrency(Number(project.totalPrice))}`],
       [],
       headers
     ];
@@ -632,8 +634,6 @@ export default function ProjectsPage() {
         material.name,
         material.totalQuantity,
         material.unit,
-        material.unitPrice,
-        material.totalCost,
         project.name,
         project.template?.name || 'No template',
         `Usage: ${usageDetails}`
@@ -643,14 +643,12 @@ export default function ProjectsPage() {
     // Add summary information for this project
     const totalMaterials = materialMap.size;
     const totalQuantity = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalQuantity, 0);
-    const totalValue = Array.from(materialMap.values()).reduce((sum: any, mat: any) => sum + mat.totalCost, 0);
 
     data.push(
       [],
       [`SUMMARY FOR PROJECT: ${project.name.toUpperCase()}`],
       [`Total Unique Materials: ${totalMaterials}`],
-      [`Total Quantity in Project: ${totalQuantity}`],
-      [`Total Value: ${formatCurrency(totalValue)}`]
+      [`Total Quantity in Project: ${totalQuantity}`]
     );
 
     // Download file for this project
@@ -755,6 +753,8 @@ export default function ProjectsPage() {
               <span className="xs:hidden">Add</span>
             </Button>
           </DialogTrigger>
+
+
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -896,24 +896,13 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              {/* Budget & Timeline */}
+              {/* Budget & Schedule */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Budget & Timeline
+                  Budget & Schedule
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="budget">Budget (IDR)</Label>
-                    <Input
-                      id="budget"
-                      type="number"
-                      value={formData.budget}
-                      onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                      placeholder="Approved budget"
-                      min="0"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Planned Start Date</Label>
                     <Input
@@ -1092,7 +1081,6 @@ export default function ProjectsPage() {
                       projectType: "",
                       location: "",
                       area: "",
-                      budget: "",
                       startDate: "",
                       endDate: "",
                       actualStart: "",
@@ -1101,6 +1089,7 @@ export default function ProjectsPage() {
                       progress: "0",
                       priority: "MEDIUM",
                       fromTemplateId: "",
+                      crmInquiryId: "",
                       assignedUsers: []
                     });
                   }}
@@ -1137,38 +1126,6 @@ export default function ProjectsPage() {
             <div className="text-lg sm:text-2xl font-bold">{templates.length}</div>
             <p className="text-xs text-muted-foreground truncate">
               Reusable configurations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Value</CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 truncate">
-              {formatCurrency(projects.reduce((total, project) => total + Number(project.totalPrice), 0))}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              Combined project value
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Avg Project Value</CardTitle>
-            <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-lg font-bold truncate">
-              {projects.length > 0
-                ? formatCurrency(projects.reduce((total, project) => total + Number(project.totalPrice), 0) / projects.length)
-                : formatCurrency(0)}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              Average per project
             </p>
           </CardContent>
         </Card>
@@ -1277,7 +1234,6 @@ export default function ProjectsPage() {
                       </Button>
                     </TableHead>
                     <TableHead>Client</TableHead>
-                    <TableHead>Total Cost</TableHead>
                     <TableHead>
                       <Button variant="ghost" onClick={() => handleSort("createdAt")} className="h-auto p-0 font-semibold">
                         Created
@@ -1286,8 +1242,9 @@ export default function ProjectsPage() {
                     </TableHead>
                     <TableHead className="text-center">Schematic Docs</TableHead>
                     <TableHead className="text-center">Quality Check Docs</TableHead>
-                    <TableHead className="text-center">BOQ</TableHead>
-                    <TableHead className="text-center">Template Docs</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1323,9 +1280,6 @@ export default function ProjectsPage() {
                         {project.client ?
                           (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson)
                           : "-"}
-                      </TableCell>
-                      <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                        {formatCurrency(Number(project.totalPrice))}
                       </TableCell>
                       <TableCell>
                         {new Date(project.createdAt).toLocaleDateString()}
@@ -1444,43 +1398,21 @@ export default function ProjectsPage() {
                           </>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
-                        {project.template ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/projects/${project.id}/boq`)}
-                            title="View Bill of Quantity"
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            View BOQ
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{project.location || "-"}</span>
+                          <span className="text-xs text-muted-foreground">{project.area ? project.area + " m²" : "-"}</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {project.template?.docs && project.template.docs.length > 0 ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setIsDetailsDialogOpen(true);
-                            }}
-                            className="h-auto p-1 text-xs hover:bg-muted"
-                            title={`View ${project.template.docs.length} template documents`}
-                          >
-                            <FileText className="h-3 w-3 mr-1" />
-                            {project.template.docs.length} docs
-                          </Button>
-                        ) : project.template ? (
-                          <Badge variant="outline" className="text-xs">
-                            0 docs
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {project.status.toLowerCase().replace(/_/g, ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {project.progress}%
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -1495,14 +1427,7 @@ export default function ProjectsPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push(`/projects/${project.id}/timeline`)}
-                            title="View project timeline"
-                          >
-                            <Calendar className="h-4 w-4" />
-                          </Button>
+
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1653,7 +1578,7 @@ export default function ProjectsPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Selecting a template will automatically calculate the project cost
+                    Selecting a template will automatically populate the project structure
                   </p>
                 </div>
               </div>
@@ -1690,24 +1615,13 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            {/* Budget & Timeline */}
+            {/* Schedule */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Budget & Timeline
+                <Calendar className="h-4 w-4" />
+                Schedule
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-budget">Budget (IDR)</Label>
-                  <Input
-                    id="edit-budget"
-                    type="number"
-                    value={formData.budget}
-                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                    placeholder="Approved budget"
-                    min="0"
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-startDate">Planned Start Date</Label>
                   <Input
@@ -1820,7 +1734,6 @@ export default function ProjectsPage() {
                     projectType: "",
                     location: "",
                     area: "",
-                    budget: "",
                     startDate: "",
                     endDate: "",
                     actualStart: "",
@@ -1829,6 +1742,7 @@ export default function ProjectsPage() {
                     progress: "0",
                     priority: "MEDIUM",
                     fromTemplateId: "",
+                    crmInquiryId: "",
                     assignedUsers: []
                   });
                 }}
@@ -1847,7 +1761,7 @@ export default function ProjectsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5" />
-              Project Details: "{selectedProject?.name}"
+              Project Details: &quot;{selectedProject?.name}&quot;
             </DialogTitle>
             <DialogDescription>
               Comprehensive project information and template breakdown
@@ -1921,7 +1835,7 @@ export default function ProjectsPage() {
                     Template Documents
                   </CardTitle>
                   <CardDescription>
-                    Documents from "{selectedProject.template.name}" template
+                    Documents from &quot;{selectedProject.template.name}&quot; template
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -2078,28 +1992,38 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="text-center p-3 border rounded-lg">
-                        <div className="text-xl font-bold">
+                    {/* Standard items summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="text-center p-3 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
+                        <div className="text-xl font-bold text-blue-600">
                           {selectedProject.template.assemblies.length}
                         </div>
                         <div className="text-sm text-muted-foreground">Assemblies</div>
                       </div>
 
-                      <div className="text-center p-3 border rounded-lg">
-                        <div className="text-xl font-bold">
-                          {selectedProject.template.assemblies?.reduce((total, ta) => {
-                            return total + (ta.assembly?.materials?.length || 0);
-                          }, 0) || 0}
+                      <div className="text-center p-3 border rounded-lg bg-green-50/50 dark:bg-green-950/20">
+                        <div className="text-xl font-bold text-green-600">
+                          {selectedProject.template.assemblies.reduce((sum, sa) =>
+                            sum + (sa.assembly.materials ? sa.assembly.materials.length : 0), 0)
+                          }
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Materials</div>
+                        <div className="text-sm text-muted-foreground">Unique Materials</div>
                       </div>
 
-                      <div className="text-center p-3 border rounded-lg">
-                        <div className="text-xl font-bold text-green-600 dark:text-green-400">
-                          {formatCurrency(Number(selectedProject.totalPrice))}
+                      <div className="text-center p-3 border rounded-lg bg-purple-50/50 dark:bg-purple-950/20">
+                        <div className="text-xl font-bold text-purple-600">
+                          {selectedProject.template.assemblies.reduce((sum: number, sa: any) =>
+                            sum + (sa.assembly.materials ? sa.assembly.materials.reduce((mSum: number, m: any) => mSum + m.quantity, 0) * sa.quantity : 0), 0).toFixed(0)
+                          }
                         </div>
-                        <div className="text-sm text-muted-foreground">Calculated Cost</div>
+                        <div className="text-sm text-muted-foreground">Total Material Qty</div>
+                      </div>
+
+                      <div className="text-center p-3 border rounded-lg bg-orange-50/50 dark:bg-orange-950/20">
+                        <div className="text-xl font-bold text-orange-600">
+                          {new Set(selectedProject.template.assemblies.map(sa => sa.assembly.module)).size}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Modules</div>
                       </div>
                     </div>
 
@@ -2123,12 +2047,9 @@ export default function ProjectsPage() {
                             </div>
 
                             <div className="text-right">
-                              <div className="font-semibold text-green-600 dark:text-green-400">
-                                {formatCurrency(calculateAssemblyCost(assembly) * quantity)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {formatCurrency(calculateAssemblyCost(assembly))} × {quantity}
-                              </div>
+                              <Badge variant="outline">
+                                Ready
+                              </Badge>
                             </div>
                           </div>
                         );
@@ -2140,65 +2061,13 @@ export default function ProjectsPage() {
             )}
 
             {/* Cost Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Cost Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="font-medium">Template Cost</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">
-                        {selectedProject?.template
-                          ? formatCurrency(Number(selectedProject.totalPrice))
-                          : "N/A (Custom Project)"}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="font-medium">Additional Costs</span>
-                      <span className="text-muted-foreground">
-                        {selectedProject?.template ? "Included in template" : "Calculate manually"}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center py-2 text-lg font-bold border-t-2">
-                      <span>Total Project Cost</span>
-                      <span className="text-green-600 dark:text-green-400">{formatCurrency(Number(selectedProject?.totalPrice || 0))}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Project Status</h4>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">Active Project</span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Template Usage</h4>
-                      <div className="text-sm">
-                        {selectedProject?.template
-                          ? `Based on "${selectedProject.template.name}" template`
-                          : "Custom project without template"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Cost Summary Removed */}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Export CSV Dialog */}
-      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+      < Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen} >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -2232,10 +2101,6 @@ export default function ProjectsPage() {
                           <span className="text-muted-foreground flex items-center gap-1"><FileText className="h-4 w-4" /> Files:</span>
                           <span className="font-medium">Multiple CSV</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground flex items-center gap-1"><DollarSign className="h-4 w-4" /> Content:</span>
-                          <span className="font-medium">Cost breakdown</span>
-                        </div>
                       </div>
                     </div>
                     <Button
@@ -2261,7 +2126,7 @@ export default function ProjectsPage() {
                       Individual Project Export
                     </h4>
                     <p className="text-sm text-blue-800 dark:text-blue-200">
-                      To export materials from a specific project only, click the "Export" button in the "Export Materials" column of the table.
+                      To export materials from a specific project only, click the &quot;Export&quot; button in the &quot;Export Materials&quot; column of the table.
                     </p>
                   </div>
                 </div>
@@ -2276,10 +2141,10 @@ export default function ProjectsPage() {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Document Details Dialog */}
-      <Dialog open={isDocumentDetailsOpen} onOpenChange={setIsDocumentDetailsOpen}>
+      < Dialog open={isDocumentDetailsOpen} onOpenChange={setIsDocumentDetailsOpen} >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

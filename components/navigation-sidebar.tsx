@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, Package as PackageIcon, FileText, FolderOpen, BarChart3, HelpCircle } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, FileText, FolderOpen, BarChart3, HelpCircle, Sparkles, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -34,20 +34,20 @@ const ThemeToggle = dynamic(
   }
 );
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME || "QuickBom";
-
-// Hardcoded menu structure
+// Hardcoded menu structure with role-based access
 const hardcodedMenuGroups = [
   {
     id: "dashboard",
     label: "Dashboard",
     icon: "LayoutDashboard",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"],
     items: [
       {
         id: "main-dashboard",
         label: "Main Dashboard",
         path: "/",
-        icon: "LayoutDashboard"
+        icon: "LayoutDashboard",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"]
       }
     ]
   },
@@ -55,12 +55,14 @@ const hardcodedMenuGroups = [
     id: "user-management",
     label: "User",
     icon: "Users",
+    roles: ["SUPER_ADMIN", "ADMIN"],
     items: [
       {
         id: "users-list",
         label: "Users",
         path: "/users",
-        icon: "Users"
+        icon: "Users",
+        roles: ["SUPER_ADMIN", "ADMIN"]
       }
     ]
   },
@@ -68,12 +70,14 @@ const hardcodedMenuGroups = [
     id: "client-management",
     label: "Client",
     icon: "Users",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ACCOUNTANT", "ESTIMATOR"],
     items: [
       {
         id: "clients-list",
         label: "Clients",
         path: "/clients",
-        icon: "Users"
+        icon: "Users",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ACCOUNTANT", "ESTIMATOR"]
       }
     ]
   },
@@ -81,12 +85,14 @@ const hardcodedMenuGroups = [
     id: "materials",
     label: "Materials",
     icon: "Package",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ESTIMATOR", "ENGINEER"],
     items: [
       {
         id: "materials-list",
         label: "Materials",
         path: "/materials",
-        icon: "Package"
+        icon: "Package",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ESTIMATOR", "ENGINEER"]
       }
     ]
   },
@@ -94,24 +100,28 @@ const hardcodedMenuGroups = [
     id: "assemblies",
     label: "Assemblies",
     icon: "Settings",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"],
     items: [
       {
         id: "assemblies-list",
         label: "Assemblies Sets",
         path: "/assemblies",
-        icon: "Settings"
+        icon: "Settings",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"]
       },
       {
         id: "assembly-categories",
         label: "Assembly Categories",
         path: "/assembly-categories",
-        icon: "FolderOpen"
+        icon: "FolderOpen",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"]
       },
       {
         id: "assembly-groups",
         label: "Assembly Groups",
         path: "/assembly-groups",
-        icon: "Package"
+        icon: "Package",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"]
       }
     ]
   },
@@ -119,12 +129,14 @@ const hardcodedMenuGroups = [
     id: "templates",
     label: "Templates",
     icon: "FileText",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"],
     items: [
       {
         id: "templates-list",
         label: "Templates",
         path: "/templates",
-        icon: "FileText"
+        icon: "FileText",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"]
       }
     ]
   },
@@ -132,56 +144,73 @@ const hardcodedMenuGroups = [
     id: "projects",
     label: "Projects",
     icon: "FolderOpen",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "ENGINEER", "ESTIMATOR"],
     items: [
       {
         id: "projects-list",
         label: "Projects",
         path: "/projects",
-        icon: "FolderOpen"
+        icon: "FolderOpen",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "ENGINEER", "ESTIMATOR"]
       },
       {
         id: "pdf-config",
         label: "PDF Configuration",
         path: "/pdf-config",
-        icon: "FileText"
+        icon: "FileText",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ESTIMATOR"]
       }
     ]
   },
-  {
-    id: "gantt",
-    label: "Gantt Chart",
-    icon: "BarChart3",
-    items: [
-      {
-        id: "gantt-chart",
-        label: "Gantt Chart",
-        path: "/gantt",
-        icon: "BarChart3"
-      }
-    ]
-  },
+
   {
     id: "system",
     label: "System",
     icon: "Settings",
+    roles: ["SUPER_ADMIN", "ADMIN"],
     items: [
       {
         id: "pdf-tools",
         label: "PDF Tools",
         path: "/pdf-tools",
-        icon: "FileText"
+        icon: "FileText",
+        roles: ["SUPER_ADMIN", "ADMIN"]
       },
       {
         id: "backup-management",
         label: "Backup Management",
         path: "/backups",
-        icon: "Database"
+        icon: "Database",
+        roles: ["SUPER_ADMIN", "ADMIN"]
       },
       {
         id: "help-documentation",
         label: "Help & Documentation",
         path: "/help",
-        icon: "HelpCircle"
+        icon: "HelpCircle",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"]
+      }
+    ]
+  },
+  {
+    id: "ai",
+    label: "AI Assistant",
+    icon: "Sparkles",
+    roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"],
+    items: [
+      {
+        id: "ai-chat",
+        label: "AI Chat",
+        path: "/ai",
+        icon: "Sparkles",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"]
+      },
+      {
+        id: "smart-questionnaire",
+        label: "Smart Questionnaire",
+        path: "/questionnaire",
+        icon: "ClipboardList",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ESTIMATOR", "ENGINEER"]
       }
     ]
   }
@@ -195,6 +224,18 @@ export const NavigationSidebar = memo(function NavigationSidebar({
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const { logout, user, isAuthenticated, isLoggingOut } = useAuth();
+
+  // Filter menu groups based on user role
+  const filteredMenuGroups = hardcodedMenuGroups.filter(group => {
+    if (!user?.role) return false;
+    return group.roles.includes(user.role);
+  }).map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (!user?.role) return false;
+      return item.roles.includes(user.role);
+    })
+  })).filter(group => group.items.length > 0);
 
   // Toggle group open/close state
   const toggleGroup = (groupId: string) => {
@@ -229,14 +270,13 @@ export const NavigationSidebar = memo(function NavigationSidebar({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center border-gray-400 justify-center rounded-lg bg-primary text-primary-foreground">
-              <Package className="h-5 w-5" />
+              <span className="font-bold text-sm tracking-tighter">PC</span>
             </div>
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-sidebar-foreground">
-                QuickBom
+                Product Configurator
               </h1>
-              <p className="text-xs text-sidebar-foreground/70">{appName}</p>
-              </div>
+            </div>
           </div>
         </div>
       </SidebarHeader>
@@ -245,7 +285,7 @@ export const NavigationSidebar = memo(function NavigationSidebar({
         className="bg-background overflow-auto scrollbar-hide flex-1 min-h-0"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {hardcodedMenuGroups.map((group) => {
+        {filteredMenuGroups.map((group) => {
           const groupId = group.id;
           if (collapsible) {
             const isOpen = openGroups.has(groupId);
@@ -263,6 +303,7 @@ export const NavigationSidebar = memo(function NavigationSidebar({
                         {group.icon === 'Activity' && <Activity className="h-4 w-4 text-sidebar-foreground/80" />}
                         {group.icon === 'Users' && <Users className="h-4 w-4 text-sidebar-foreground/80" />}
                         {group.icon === 'BarChart3' && <BarChart3 className="h-4 w-4 text-sidebar-foreground/80" />}
+                        {group.icon === 'Sparkles' && <Sparkles className="h-4 w-4 text-indigo-500" />}
                         <span className="text-sidebar-foreground/80 font-medium text-base">{group.label}</span>
                       </div>
                       {isOpen ? (
@@ -309,6 +350,7 @@ export const NavigationSidebar = memo(function NavigationSidebar({
                   {group.icon === 'Activity' && <Activity className="h-4 w-4 text-sidebar-foreground/80" />}
                   {group.icon === 'Users' && <Users className="h-4 w-4 text-sidebar-foreground/80" />}
                   {group.icon === 'BarChart3' && <BarChart3 className="h-4 w-4 text-sidebar-foreground/80" />}
+                  {group.icon === 'Sparkles' && <Sparkles className="h-4 w-4 text-indigo-500" />}
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -324,12 +366,28 @@ export const NavigationSidebar = memo(function NavigationSidebar({
                             href={item.path}
                             prefetch={false}
                           >
+                            {/* @ts-ignore */}
                             {item.icon === 'LayoutDashboard' && <LayoutDashboard className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
                             {item.icon === 'Settings' && <Settings className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
                             {item.icon === 'Activity' && <Activity className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
                             {item.icon === 'Database' && <Database className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
                             {item.icon === 'Users' && <Users className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
                             {item.icon === 'HelpCircle' && <HelpCircle className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
+                            {item.icon === 'Package' && <Package className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
+                            {item.icon === 'FileText' && <FileText className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
+                            {item.icon === 'FolderOpen' && <FolderOpen className="h-4 w-4 text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground" />}
+                            {/* @ts-ignore */}
+                            {item.icon === 'Sparkles' && <Sparkles className="h-4 w-4 text-indigo-500" />}
+                            {/* @ts-ignore */}
+                            {item.icon === 'ClipboardList' && <ClipboardList className="h-4 w-4 text-purple-500" />}
                             <span>{item.label}</span>
                           </Link>
                         </SidebarMenuButton>

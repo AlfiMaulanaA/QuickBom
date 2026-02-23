@@ -3,9 +3,9 @@ import { readFile } from 'fs/promises';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
-// const ILOVEPDF_SECRET_KEY = "secret_key_65a51e430b3e1c63e317f7785293a5a348185d8a57e59ba";
-const ILOVEPDF_SECRET_KEY = "dummy_key_for_mock_processing"; // Not used when USE_MOCK_PROCESSING = true
-const USE_MOCK_PROCESSING = true; // Set to false when you have a valid iLovePDF API key
+const ILOVEPDF_API_URL = process.env.ILOVEPDF_API_URL || "https://api.ilovepdf.com/v1";
+const ILOVEPDF_SECRET_KEY = process.env.ILOVEPDF_SECRET_KEY || "dummy_key_for_mock_processing";
+const USE_MOCK_PROCESSING = process.env.USE_MOCK_PDF_PROCESSING === 'true';
 
 interface PDFOperationRequest {
   fileUrl?: string; // Optional for merge operations
@@ -305,7 +305,7 @@ async function processWithILovePDF(
     console.log(`🔄 Processing ${operation} with iLovePDF...`);
 
     // Step 1: Create task first (some APIs require this order)
-    const taskResponse = await fetch('https://api.ilovepdf.com/v1/tasks', {
+    const taskResponse = await fetch(`${ILOVEPDF_API_URL}/tasks`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -331,7 +331,7 @@ async function processWithILovePDF(
     const formData = new FormData();
     formData.append('file', new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }), 'file.pdf');
 
-    const uploadResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/upload`, {
+    const uploadResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`
@@ -352,7 +352,7 @@ async function processWithILovePDF(
     const processConfig = getProcessConfig(operation, options);
     console.log(`🔄 Processing task with config:`, processConfig);
 
-    const processResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/process`, {
+    const processResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/process`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -376,7 +376,7 @@ async function processWithILovePDF(
 
     // Step 4: Download the result
     console.log(`🔄 Downloading result...`);
-    const downloadResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/download`, {
+    const downloadResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`
@@ -420,7 +420,7 @@ async function processMergeWithILovePDF(
         const formData = new FormData();
         formData.append('file', new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }), `file_${i + 1}.pdf`);
 
-        const uploadResponse = await fetch('https://api.ilovepdf.com/v1/upload', {
+        const uploadResponse = await fetch(`${ILOVEPDF_API_URL}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`
@@ -443,7 +443,7 @@ async function processMergeWithILovePDF(
     }
 
     // Step 2: Create merge task
-    const taskResponse = await fetch('https://api.ilovepdf.com/v1/tasks', {
+    const taskResponse = await fetch(`${ILOVEPDF_API_URL}/tasks`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -467,7 +467,7 @@ async function processMergeWithILovePDF(
     console.log(`✅ Created ilovepdf merge task: ${taskId}`);
 
     // Step 3: Process the merge task
-    const processResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/process`, {
+    const processResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/process`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -488,7 +488,7 @@ async function processMergeWithILovePDF(
     console.log('✅ PDF merge completed successfully');
 
     // Step 4: Download the merged PDF
-    const downloadResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/download`, {
+    const downloadResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`
@@ -649,9 +649,9 @@ endobj
 endobj
 
 ${Array.from({ length: totalPages }, (_, i) => {
-  const pageNum = i + 1;
-  const fileInfo = fileInfos[Math.floor(i / 2)] || fileInfos[0]; // Distribute pages across files
-  return `${i + 3} 0 obj
+    const pageNum = i + 1;
+    const fileInfo = fileInfos[Math.floor(i / 2)] || fileInfos[0]; // Distribute pages across files
+    return `${i + 3} 0 obj
 <<
 /Type /Page
 /Parent 2 0 R
@@ -664,70 +664,70 @@ ${Array.from({ length: totalPages }, (_, i) => {
 >>
 >>
 endobj`;
-}).join('\n')}
+  }).join('\n')}
 
 ${Array.from({ length: totalPages }, (_, i) => {
-  const pageNum = i + 1;
-  const fileInfo = fileInfos[Math.floor(i / 2)] || fileInfos[0];
+    const pageNum = i + 1;
+    const fileInfo = fileInfos[Math.floor(i / 2)] || fileInfos[0];
 
-  // Generate operation-specific content
-  let contentLines = [];
-  switch (operation) {
-    case 'merge':
-      contentLines = [
-        `(Merged PDF - Page ${pageNum}) Tj`,
-        `(Total Pages: ${totalPages}) Tj`,
-        `(Files merged: ${fileInfos.length}) Tj`
-      ];
-      break;
-    case 'compress':
-      contentLines = [
-        `(Compressed PDF - Page ${pageNum}) Tj`,
-        `(Size reduced by ~30%) Tj`,
-        `(Total Pages: ${totalPages}) Tj`
-      ];
-      break;
-    case 'split':
-      contentLines = [
-        `(Split PDF - Part ${Math.ceil(pageNum / 3)}) Tj`,
-        `(Page ${pageNum} of ${totalPages}) Tj`,
-        `(Split operation completed) Tj`
-      ];
-      break;
-    case 'rotate':
-      const rotation = options.rotation || 90;
-      contentLines = [
-        `(Rotated PDF - Page ${pageNum}) Tj`,
-        `(Rotation: ${rotation}°) Tj`,
-        `(Total Pages: ${totalPages}) Tj`
-      ];
-      break;
-    case 'protect':
-      const password = options.password || 'demo_password';
-      contentLines = [
-        `(Protected PDF - Page ${pageNum}) Tj`,
-        `(Password: ${password}) Tj`,
-        `(*Note: Demo mode - password simulated) Tj`,
-        `(Total Pages: ${totalPages}) Tj`
-      ];
-      break;
-    case 'organize':
-      const pageOrder = options.pageOrder || [];
-      contentLines = [
-        `(Organized PDF - Page ${pageNum}) Tj`,
-        `(Page order: ${pageOrder.slice(0, 5).join(',')}...) Tj`,
-        `(Total Pages: ${totalPages}) Tj`
-      ];
-      break;
-    default:
-      contentLines = [
-        `(${operation.toUpperCase()} PDF - Page ${pageNum}) Tj`,
-        `(Operation completed) Tj`,
-        `(Total Pages: ${totalPages}) Tj`
-      ];
-  }
+    // Generate operation-specific content
+    let contentLines = [];
+    switch (operation) {
+      case 'merge':
+        contentLines = [
+          `(Merged PDF - Page ${pageNum}) Tj`,
+          `(Total Pages: ${totalPages}) Tj`,
+          `(Files merged: ${fileInfos.length}) Tj`
+        ];
+        break;
+      case 'compress':
+        contentLines = [
+          `(Compressed PDF - Page ${pageNum}) Tj`,
+          `(Size reduced by ~30%) Tj`,
+          `(Total Pages: ${totalPages}) Tj`
+        ];
+        break;
+      case 'split':
+        contentLines = [
+          `(Split PDF - Part ${Math.ceil(pageNum / 3)}) Tj`,
+          `(Page ${pageNum} of ${totalPages}) Tj`,
+          `(Split operation completed) Tj`
+        ];
+        break;
+      case 'rotate':
+        const rotation = options.rotation || 90;
+        contentLines = [
+          `(Rotated PDF - Page ${pageNum}) Tj`,
+          `(Rotation: ${rotation}°) Tj`,
+          `(Total Pages: ${totalPages}) Tj`
+        ];
+        break;
+      case 'protect':
+        const password = options.password || 'demo_password';
+        contentLines = [
+          `(Protected PDF - Page ${pageNum}) Tj`,
+          `(Password: ${password}) Tj`,
+          `(*Note: Demo mode - password simulated) Tj`,
+          `(Total Pages: ${totalPages}) Tj`
+        ];
+        break;
+      case 'organize':
+        const pageOrder = options.pageOrder || [];
+        contentLines = [
+          `(Organized PDF - Page ${pageNum}) Tj`,
+          `(Page order: ${pageOrder.slice(0, 5).join(',')}...) Tj`,
+          `(Total Pages: ${totalPages}) Tj`
+        ];
+        break;
+      default:
+        contentLines = [
+          `(${operation.toUpperCase()} PDF - Page ${pageNum}) Tj`,
+          `(Operation completed) Tj`,
+          `(Total Pages: ${totalPages}) Tj`
+        ];
+    }
 
-  return `${i + totalPages + 3} 0 obj
+    return `${i + totalPages + 3} 0 obj
 <<
 /Length ${100 + Math.random() * 200}
 >>
@@ -739,25 +739,25 @@ ${contentLines.join('\n0 -20 Td\n')}
 ET
 endstream
 endobj`;
-}).join('\n')}
+  }).join('\n')}
 
 ${Array.from({ length: totalPages }, (_, i) => {
-  return `${i + totalPages * 2 + 3} 0 obj
+    return `${i + totalPages * 2 + 3} 0 obj
 <<
 /Type /Font
 /Subtype /Type1
 /BaseFont /Helvetica
 >>
 endobj`;
-}).join('\n')}
+  }).join('\n')}
 
 xref
 0 ${totalPages * 3 + 3}
 0000000000 65535 f
 ${Array.from({ length: totalPages * 3 + 2 }, (_, i) => {
-  const offset = 1000 + (i * 200); // Mock offsets
-  return `${offset.toString().padStart(10, '0')} 00000 n`;
-}).join('\n')}
+    const offset = 1000 + (i * 200); // Mock offsets
+    return `${offset.toString().padStart(10, '0')} 00000 n`;
+  }).join('\n')}
 trailer
 <<
 /Size ${totalPages * 3 + 3}

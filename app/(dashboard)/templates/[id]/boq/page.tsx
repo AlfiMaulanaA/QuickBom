@@ -30,7 +30,6 @@ interface Material {
   partNumber: string | null;
   manufacturer: string | null;
   unit: string;
-  price: number;
 }
 
 interface AssemblyMaterial {
@@ -72,8 +71,6 @@ interface BOQItem {
   item: string;
   qty: number;
   unit: string;
-  unitPrice: number;
-  totalPrice: number;
   assemblyName: string;
   isModuleHeader?: boolean;
   isAssemblyHeader?: boolean;
@@ -138,11 +135,11 @@ export default function TemplateBOQPage() {
     template.assemblies.forEach((templateAssembly) => {
       if (!templateAssembly || !templateAssembly.assembly) return;
 
-      const module = templateAssembly.assembly.module;
-      if (!assembliesByModule[module]) {
-        assembliesByModule[module] = [];
+      const assemblyModule = templateAssembly.assembly.module;
+      if (!assembliesByModule[assemblyModule]) {
+        assembliesByModule[assemblyModule] = [];
       }
-      assembliesByModule[module].push(templateAssembly);
+      assembliesByModule[assemblyModule].push(templateAssembly);
     });
 
     let moduleNumber = 1;
@@ -160,8 +157,6 @@ export default function TemplateBOQPage() {
         item: `${moduleName} MODULE`,
         qty: 0,
         unit: "",
-        unitPrice: 0,
-        totalPrice: 0,
         assemblyName: "",
         isModuleHeader: true
       });
@@ -183,12 +178,6 @@ export default function TemplateBOQPage() {
           item: assembly.name,
           qty: assemblyQuantity,
           unit: "Assembly",
-          unitPrice: assembly.materials && Array.isArray(assembly.materials) ? assembly.materials.reduce((total, am) => {
-            return total + (Number(am.material?.price || 0) * Number(am.quantity || 0));
-          }, 0) : 0,
-          totalPrice: assembly.materials && Array.isArray(assembly.materials) ? assembly.materials.reduce((total, am) => {
-            return total + (Number(am.material?.price || 0) * Number(am.quantity || 0));
-          }, 0) * assemblyQuantity : 0,
           assemblyName: assembly.name,
           isAssemblyHeader: true
         });
@@ -208,8 +197,6 @@ export default function TemplateBOQPage() {
               item: material.name || "",
               qty: materialQuantity,
               unit: material.unit || "",
-              unitPrice: Number(material.price || 0),
-              totalPrice: materialQuantity * Number(material.price || 0),
               assemblyName: assembly.name
             });
           });
@@ -224,17 +211,12 @@ export default function TemplateBOQPage() {
     return boqItems;
   }, [template]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
+
 
   const exportToExcelHandler = () => {
     if (!template || boqData.length === 0) return;
 
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Unit Price", "Total Price", "Assembly Name"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Assembly Name"];
 
     const data = [
       [`BILL OF QUANTITY - ${template.name.toUpperCase()}`],
@@ -242,7 +224,6 @@ export default function TemplateBOQPage() {
       [`Template Description: ${template.description || "No description"}`],
       [`Total Assemblies: ${template.assemblies.length}`],
       [`Total Items: ${boqData.filter(item => !item.isModuleHeader && !item.isAssemblyHeader).length}`],
-      [`Total Cost: ${formatCurrency(boqData.reduce((sum, item) => sum + item.totalPrice, 0))}`],
       [],
       headers,
       ...boqData.map(item => [
@@ -252,8 +233,6 @@ export default function TemplateBOQPage() {
         item.item,
         item.qty,
         item.unit,
-        item.unitPrice,
-        item.totalPrice,
         item.assemblyName
       ])
     ];
@@ -273,9 +252,9 @@ export default function TemplateBOQPage() {
       `BILL OF QUANTITY - ${template.name}`,
       `Generated on: ${new Date().toLocaleString()}`,
       "",
-      "No\tManufactur\tPN\tItem\tQty\tUnit\tUnit Price\tTotal Price\tAssembly Name",
+      "No\tManufactur\tPN\tItem\tQty\tUnit\tAssembly Name",
       ...boqData.map(item =>
-        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.unitPrice}\t${item.totalPrice}\t${item.assemblyName}`
+        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.assemblyName}`
       )
     ].join("\n");
 
@@ -303,9 +282,7 @@ export default function TemplateBOQPage() {
       partNumber: string;
       manufacturer: string;
       unit: string;
-      unitPrice: number;
       totalQuantity: number;
-      totalCost: number;
       assemblies: string[];
     }>();
 
@@ -330,7 +307,6 @@ export default function TemplateBOQPage() {
             // Update existing material
             const existing = materialMap.get(materialKey)!;
             existing.totalQuantity += materialQuantity;
-            existing.totalCost += materialQuantity * Number(material.price || 0);
             if (!existing.assemblies.includes(assembly.name)) {
               existing.assemblies.push(assembly.name);
             }
@@ -341,9 +317,7 @@ export default function TemplateBOQPage() {
               partNumber: material.partNumber || '',
               manufacturer: material.manufacturer || '',
               unit: material.unit || '',
-              unitPrice: Number(material.price || 0),
               totalQuantity: materialQuantity,
-              totalCost: materialQuantity * Number(material.price || 0),
               assemblies: [assembly.name]
             });
           }
@@ -354,7 +328,7 @@ export default function TemplateBOQPage() {
     // Convert map to array for Excel export
     const consolidatedMaterials = Array.from(materialMap.values());
 
-    const headers = ["No", "Manufacturer", "Part Number", "Item", "Total Qty", "Unit", "Unit Price", "Total Cost", "Used in Assemblies"];
+    const headers = ["No", "Manufacturer", "Part Number", "Item", "Total Qty", "Unit", "Used in Assemblies"];
 
     const data = [
       [`CONSOLIDATED BILL OF QUANTITY - ${template.name.toUpperCase()}`],
@@ -362,7 +336,6 @@ export default function TemplateBOQPage() {
       [`Template Description: ${template.description || "No description"}`],
       [`Total Assemblies: ${template.assemblies?.length || 0}`],
       [`Unique Materials: ${consolidatedMaterials.length}`],
-      [`Total Estimated Cost: ${formatCurrency(consolidatedMaterials.reduce((sum, mat) => sum + mat.totalCost, 0))}`],
       [],
       headers,
       ...consolidatedMaterials.map((material, index) => [
@@ -372,8 +345,6 @@ export default function TemplateBOQPage() {
         material.name,
         material.totalQuantity,
         material.unit,
-        material.unitPrice,
-        material.totalCost,
         material.assemblies.join('; ')
       ])
     ];
@@ -402,7 +373,7 @@ export default function TemplateBOQPage() {
       <div className="p-6">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900">Template not found</h2>
-          <p className="text-gray-500 mt-2">The template you're looking for doesn't exist.</p>
+          <p className="text-gray-500 mt-2">The template you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.push("/templates")} className="mt-4">
             Back to Templates
           </Button>
@@ -411,8 +382,7 @@ export default function TemplateBOQPage() {
     );
   }
 
-  const totalCost = boqData.reduce((sum, item) => sum + item.totalPrice, 0);
-  const totalMaterials = boqData.filter(item => !item.item.startsWith('ASSEMBLY:')).length;
+  const totalMaterials = boqData.filter(item => !item.isModuleHeader && !item.isAssemblyHeader).length;
   const totalAssemblies = template.assemblies.length;
 
   return (
@@ -507,19 +477,6 @@ export default function TemplateBOQPage() {
             </p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Cost</CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalCost)}</div>
-            <p className="text-xs text-muted-foreground truncate">
-              Estimated total
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* BOQ Table */}
@@ -530,7 +487,7 @@ export default function TemplateBOQPage() {
             Complete Bill of Quantity
           </CardTitle>
           <CardDescription>
-            Detailed breakdown of all materials required for "{template.name}" template
+            Detailed breakdown of all materials required for &quot;{template.name}&quot; template
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -545,8 +502,6 @@ export default function TemplateBOQPage() {
                     <TableHead className="min-w-[200px] text-xs font-medium">Item</TableHead>
                     <TableHead className="min-w-[80px] text-xs font-medium text-right">Qty</TableHead>
                     <TableHead className="min-w-[60px] text-xs font-medium">Unit</TableHead>
-                    <TableHead className="min-w-[100px] text-xs font-medium text-right">Unit Price</TableHead>
-                    <TableHead className="min-w-[120px] text-xs font-medium text-right">Total Price</TableHead>
                     <TableHead className="min-w-[120px] text-xs font-medium">Assembly Name</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -614,15 +569,6 @@ export default function TemplateBOQPage() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-right font-mono text-blue-600">
-                          {isModuleHeader || item.unitPrice === 0 ? '-' : formatCurrency(item.unitPrice)}
-                        </TableCell>
-                        <TableCell className={`text-sm text-right font-medium ${isModuleHeader ? 'text-purple-700 dark:text-purple-300 font-bold' :
-                          isAssemblyHeader ? 'text-blue-700 dark:text-blue-300' :
-                            'text-green-600'
-                          }`}>
-                          {isModuleHeader ? '-' : formatCurrency(item.totalPrice)}
-                        </TableCell>
                         <TableCell className="text-xs">
                           {isModuleHeader ? '-' : item.assemblyName}
                         </TableCell>
@@ -645,9 +591,6 @@ export default function TemplateBOQPage() {
               </div>
               <div className="text-sm">
                 <span className="font-medium">Total Assemblies:</span> {totalAssemblies}
-              </div>
-              <div className="text-lg font-bold text-green-600">
-                {formatCurrency(totalCost)}
               </div>
             </div>
           </div>

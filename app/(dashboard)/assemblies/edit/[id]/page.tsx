@@ -102,15 +102,34 @@ export default function EditAssemblyPage() {
       if (response.ok) {
         const data = await response.json();
         setAssembly(data);
+        // Convert Snapshot materials to compatible format
+        const currentMaterials = data.materials.map((am: any) => ({
+          materialId: Number(am.externalId),
+          quantity: Number(am.quantity)
+        }));
+
         setFormData({
           name: data.name,
           description: data.description || "",
           module: data.module || "ELECTRICAL",
           categoryId: data.categoryId.toString(),
-          materials: data.materials.map((am: any) => ({
-            materialId: am.materialId,
-            quantity: Number(am.quantity)
-          }))
+          materials: currentMaterials
+        });
+
+        // Also populate 'materials' state with the snapshot data so they appear in list/calc
+        const snapshotMaterials: Material[] = data.materials.map((am: any) => ({
+          id: Number(am.externalId),
+          name: am.name,
+          partNumber: am.partNumber,
+          manufacturer: am.manufacturer,
+          unit: am.unit,
+          price: Number(am.price)
+        }));
+        setMaterials(prev => {
+          // Merge to avoid duplicates
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMaterials = snapshotMaterials.filter(m => !existingIds.has(m.id));
+          return [...prev, ...newMaterials];
         });
 
         // Load existing documents, filter out temporary ones
@@ -138,10 +157,25 @@ export default function EditAssemblyPage() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await fetch("/api/materials");
+      // Fetch with larger page size - MaterialSelector now handles pagination
+      const response = await fetch("/api/materials?page=0&size=100");
       if (response.ok) {
+        // Map CRM data to local interface
         const data = await response.json();
-        setMaterials(data);
+        const mappedMaterials: Material[] = (data.content || []).map((m: any) => ({
+          id: m.id,
+          name: m.partName,
+          partNumber: m.partNumber,
+          manufacturer: m.mfr,
+          unit: m.unitMeasure,
+          price: m.priceToIDR
+        }));
+        setMaterials(prev => {
+          // Merge with existing materials (from assembly) to avoid losing them
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMaterials = mappedMaterials.filter(m => !existingIds.has(m.id));
+          return [...prev, ...newMaterials];
+        });
       }
     } catch (error) {
       console.error("Failed to fetch materials:", error);
@@ -196,7 +230,18 @@ export default function EditAssemblyPage() {
           module: formData.module,
           categoryId: parseInt(formData.categoryId),
           docs: null, // We'll handle documents separately
-          materials: formData.materials
+          materials: formData.materials.map(m => {
+            const materialInfo = materials.find(mat => mat.id === m.materialId);
+            return {
+              externalId: m.materialId,
+              quantity: m.quantity,
+              name: materialInfo?.name || "Unknown",
+              partNumber: materialInfo?.partNumber,
+              manufacturer: materialInfo?.manufacturer,
+              unit: materialInfo?.unit || "pcs",
+              price: materialInfo?.price || 0
+            };
+          })
         }),
       });
 
@@ -393,7 +438,7 @@ export default function EditAssemblyPage() {
                           )}
                         </div>
                       </SelectItem>
-                    ))} 
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
@@ -510,15 +555,6 @@ export default function EditAssemblyPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={() => setIsCreateMaterialOpen(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Material
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
                   onClick={() => setIsMaterialSelectorOpen(true)}
                 >
                   <Package className="mr-2 h-4 w-4" />
@@ -598,7 +634,7 @@ export default function EditAssemblyPage() {
                     const filteredMaterials = materialsWithData.filter(item => {
                       const searchLower = materialSearchTerm.toLowerCase();
                       return item.material.name.toLowerCase().includes(searchLower) ||
-                             (item.material.partNumber && item.material.partNumber.toLowerCase().includes(searchLower));
+                        (item.material.partNumber && item.material.partNumber.toLowerCase().includes(searchLower));
                     });
 
                     // Sort materials
@@ -705,198 +741,202 @@ export default function EditAssemblyPage() {
       </form>
 
       {/* Material Selector Modal */}
-      {isMaterialSelectorOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-7xl w-full max-h-[95vh] overflow-hidden">
-            <MaterialSelector
-              onSelectionChange={(selectedMaterials) => {
-                setFormData({
-                  ...formData,
-                  materials: selectedMaterials.map(sm => ({
-                    materialId: sm.materialId,
-                    quantity: sm.quantity
-                  }))
-                });
-              }}
-              initialSelectedMaterials={formData.materials.map(material => {
-                const materialInfo = materials.find(m => m.id === material.materialId);
-                return materialInfo ? {
-                  materialId: material.materialId,
-                  quantity: material.quantity,
-                  material: materialInfo
-                } : null;
-              }).filter(Boolean) as any[]}
-              onClose={() => setIsMaterialSelectorOpen(false)}
-            />
+      {
+        isMaterialSelectorOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-background rounded-lg shadow-lg max-w-7xl w-full max-h-[95vh] overflow-hidden">
+              <MaterialSelector
+                onSelectionChange={(selectedMaterials) => {
+                  setFormData({
+                    ...formData,
+                    materials: selectedMaterials.map(sm => ({
+                      materialId: sm.materialId,
+                      quantity: sm.quantity
+                    }))
+                  });
+                }}
+                initialSelectedMaterials={formData.materials.map(material => {
+                  const materialInfo = materials.find(m => m.id === material.materialId);
+                  return materialInfo ? {
+                    materialId: material.materialId,
+                    quantity: material.quantity,
+                    material: materialInfo
+                  } : null;
+                }).filter(Boolean) as any[]}
+                onClose={() => setIsMaterialSelectorOpen(false)}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Create Material Modal */}
-      {isCreateMaterialOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Create New Material</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsCreateMaterialOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="material-name">Material Name *</Label>
-                  <Input
-                    id="material-name"
-                    value={newMaterial.name}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
-                    placeholder="e.g., Kabel NYY 2.5mm"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="material-part-number">Part Number</Label>
-                  <Input
-                    id="material-part-number"
-                    value={newMaterial.partNumber}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, partNumber: e.target.value })}
-                    placeholder="e.g., NYY-2.5"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="material-manufacturer">Manufacturer</Label>
-                  <Input
-                    id="material-manufacturer"
-                    value={newMaterial.manufacturer}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, manufacturer: e.target.value })}
-                    placeholder="e.g., PT. Sumber Listrik"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="material-unit">Unit</Label>
-                    <select
-                      id="material-unit"
-                      value={newMaterial.unit}
-                      onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
-                      className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                    >
-                      <option value="pcs">pcs</option>
-                      <option value="m">m</option>
-                      <option value="m2">m²</option>
-                      <option value="m3">m³</option>
-                      <option value="kg">kg</option>
-                      <option value="liter">liter</option>
-                      <option value="set">set</option>
-                      <option value="roll">roll</option>
-                      <option value="box">box</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="material-price">Price (IDR)</Label>
-                    <Input
-                      id="material-price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newMaterial.price}
-                      onChange={(e) => setNewMaterial({ ...newMaterial, price: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
+      {
+        isCreateMaterialOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-background rounded-lg shadow-lg max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Create New Material</h2>
                   <Button
-                    type="button"
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setIsCreateMaterialOpen(false)}
                   >
-                    Cancel
+                    <X className="h-4 w-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      if (!newMaterial.name.trim()) {
-                        toast({
-                          title: "Error",
-                          description: "Material name is required",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
+                </div>
 
-                      try {
-                        const response = await fetch("/api/materials", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify(newMaterial),
-                        });
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="material-name">Material Name *</Label>
+                    <Input
+                      id="material-name"
+                      value={newMaterial.name}
+                      onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                      placeholder="e.g., Kabel NYY 2.5mm"
+                      required
+                    />
+                  </div>
 
-                        if (response.ok) {
-                          const createdMaterial = await response.json();
-                          toast({
-                            title: "Success",
-                            description: `Material "${newMaterial.name}" created successfully`,
-                          });
+                  <div className="space-y-2">
+                    <Label htmlFor="material-part-number">Part Number</Label>
+                    <Input
+                      id="material-part-number"
+                      value={newMaterial.partNumber}
+                      onChange={(e) => setNewMaterial({ ...newMaterial, partNumber: e.target.value })}
+                      placeholder="e.g., NYY-2.5"
+                    />
+                  </div>
 
-                          // Reset form
-                          setNewMaterial({
-                            name: "",
-                            partNumber: "",
-                            manufacturer: "",
-                            unit: "pcs",
-                            price: 0
-                          });
-                          setIsCreateMaterialOpen(false);
+                  <div className="space-y-2">
+                    <Label htmlFor="material-manufacturer">Manufacturer</Label>
+                    <Input
+                      id="material-manufacturer"
+                      value={newMaterial.manufacturer}
+                      onChange={(e) => setNewMaterial({ ...newMaterial, manufacturer: e.target.value })}
+                      placeholder="e.g., PT. Sumber Listrik"
+                    />
+                  </div>
 
-                          // Refresh materials list
-                          fetchMaterials();
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="material-unit">Unit</Label>
+                      <select
+                        id="material-unit"
+                        value={newMaterial.unit}
+                        onChange={(e) => setNewMaterial({ ...newMaterial, unit: e.target.value })}
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                      >
+                        <option value="pcs">pcs</option>
+                        <option value="m">m</option>
+                        <option value="m2">m²</option>
+                        <option value="m3">m³</option>
+                        <option value="kg">kg</option>
+                        <option value="liter">liter</option>
+                        <option value="set">set</option>
+                        <option value="roll">roll</option>
+                        <option value="box">box</option>
+                      </select>
+                    </div>
 
-                          // Auto-add to assembly with quantity 1
-                          setFormData({
-                            ...formData,
-                            materials: [...formData.materials, {
-                              materialId: createdMaterial.id,
-                              quantity: 1
-                            }]
-                          });
-                        } else {
-                          const error = await response.json();
+                    <div className="space-y-2">
+                      <Label htmlFor="material-price">Price (IDR)</Label>
+                      <Input
+                        id="material-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newMaterial.price}
+                        onChange={(e) => setNewMaterial({ ...newMaterial, price: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreateMaterialOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        if (!newMaterial.name.trim()) {
                           toast({
                             title: "Error",
-                            description: error.error || "Failed to create material",
+                            description: "Material name is required",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        try {
+                          const response = await fetch("/api/materials", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(newMaterial),
+                          });
+
+                          if (response.ok) {
+                            const createdMaterial = await response.json();
+                            toast({
+                              title: "Success",
+                              description: `Material "${newMaterial.name}" created successfully`,
+                            });
+
+                            // Reset form
+                            setNewMaterial({
+                              name: "",
+                              partNumber: "",
+                              manufacturer: "",
+                              unit: "pcs",
+                              price: 0
+                            });
+                            setIsCreateMaterialOpen(false);
+
+                            // Refresh materials list
+                            fetchMaterials();
+
+                            // Auto-add to assembly with quantity 1
+                            setFormData({
+                              ...formData,
+                              materials: [...formData.materials, {
+                                materialId: createdMaterial.id,
+                                quantity: 1
+                              }]
+                            });
+                          } else {
+                            const error = await response.json();
+                            toast({
+                              title: "Error",
+                              description: error.error || "Failed to create material",
+                              variant: "destructive",
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to create material",
                             variant: "destructive",
                           });
                         }
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: "Failed to create material",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    Create & Add to Assembly
-                  </Button>
+                      }}
+                    >
+                      Create & Add to Assembly
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

@@ -2,6 +2,7 @@ import type React from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavigationSidebar } from "@/components/navigation-sidebar";
 import DashboardHeader from "./dashboard-header";
+import { AiMiniChat } from "@/components/ai-mini-chat";
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
+      <AiMiniChat />
     </SidebarProvider>
   );
 }

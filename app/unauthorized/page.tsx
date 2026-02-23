@@ -53,7 +53,7 @@ function UnauthorizedContent() {
             Access Denied
           </CardTitle>
           <CardDescription className="text-base">
-            You don't have permission to access this page
+            You don&apos;t have permission to access this page
           </CardDescription>
         </CardHeader>
 

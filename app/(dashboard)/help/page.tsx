@@ -65,7 +65,7 @@ export default function HelpPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">User Guide & Documentation</h1>
           <p className="text-xl text-muted-foreground mt-2 max-w-3xl mx-auto">
-            Complete guide to using QuickBom - from initial setup to advanced features.
+            Complete guide to using Product Configurator - from initial setup to advanced features.
             Learn how to manage your bill of materials, assemblies, and backup systems effectively.
           </p>
         </div>
@@ -132,9 +132,9 @@ export default function HelpPage() {
             <CardContent className="space-y-8">
               {/* Application Purpose */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold">What is QuickBom?</h3>
+                <h3 className="text-xl font-semibold">What is Product Configurator?</h3>
                 <p className="text-muted-foreground">
-                  QuickBom is a comprehensive Bill of Materials (BOM) management system designed for manufacturing and engineering teams.
+                  Product Configurator is a comprehensive Bill of Materials (BOM) management system designed for manufacturing and engineering teams.
                   It helps you organize, track, and manage all components, assemblies, and templates needed for your projects.
                 </p>
 
@@ -533,26 +533,7 @@ export default function HelpPage() {
 
                         {/* Additional Features */}
                         <div className="flex items-end gap-6 mt-4">
-                          <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-3">
-                              <BarChart3 className="h-6 w-6 text-white" />
-                            </div>
-                            <span className="text-sm font-medium text-center">Gantt Chart</span>
-                            <span className="text-xs text-muted-foreground">/gantt</span>
-                            <span className="text-xs text-cyan-600 mt-1">Timeline View</span>
-                          </div>
 
-                          <svg width="40" height="30" className="mb-6">
-                            <path
-                              d="M 0 20 Q 20 0 40 20"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              className="text-gray-400"
-                              strokeLinecap="round"
-                              strokeDasharray="3,3"
-                            />
-                          </svg>
 
                           <div className="flex flex-col items-center">
                             <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mb-3">
@@ -1544,7 +1525,7 @@ export default function HelpPage() {
                         <h4 className="font-medium">What Doesn't Get Restored:</h4>
                         <ul className="text-sm space-y-1">
                           <li>• User accounts and permissions</li>
-                          <li>• Project-specific data and timelines</li>
+                          <li>• Project-specific data</li>
                           <li>• System configuration and settings</li>
                           <li>• Uploaded files and documents</li>
                         </ul>
@@ -1614,7 +1595,7 @@ export default function HelpPage() {
           Need additional help? Contact your system administrator or refer to the technical documentation.
         </p>
         <div className="flex items-center justify-center gap-4 mt-4">
-          <Badge variant="outline">QuickBom v1.0</Badge>
+          <Badge variant="outline">Product Configurator v1.0</Badge>
           <Badge variant="outline">Last Updated: December 2025</Badge>
         </div>
       </div>

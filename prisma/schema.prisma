@@ -67,7 +67,7 @@ model User {
 
   // Relations
   createdProjects Project[] // Projects created by this user
-  assignedTasks   ProjectTask[] // Tasks assigned to this user (many-to-many)
+  chatSessions    ChatSession[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -202,6 +202,7 @@ model AssemblyCategory {
   // Relations
   assemblies  Assembly[] // Assemblies in this category
   assemblyGroups AssemblyGroup[] // Assembly groups in this category
+  templateAssemblyGroups TemplateAssemblyGroup[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -210,28 +211,8 @@ model AssemblyCategory {
 }
 
 // LEVEL 1: ITEM / MATERIAL
-// Ini adalah bahan baku mentah atau upah dasar
-model Material {
-  id                   Int      @id @default(autoincrement())
-  name                 String   @unique // Nama material harus unik
-  partNumber           String?  // Nomor part dari manufacturer
-  manufacturer         String?  // Nama manufacturer/pemasok
-  unit                 String   // Contoh: "kg", "pcs", "jam", "sak"
-  price                Decimal  @default(0) // Harga satuan dasar
-
-  // Field tambahan untuk enhanced material management
-  purchaseUrl          String?  // Link untuk pembelian online
-  datasheetFile        String?  // Path file datasheet yang diupload
-
-  // Relasi: Material ini dipakai di Assembly apa saja?
-  assemblies           AssemblyMaterial[]
-
-  // Project overrides relations
-  projectOverrides     ProjectOverride[]
-
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-}
+// DEPRECATED: Material table removed in favor of External CRM API integration.
+// Material data is now fetched directly from CRM and stored as snapshots in AssemblyMaterial.
 
 // LEVEL 2: GROUP / ASSEMBLY
 // Contoh: "Pemasangan Dinding Bata Merah per m2"
@@ -245,7 +226,7 @@ model Assembly {
 
   // Category relationship - REQUIRED
   categoryId  Int
-  category    AssemblyCategory @relation(fields: [categoryId], references: [id])
+  category    AssemblyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   // Document files associated with this assembly
   docs        Json?    // Array of {name: string, url: string, size: number, type: string, uploadedAt: DateTime}
@@ -258,9 +239,7 @@ model Assembly {
 
   // Assembly grouping system relations
   assemblyGroupItems AssemblyGroupItem[]
-
-  // Project overrides relations
-  projectOverrides ProjectOverride[]
+  templateAssemblyGroupItems TemplateAssemblyGroupItem[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -270,19 +249,31 @@ model Assembly {
 }
 
 // TABEL PENGHUBUNG (LEVEL 1 ke 2)
-// Menyimpan "Resep": Berapa banyak Material X untuk bikin 1 Assembly Y
+// Menyimpan "Resep": Berapa banyak Material (External API) untuk bikin 1 Assembly Y
 model AssemblyMaterial {
-  assemblyId Int
-  materialId Int
+  id          String   @id @default(cuid())
+  
+  assemblyId  Int
+  assembly    Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+
+  // External Material Snapshot Data
+  // We store a copy of the CRM data here because we cannot join tables with an external API
+  externalId   String   // ID from CRM (stored as String for flexibility)
+  name         String   // Material Name (partName)
+  partNumber   String?  // Part Number
+  manufacturer String?  // Manufacturer (mfr)
+  unit         String   // Unit (unitMeasure)
+  price        Decimal  @default(0) // Price (priceToIDR) captured at time of addition/sync
 
   // KOEFISIEN PENTING
   // Contoh: Untuk 1m2 dinding, butuh 70 buah bata (quantity = 70)
-  quantity   Decimal
+  quantity     Decimal
 
-  assembly   Assembly @relation(fields: [assemblyId], references: [id])
-  material   Material @relation(fields: [materialId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt // Can track when the price was last synced from CRM
 
-  @@id([assemblyId, materialId]) // Composite Key
+  @@unique([assemblyId, externalId]) // Prevent adding same external material twice to one assembly
+  @@index([externalId])
 }
 
 // LEVEL 3: SET / TEMPLATE
@@ -302,12 +293,50 @@ model Template {
 
   // Relasi ke bawah: Template ini butuh Assembly apa saja?
   assemblies  TemplateAssembly[]
+  assemblyGroups TemplateAssemblyGroup[]
 
   // Jika user memilih template ini untuk dibuat jadi real project
   projects    Project[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// TEMPLATE ASSEMBLY GROUPING SYSTEM
+// ================================
+
+model TemplateAssemblyGroup {
+  id            String   @id @default(cuid())
+  templateId    Int
+  template      Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  groupType     AssemblyGroupType
+  categoryId    Int
+  category      AssemblyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  items         TemplateAssemblyGroupItem[]
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([templateId])
+  @@index([categoryId])
+}
+
+model TemplateAssemblyGroupItem {
+  id            String   @id @default(cuid())
+  groupId       String
+  group         TemplateAssemblyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assemblyId    Int
+  assembly      Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  quantity      Decimal  @default(1)
+  conflictsWith String[]
+  isDefault     Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([groupId, assemblyId])
 }
 
 // TABEL PENGHUBUNG (LEVEL 2 ke 3)
@@ -320,8 +349,8 @@ model TemplateAssembly {
   // Contoh: Di template Kamar Mandi, butuh Dinding seluas 12m2 (quantity = 12)
   quantity   Decimal
 
-  template   Template @relation(fields: [templateId], references: [id])
-  assembly   Assembly @relation(fields: [assemblyId], references: [id])
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  assembly   Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
 
   @@id([templateId, assemblyId])
 }
@@ -335,7 +364,7 @@ model Project {
 
   // Client relationship
   clientId   String?
-  client     Client?  @relation(fields: [clientId], references: [id])
+  client     Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   // Project details
   projectType String? // Residential, Commercial, Infrastructure, etc.
@@ -344,7 +373,7 @@ model Project {
   budget      Decimal? // Approved budget
   totalPrice  Decimal  @default(0) // Calculated total from assemblies
 
-  // Project timeline
+
   startDate   DateTime?
   endDate     DateTime?
   actualStart DateTime?
@@ -359,9 +388,13 @@ model Project {
   schematicDocs   Json?  // Array of schematic documents
   qualityCheckDocs Json? // Array of quality check documents
 
+  // CRM Integration - NEW FIELDS
+  crmInquiryId    Int?
+  crmInquiryTitle String?
+
   // Mengambil referensi dari Template mana (opsional)
   fromTemplateId Int?
-  template       Template? @relation(fields: [fromTemplateId], references: [id])
+  template       Template? @relation(fields: [fromTemplateId], references: [id], onDelete: SetNull)
 
   // User relationships
   createdBy   String
@@ -371,202 +404,13 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Timeline integration
-  timeline    ProjectTimeline?
-
-  // Project overrides for BOQ customization
-  overrides   ProjectOverride[]
-
   @@index([clientId])
   @@index([status])
   @@index([createdBy])
   @@index([startDate, endDate])
 }
 
-// PROJECT TIMELINE PLANNING MANAGEMENT SYSTEM
-// =============================================
 
-// 1. PROJECT TIMELINE - Main timeline container
-model ProjectTimeline {
-  id            String   @id @default(cuid())
-  projectId     Int
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  // Timeline settings
-  startDate     DateTime
-  endDate       DateTime?
-  duration      Int?     // Calculated duration in days
-  workingDays   Json?    // Working days configuration (Mon-Fri, etc.)
-  holidays      Json?    // Holiday dates
-
-  // Progress tracking
-  progress      Decimal  @default(0)  // 0-100 percentage
-  status        TimelineStatus @default(PLANNING)
-
-  // Metadata
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  milestones    ProjectMilestone[]
-  tasks         ProjectTask[]
-
-  @@index([projectId])
-  @@unique([projectId]) // One timeline per project
-}
-
-// 2. PROJECT MILESTONES - Key project milestones
-model ProjectMilestone {
-  id            String   @id @default(cuid())
-  timelineId    String
-  timeline      ProjectTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
-
-  name          String
-  description   String?
-  dueDate       DateTime
-  actualDate    DateTime?
-
-  // Status and progress
-  status        MilestoneStatus @default(PENDING)
-  progress      Decimal @default(0)  // 0-100 percentage
-
-  // Dependencies
-  dependsOn     String?  // Milestone ID this depends on
-
-  // Relations
-  tasks         ProjectTask[]
-
-  @@index([timelineId])
-  @@index([dueDate])
-}
-
-// 3. PROJECT TASKS - Individual tasks within timeline
-model ProjectTask {
-  id            String   @id @default(cuid())
-  timelineId    String
-  timeline      ProjectTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
-
-  milestoneId   String?
-  milestone     ProjectMilestone? @relation(fields: [milestoneId], references: [id])
-
-  name          String
-  description   String?
-  taskType      TaskType @default(CONSTRUCTION)
-
-  // Time management
-  plannedStart  DateTime
-  plannedEnd    DateTime
-  actualStart   DateTime?
-  actualEnd     DateTime?
-
-  // Duration and effort
-  duration      Int      // In days
-  effortHours   Decimal? // Estimated hours
-  actualHours   Decimal? // Actual hours worked
-
-  // Progress and status
-  progress      Decimal  @default(0)  // 0-100 percentage
-  status        TaskStatus @default(NOT_STARTED)
-  priority      TaskPriority @default(MEDIUM)
-
-  // Resource allocation (JSON for flexibility)
-  assignedUsersJson Json?    // Array of user IDs (for backward compatibility)
-  resources     Json?    // Required materials/equipment
-
-  // Cost tracking
-  estimatedCost Decimal? // From assembly materials
-  actualCost    Decimal? // Real costs incurred
-
-  // Relations
-  assignedUsers User[] // Many-to-many with User (implicit)
-  dependencies  TaskDependency[] @relation("TaskDependencies")
-  dependents    TaskDependency[] @relation("DependentTasks")
-
-  @@index([timelineId])
-  @@index([milestoneId])
-  @@index([plannedStart, plannedEnd])
-  @@index([status])
-}
-
-// 4. TASK DEPENDENCIES - Relationships between tasks
-model TaskDependency {
-  id            String   @id @default(cuid())
-
-  // The task that depends on another
-  taskId        String
-  task          ProjectTask @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
-
-  // The task being depended upon
-  dependsOnTaskId String
-  dependsOnTask   ProjectTask @relation("DependentTasks", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
-
-  // Dependency type
-  dependencyType DependencyType @default(FS)  // Finish to Start
-
-  // Lag time (in days)
-  lagDays       Int @default(0)
-
-  @@unique([taskId, dependsOnTaskId])
-}
-
-// ENUMS FOR TIMELINE SYSTEM
-// =========================
-
-enum TimelineStatus {
-  PLANNING
-  ACTIVE
-  ON_HOLD
-  COMPLETED
-  CANCELLED
-}
-
-enum MilestoneStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  DELAYED
-  CANCELLED
-}
-
-enum TaskType {
-  PLANNING
-  MATERIAL_PROCUREMENT
-  SITE_PREPARATION
-  CONSTRUCTION
-  ELECTRICAL
-  PLUMBING
-  MECHANICAL
-  DESIGN
-  PERMIT
-  SUPERVISION
-  QUALITY_CHECK
-  DOCUMENTATION
-  CLIENT_APPROVAL
-  OTHER
-}
-
-enum TaskStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  ON_HOLD
-  COMPLETED
-  CANCELLED
-  DELAYED
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum DependencyType {
-  FS  // Finish to Start
-  SS  // Start to Start
-  FF  // Finish to Finish
-  SF  // Start to Finish
-}
 
 // ASSEMBLY GROUPING SYSTEM
 // =========================
@@ -577,7 +421,7 @@ model AssemblyGroup {
   description   String?
   groupType     AssemblyGroupType
   categoryId    Int      // Link ke AssemblyCategory
-  category      AssemblyCategory @relation(fields: [categoryId], references: [id])
+  category      AssemblyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   items         AssemblyGroupItem[]
   sortOrder     Int      @default(0) // For ordering groups within category
   createdAt     DateTime @default(now())
@@ -589,9 +433,9 @@ model AssemblyGroup {
 model AssemblyGroupItem {
   id            String   @id @default(cuid())
   groupId       String
-  group         AssemblyGroup @relation(fields: [groupId], references: [id])
+  group         AssemblyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   assemblyId    Int
-  assembly      Assembly @relation(fields: [assemblyId], references: [id])
+  assembly      Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
   quantity      Decimal  @default(1) // Default quantity when selected
   conflictsWith String[] // Array of assembly IDs that conflict with this item
   isDefault     Boolean  @default(false) // Default selection for CHOOSE_ONE
@@ -639,95 +483,28 @@ enum ProjectPriority {
   CRITICAL
 }
 
-// PROJECT-SPECIFIC OVERRIDES SYSTEM
-// ==================================
+// AI CHAT SYSTEM
+// ==============
 
-enum OverrideType {
-  ASSEMBLY_QUANTITY   // Override quantity of assembly (affects all materials proportionally)
-  MATERIAL_QUANTITY   // Override quantity of specific material (breaks assembly relationship)
-  MATERIAL_PRICE      // Override price of material
+model ChatSession {
+  id        String        @id @default(cuid())
+  title     String?
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
 }
 
-model ProjectOverride {
-  id            String   @id @default(cuid())
+model ChatMessage {
+  id        String      @id @default(cuid())
+  role      String      // 'user', 'assistant', 'system'
+  content   String      @db.Text
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
 
-  // Project relationship
-  projectId     Int
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  // What is being overridden
-  overrideType  OverrideType
-
-  // For assembly quantity overrides
-  assemblyId    Int?     // Reference to assembly being overridden
-  assembly      Assembly? @relation(fields: [assemblyId], references: [id])
-  originalAssemblyQty Decimal? // Original quantity from template
-
-  // For material price overrides
-  materialId    Int?     // Reference to material being overridden
-  material      Material? @relation(fields: [materialId], references: [id])
-  originalMaterialPrice Decimal? // Original price from material table
-
-  // Override values
-  newQuantity   Decimal? // New quantity (for assemblies)
-  newPrice      Decimal? // New price (for materials)
-
-  // Metadata
-  reason        String?  // Reason for override (optional)
-  notes         String?  // Additional notes
-
-  // User tracking
-  createdBy     String   // User ID who created the override
-  updatedBy     String?  // User ID who last updated the override
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Indexes
-  @@index([projectId])
-  @@index([assemblyId])
-  @@index([materialId])
-  @@index([overrideType])
-  @@unique([projectId, assemblyId]) // One override per assembly per project
-  @@unique([projectId, materialId]) // One override per material per project
-}
-
-// CHANGE HISTORY FOR PROJECT OVERRIDES
-// ====================================
-
-enum ChangeType {
-  CREATED       // Override was created
-  UPDATED       // Override was modified
-  DELETED       // Override was deleted
-}
-
-model ProjectOverrideHistory {
-  id            String     @id @default(cuid())
-
-  // Link to the override
-  overrideId    String
-  projectId     Int
-
-  // Change details
-  changeType    ChangeType
-  fieldChanged  String     // e.g., "quantity", "price", "reason"
-
-  // Values
-  oldValue      String?    // Previous value (JSON string for complex data)
-  newValue      String?    // New value (JSON string for complex data)
-
-  // Context
-  reason        String?    // Reason for this change
-  notes         String?    // Additional context
-
-  // User tracking
-  changedBy     String     // User ID who made the change
-
-  createdAt     DateTime   @default(now())
-
-  // Indexes
-  @@index([overrideId])
-  @@index([projectId])
-  @@index([changedBy])
-  @@index([createdAt])
+  @@index([sessionId])
 }

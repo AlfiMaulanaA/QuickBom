@@ -73,14 +73,14 @@ export default function NotFound() {
               Oops! Page Not Found
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              The page you're looking for doesn't exist or has been moved to a different location.
+              The page you&apos;re looking for doesn&apos;t exist or has been moved to a different location.
             </p>
             <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-4 border">
               <p className="mb-2">This could happen because:</p>
               <ul className="text-left space-y-1 list-disc list-inside">
                 <li>The URL was typed incorrectly</li>
                 <li>The page has been deleted or moved</li>
-                <li>You don't have permission to access this page</li>
+                <li>You don&apos;t have permission to access this page</li>
                 <li>The link you followed is broken</li>
               </ul>
             </div>

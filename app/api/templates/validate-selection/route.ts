@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch template with groups
-    const template = await prisma.template.findUnique({
+    const template: any = await prisma.template.findUnique({
       where: { id: templateId },
       include: {
         assemblyGroups: {
@@ -53,11 +53,7 @@ export async function POST(request: NextRequest) {
               include: {
                 assembly: {
                   include: {
-                    materials: {
-                      include: {
-                        material: true
-                      }
-                    }
+                    materials: true
                   }
                 }
               }
@@ -80,7 +76,7 @@ export async function POST(request: NextRequest) {
     let totalCost = 0;
 
     // Group by category for easier processing
-    const groupsByCategory = template.assemblyGroups.reduce((acc, group) => {
+    const groupsByCategory = template.assemblyGroups.reduce((acc: any, group: any) => {
       if (!acc[group.categoryId]) {
         acc[group.categoryId] = [];
       }
@@ -90,14 +86,15 @@ export async function POST(request: NextRequest) {
 
     // Validate each category
     for (const [categoryId, groups] of Object.entries(groupsByCategory)) {
+      const categoryGroups = groups as any[];
       const categorySelections = selections[categoryId] || {};
       const categoryBreakdown = {
         categoryId: parseInt(categoryId),
-        categoryName: groups[0].category.name,
+        categoryName: categoryGroups[0].category.name,
         groups: [] as ValidationResult['breakdown'][0]['groups']
       };
 
-      for (const group of groups) {
+      for (const group of categoryGroups) {
         const groupSelections = categorySelections[group.id] || [];
         const groupBreakdown = {
           groupId: group.id,
@@ -142,12 +139,12 @@ export async function POST(request: NextRequest) {
 
           case 'CONFLICT':
             // Check for conflicts within group
-            const selectedItems = group.items.filter(item =>
+            const selectedItems = group.items.filter((item: any) =>
               groupSelections.includes(item.assemblyId)
             );
 
             for (const item of selectedItems) {
-              const conflicts = selectedItems.filter(other =>
+              const conflicts = selectedItems.filter((other: any) =>
                 item.conflictsWith.includes(other.assemblyId.toString())
               );
 
@@ -158,7 +155,7 @@ export async function POST(request: NextRequest) {
                   message: `Conflicting items selected in group "${group.name}"`,
                   details: {
                     item: item.assembly.name,
-                    conflicts: conflicts.map(c => c.assembly.name)
+                    conflicts: conflicts.map((c: any) => c.assembly.name)
                   }
                 });
               }
@@ -168,10 +165,10 @@ export async function POST(request: NextRequest) {
 
         // Calculate costs for selected items
         for (const selectedAssemblyId of groupSelections) {
-          const item = group.items.find(i => i.assemblyId === selectedAssemblyId);
+          const item = group.items.find((i: any) => i.assemblyId === selectedAssemblyId);
           if (item) {
-            const assemblyCost = item.assembly.materials.reduce((total, am) => {
-              return total + (Number(am.material.price) * Number(am.quantity));
+            const assemblyCost = item.assembly.materials.reduce((total: number, am: any) => {
+              return total + (Number(am.price || 0) * Number(am.quantity || 1));
             }, 0) * Number(item.quantity);
 
             groupBreakdown.cost += assemblyCost;

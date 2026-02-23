@@ -10,16 +10,22 @@ export async function GET() {
             assembly: {
               include: {
                 category: true,
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
         },
-        projects: true
+        projects: true,
+        assemblyGroups: {
+          include: {
+            category: true,
+            items: {
+              include: {
+                assembly: true
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -80,15 +86,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // --- De-duplicate assemblies by assemblyId (sum quantities for duplicates) ---
+    // Prevents Unique constraint error on (templateId, assemblyId) when same assembly
+    // appears in multiple groups from the CategoryBasedSelector
+    const deduplicatedAssemblies = assemblies
+      ? Object.values(
+        (assemblies as { assemblyId: number; quantity: number }[]).reduce(
+          (acc: Record<number, { assemblyId: number; quantity: number }>, a) => {
+            if (acc[a.assemblyId]) {
+              acc[a.assemblyId].quantity += Number(a.quantity) || 1;
+            } else {
+              acc[a.assemblyId] = { assemblyId: a.assemblyId, quantity: Number(a.quantity) || 1 };
+            }
+            return acc;
+          },
+          {}
+        )
+      )
+      : [];
+
     const template = await prisma.template.create({
       data: {
         name,
         description: description || null,
         docs: docs || null,
         assemblySelections: assemblySelections || null,
-        ...(assemblies && assemblies.length > 0 ? {
+        ...(deduplicatedAssemblies.length > 0 ? {
           assemblies: {
-            create: assemblies.map((a: any) => ({
+            create: deduplicatedAssemblies.map((a) => ({
               assemblyId: a.assemblyId,
               quantity: a.quantity
             }))
@@ -101,16 +126,22 @@ export async function POST(request: NextRequest) {
             assembly: {
               include: {
                 category: true,
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
         },
-        projects: true
+        projects: true,
+        assemblyGroups: {
+          include: {
+            category: true,
+            items: {
+              include: {
+                assembly: true
+              }
+            }
+          }
+        }
       }
     });
 

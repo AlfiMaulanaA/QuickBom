@@ -16,6 +16,7 @@ interface PDFConfig {
   showSignatureSection: boolean;
   includeAssemblyBreakdown: boolean;
   customFooter: string;
+  fontFamily: string;
 }
 
 export async function GET(
@@ -24,10 +25,10 @@ export async function GET(
 ) {
   // Default configuration for backward compatibility
   const defaultConfig: PDFConfig = {
-    companyName: "PT. QUICKBOM INDONESIA",
+    companyName: "PT. PRODUCT CONFIGURATOR INDONESIA",
     companyAddress: "Jl. Raya Industri No. 123, Jakarta Pusat",
     companyPhone: "(021) 1234-5678",
-    companyEmail: "procurement@quickbom.id",
+    companyEmail: "procurement@productconfigurator.id",
     documentTitle: "SURAT SERAH TERIMA MATERIAL",
     requesterTitle: "Requester",
     approverTitle: "Approved By",
@@ -36,7 +37,8 @@ export async function GET(
     showMaterialDetails: true,
     showSignatureSection: true,
     includeAssemblyBreakdown: true,
-    customFooter: "Dokumen ini dibuat secara otomatis oleh sistem QuickBom"
+    customFooter: "Dokumen ini dibuat secara otomatis oleh sistem Product Configurator",
+    fontFamily: "helvetica"
   };
 
   return generatePDF(params.id, defaultConfig);
@@ -78,11 +80,7 @@ async function generatePDF(projectId: string, config: PDFConfig) {
               include: {
                 assembly: {
                   include: {
-                    materials: {
-                      include: {
-                        material: true
-                      }
-                    }
+                    materials: true
                   }
                 }
               }
@@ -162,12 +160,12 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
 
   // Header - Company Letterhead
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text(config.companyName, 105, yPosition, { align: 'center' });
   yPosition += 7;
 
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text('Material Procurement & Project Management', 105, yPosition, { align: 'center' });
   yPosition += 7;
 
@@ -179,29 +177,29 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
 
   // Document Title
   doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text(config.documentTitle, 105, yPosition, { align: 'center' });
   yPosition += 7;
 
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text('Material Handover Letter', 105, yPosition, { align: 'center' });
   yPosition += 15;
 
   // Document Number and Date
   const docNumber = `SST-${project.id.toString().padStart(4, '0')}-${new Date().getFullYear()}`;
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text(`Nomor: ${docNumber}`, 20, yPosition);
   doc.text(`Tanggal: ${formatDate(new Date())}`, 190, yPosition, { align: 'right' });
   yPosition += 15;
 
   // Recipient Information
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text('Kepada Yth:', 20, yPosition);
   yPosition += 7;
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text('Kepala Gudang / Procurement Manager', 20, yPosition);
   yPosition += 7;
 
@@ -220,12 +218,12 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   yPosition += 10;
 
   // Subject
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text('Perihal: Penyerahan Material untuk Project', 20, yPosition);
   yPosition += 15;
 
   // Opening Paragraph
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(11);
   const openingText = 'Dengan hormat,\n\nSehubungan dengan project yang sedang berjalan, bersama ini kami serahkan material-material yang diperlukan untuk pelaksanaan project tersebut. Berikut adalah rincian material yang diserahkan:';
   const splitOpening = doc.splitTextToSize(openingText, 170);
@@ -233,41 +231,41 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   yPosition += splitOpening.length * 5 + 15;
 
   // Project Information - Display as regular text blocks
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(10);
 
   // Project Name
   doc.text('Nama Project:', 20, yPosition);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text(project.name, 60, yPosition);
   yPosition += 8;
 
   // Template
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text('Template:', 20, yPosition);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.text(project.template.name, 60, yPosition);
   yPosition += 8;
 
   // Client
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text('Client:', 20, yPosition);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   const clientName = project.client ?
     (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : '-';
   doc.text(clientName, 60, yPosition);
   yPosition += 8;
 
   // Project Date
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.text('Tanggal Project:', 20, yPosition);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   const projectDate = project.startDate ? formatDate(new Date(project.startDate)) : '-';
   doc.text(projectDate, 60, yPosition);
   yPosition += 15;
 
   // Materials Table
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(12);
   doc.text('DAFTAR MATERIAL YANG DISERAHKAN', 20, yPosition);
   yPosition += 10;
@@ -280,7 +278,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
     const assemblyQuantity = Number(templateAssembly.quantity);
 
     assembly.materials.forEach((assemblyMaterial: any) => {
-      const material = assemblyMaterial.material;
+      const material = assemblyMaterial;
       const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}`;
 
       const materialQuantityPerAssembly = Number(assemblyMaterial.quantity);
@@ -309,7 +307,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   const materialsRowHeight = 10;
 
   // Table headers (plain text without background)
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(8);
 
   let xPos = 20;
@@ -324,7 +322,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   yPosition += materialsRowHeight;
 
   // Table data rows
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(7);
 
   Array.from(materialMap.values()).forEach((material: any, index: number) => {
@@ -334,7 +332,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
       yPosition = 20;
 
       // Redraw headers on new page (plain text without background)
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(config.fontFamily, 'bold');
       doc.setFontSize(8);
       xPos = 20;
       headers.forEach((header, headerIndex) => {
@@ -343,7 +341,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
         xPos += materialsColWidths[headerIndex];
       });
       yPosition += materialsRowHeight;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(config.fontFamily, 'normal');
       doc.setFontSize(7);
     }
 
@@ -370,13 +368,13 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   // Summary (only total count, no price information)
   const totalMaterials = materialMap.size;
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(10);
   doc.text(`Total Jenis Material: ${totalMaterials}`, 20, yPosition);
   yPosition += 15;
 
   // Closing paragraph
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(11);
   const closingText = 'Material-material tersebut telah diperiksa dan dinyatakan lengkap sesuai dengan spesifikasi yang dibutuhkan untuk project ini. Mohon untuk segera diproses dan digunakan sesuai dengan jadwal project.\n\nDemikian surat serah terima material ini dibuat untuk dapat dipergunakan sebagaimana mestinya.';
   const splitClosing = doc.splitTextToSize(closingText, 170);
@@ -388,12 +386,12 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   const signatureWidth = (pageWidth - 40) / 2; // 40 is total margin
 
   // Requester signature (left)
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(11);
   doc.text(config.requesterTitle, 20 + signatureWidth / 2, yPosition, { align: 'center' });
   yPosition += 15; // More space
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(10);
   doc.text('(____________________)', 20 + signatureWidth / 2, yPosition, { align: 'center' });
   yPosition += 12; // More space
@@ -407,12 +405,12 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
   const rightX = 20 + signatureWidth;
   let rightY = yPosition - 43; // Go back up for right signature with more space
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(config.fontFamily, 'bold');
   doc.setFontSize(11);
   doc.text(config.approverTitle, rightX + signatureWidth / 2, rightY, { align: 'center' });
   rightY += 15; // More space
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(10);
   doc.text('(____________________)', rightX + signatureWidth / 2, rightY, { align: 'center' });
   rightY += 12; // More space
@@ -424,7 +422,7 @@ async function generateMaterialHandoverPDF(project: any, config: PDFConfig): Pro
 
   // Footer
   const pageHeight = doc.internal.pageSize.height;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(config.fontFamily, 'normal');
   doc.setFontSize(8);
   doc.text(config.customFooter, 105, pageHeight - 20, { align: 'center' });
   doc.text(`Generated on: ${new Date().toLocaleString('id-ID')}`, 105, pageHeight - 10, { align: 'center' });

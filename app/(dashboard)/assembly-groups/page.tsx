@@ -85,6 +85,7 @@ export default function AssemblyGroupsPage() {
   const [categories, setCategories] = useState<AssemblyCategory[]>([]);
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -378,6 +379,7 @@ export default function AssemblyGroupsPage() {
     }
 
     try {
+      setIsSubmitting(true);
       const groupData = {
         categoryId: selectedCategoryId,
         name: newGroupName.trim(),
@@ -423,6 +425,8 @@ export default function AssemblyGroupsPage() {
         description: "Failed to create group",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -437,6 +441,7 @@ export default function AssemblyGroupsPage() {
     }
 
     try {
+      setIsSubmitting(true);
       const groupData = {
         name: newGroupName.trim(),
         description: newGroupDescription.trim() || null,
@@ -481,6 +486,8 @@ export default function AssemblyGroupsPage() {
         description: "Failed to update group",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1147,8 +1154,14 @@ export default function AssemblyGroupsPage() {
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={createGroup} disabled={!selectedCategoryId || !newGroupName.trim()}>
-              Create Group
+            <Button onClick={createGroup} disabled={!selectedCategoryId || !newGroupName.trim() || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span> Creating...
+                </>
+              ) : (
+                "Create Group"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1352,8 +1365,14 @@ export default function AssemblyGroupsPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={updateGroup} disabled={!newGroupName.trim()}>
-              Update Group
+            <Button onClick={updateGroup} disabled={!newGroupName.trim() || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span> Updating...
+                </>
+              ) : (
+                "Update Group"
+              )}
             </Button>
           </div>
         </DialogContent>

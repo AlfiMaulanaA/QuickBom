@@ -21,11 +21,7 @@ export async function GET(request: NextRequest) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           },
@@ -90,17 +86,19 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         groupType,
-        categoryId,
-        templateId,
-        items: items && items.length > 0 ? {
-          create: items.map((item: any) => ({
-            assemblyId: item.assemblyId,
-            quantity: item.quantity || 1,
-            conflictsWith: item.conflictsWith || [],
-            isDefault: item.isDefault || false,
-            sortOrder: item.sortOrder || 0
-          }))
-        } : undefined
+        template: { connect: { id: Number(templateId) } },
+        category: { connect: { id: Number(categoryId) } },
+        ...(items && items.length > 0 && {
+          items: {
+            create: items.map((item: any) => ({
+              assembly: { connect: { id: Number(item.assemblyId) } },
+              quantity: item.quantity || 1,
+              conflictsWith: item.conflictsWith || [],
+              isDefault: item.isDefault || false,
+              sortOrder: item.sortOrder || 0
+            }))
+          }
+        })
       },
       include: {
         category: true,
@@ -108,11 +106,7 @@ export async function POST(request: NextRequest) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }

@@ -18,11 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               include: {
                 assembly: {
                   include: {
-                    materials: {
-                      include: {
-                        material: true
-                      }
-                    }
+                    materials: true
                   }
                 }
               }
@@ -93,11 +89,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             include: {
               assembly: {
                 include: {
-                  materials: {
-                    include: {
-                      material: true
-                    }
-                  }
+                  materials: true
                 }
               }
             }
@@ -112,14 +104,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Calculate total price from template
-      for (const templateAssembly of template.assemblies) {
-        const assembly = templateAssembly.assembly;
-        for (const assemblyMaterial of assembly.materials) {
-          const material = assemblyMaterial.material;
-          totalPrice += Number(material.price) * Number(assemblyMaterial.quantity) * Number(templateAssembly.quantity);
-        }
-      }
+      // Cost calculation removed
+      totalPrice = 0;
     }
 
     const project = await prisma.project.update({

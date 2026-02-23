@@ -17,7 +17,7 @@ interface WhatsAppResponse {
 }
 
 class WhatsAppService {
-  private static readonly API_URL = 'https://authserver-backend.iotech.my.id/send-multi-whatsapp';
+  private static readonly API_URL = process.env.WHATSAPP_API_URL || 'https://authserver-backend.iotech.my.id/send-multi-whatsapp';
 
   /**
    * Send WhatsApp message to single recipient
@@ -29,7 +29,7 @@ class WhatsAppService {
   static async sendMessage(
     phoneNumber: string,
     message: string,
-    source: string = 'QuickBom'
+    source: string = 'Product Configurator'
   ): Promise<WhatsAppResponse> {
     return this.sendMultiMessage([phoneNumber], message, source);
   }
@@ -44,7 +44,7 @@ class WhatsAppService {
   static async sendMultiMessage(
     phoneNumbers: string[],
     message: string,
-    source: string = 'QuickBom'
+    source: string = 'Product Configurator'
   ): Promise<WhatsAppResponse> {
     try {
       // Validate input
@@ -114,48 +114,22 @@ class WhatsAppService {
   static async sendProjectNotification(
     phoneNumbers: string[],
     projectName: string,
-    notificationType: 'created' | 'updated' | 'completed' | 'overdue' | 'milestone' | 'task',
+    notificationType: 'created' | 'updated' | 'completed' | 'overdue',
     details?: string
   ): Promise<WhatsAppResponse> {
     const messages = {
-      created: `🎉 *Project Created*\n\nProject: ${projectName}\nStatus: New project has been created\n\nQuickBom Project Management`,
-      updated: `📝 *Project Updated*\n\nProject: ${projectName}\nStatus: Project has been updated\n${details ? `\nDetails: ${details}` : ''}\n\nQuickBom Project Management`,
-      completed: `✅ *Project Completed*\n\nProject: ${projectName}\nStatus: Project has been completed successfully!\n\n🎊 Congratulations!\n\nQuickBom Project Management`,
-      overdue: `⚠️ *Project Overdue Alert*\n\nProject: ${projectName}\nStatus: Project is running behind schedule\n\nPlease review and take necessary actions.\n\nQuickBom Project Management`,
-      milestone: `🏆 *Milestone Achieved*\n\nProject: ${projectName}\nStatus: Milestone completed!\n${details ? `\nDetails: ${details}` : ''}\n\nQuickBom Project Management`,
-      task: `📋 *Task Update*\n\nProject: ${projectName}\nStatus: Task status changed\n${details ? `\nDetails: ${details}` : ''}\n\nQuickBom Project Management`
+      created: `🎉 *Project Created*\n\nProject: ${projectName}\nStatus: New project has been created\n\nProduct Configurator Project Management`,
+      updated: `📝 *Project Updated*\n\nProject: ${projectName}\nStatus: Project has been updated\n${details ? `\nDetails: ${details}` : ''}\n\nProduct Configurator Project Management`,
+      completed: `✅ *Project Completed*\n\nProject: ${projectName}\nStatus: Project has been completed successfully!\n\n🎊 Congratulations!\n\nProduct Configurator Project Management`,
+      overdue: `⚠️ *Project Overdue Alert*\n\nProject: ${projectName}\nStatus: Project is running behind schedule\n\nPlease review and take necessary actions.\n\nProduct Configurator Project Management`
     };
 
     const message = messages[notificationType];
 
-    return this.sendMultiMessage(phoneNumbers, message, 'QuickBom-Project');
+    return this.sendMultiMessage(phoneNumbers, message, 'Product Configurator-Project');
   }
 
-  /**
-   * Send timeline notification via WhatsApp
-   * @param phoneNumbers - Array of recipient phone numbers
-   * @param projectName - Project name
-   * @param eventType - Type of timeline event
-   * @param details - Additional details
-   * @returns Promise with response
-   */
-  static async sendTimelineNotification(
-    phoneNumbers: string[],
-    projectName: string,
-    eventType: 'timeline_created' | 'task_completed' | 'milestone_completed' | 'delay_warning',
-    details?: string
-  ): Promise<WhatsAppResponse> {
-    const messages = {
-      timeline_created: `📅 *Timeline Created*\n\nProject: ${projectName}\nStatus: Project timeline has been established\n\nYou can now track project progress.\n\nQuickBom Project Management`,
-      task_completed: `✅ *Task Completed*\n\nProject: ${projectName}\nStatus: Task has been completed\n${details ? `\nDetails: ${details}` : ''}\n\nQuickBom Project Management`,
-      milestone_completed: `🏆 *Milestone Completed*\n\nProject: ${projectName}\nStatus: Important milestone achieved!\n${details ? `\nDetails: ${details}` : ''}\n\n🎉 Great progress!\n\nQuickBom Project Management`,
-      delay_warning: `⚠️ *Schedule Delay Warning*\n\nProject: ${projectName}\nStatus: Potential delay detected\n${details ? `\nDetails: ${details}` : ''}\n\nPlease review the timeline.\n\nQuickBom Project Management`
-    };
 
-    const message = messages[eventType];
-
-    return this.sendMultiMessage(phoneNumbers, message, 'QuickBom-Timeline');
-  }
 
   /**
    * Validate phone number format
@@ -204,7 +178,7 @@ class WhatsAppService {
   static async sendBulkMessages(
     phoneNumbers: string[],
     message: string,
-    source: string = 'QuickBom',
+    source: string = 'Product Configurator',
     batchSize: number = 10,
     delay: number = 1000
   ): Promise<WhatsAppResponse> {

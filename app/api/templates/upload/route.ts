@@ -99,11 +99,7 @@ export async function POST(request: NextRequest) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
@@ -195,11 +191,7 @@ export async function DELETE(request: NextRequest) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }

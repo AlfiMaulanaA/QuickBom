@@ -16,16 +16,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
         },
-        projects: true
+        projects: true,
+        assemblyGroups: {
+          include: {
+            category: true,
+            items: {
+              include: {
+                assembly: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -70,10 +76,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       assemblySelections: assemblySelections || null
     };
 
+    // --- De-duplicate assemblies by assemblyId before recreating ---
+    const deduplicatedAssemblies = assemblies
+      ? Object.values(
+        (assemblies as { assemblyId: number; quantity: number }[]).reduce(
+          (acc: Record<number, { assemblyId: number; quantity: number }>, a) => {
+            if (acc[a.assemblyId]) {
+              acc[a.assemblyId].quantity += Number(a.quantity) || 1;
+            } else {
+              acc[a.assemblyId] = { assemblyId: a.assemblyId, quantity: Number(a.quantity) || 1 };
+            }
+            return acc;
+          },
+          {}
+        )
+      )
+      : [];
+
     // Add assemblies if provided
-    if (assemblies && assemblies.length > 0) {
+    if (deduplicatedAssemblies.length > 0) {
       updateData.assemblies = {
-        create: assemblies.map((a: any) => ({
+        create: deduplicatedAssemblies.map((a) => ({
           assemblyId: a.assemblyId,
           quantity: a.quantity
         }))
@@ -90,16 +113,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             assembly: {
               include: {
                 category: true,
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
         },
-        projects: true
+        projects: true,
+        assemblyGroups: {
+          include: {
+            category: true,
+            items: {
+              include: {
+                assembly: true
+              }
+            }
+          }
+        }
       }
     });
 

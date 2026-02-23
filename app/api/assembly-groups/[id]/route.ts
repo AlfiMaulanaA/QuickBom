@@ -14,11 +14,7 @@ export async function GET(
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                },
+                materials: true,
                 category: true
               }
             }
@@ -124,11 +120,7 @@ export async function PUT(
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                },
+                materials: true,
                 category: true
               }
             }

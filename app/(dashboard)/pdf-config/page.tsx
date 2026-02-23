@@ -31,7 +31,6 @@ interface Project {
     name: string;
     description: string | null;
   } | null;
-  totalPrice: number;
   createdAt: string;
   status: string;
 }
@@ -50,6 +49,7 @@ interface PDFConfig {
   showSignatureSection: boolean;
   includeAssemblyBreakdown: boolean;
   customFooter: string;
+  fontFamily: string;
 }
 
 export default function PDFConfigPage() {
@@ -63,10 +63,10 @@ export default function PDFConfigPage() {
 
   // PDF Configuration State
   const [pdfConfig, setPdfConfig] = useState<PDFConfig>({
-    companyName: "PT. QUICKBOM INDONESIA",
+    companyName: "PT. PRODUCT CONFIGURATOR INDONESIA",
     companyAddress: "Jl. Raya Industri No. 123, Jakarta Pusat",
     companyPhone: "(021) 1234-5678",
-    companyEmail: "procurement@quickbom.id",
+    companyEmail: "procurement@productconfigurator.id",
     documentTitle: "SURAT SERAH TERIMA MATERIAL",
     requesterTitle: "Requester",
     approverTitle: "Approved By",
@@ -75,7 +75,8 @@ export default function PDFConfigPage() {
     showMaterialDetails: true,
     showSignatureSection: true,
     includeAssemblyBreakdown: false,
-    customFooter: "Dokumen ini dibuat secara otomatis oleh sistem QuickBom"
+    customFooter: "Dokumen ini dibuat secara otomatis oleh sistem Product Configurator",
+    fontFamily: "helvetica"
   });
 
   const fetchProjects = async () => {
@@ -308,10 +309,10 @@ export default function PDFConfigPage() {
 
   const resetConfiguration = () => {
     setPdfConfig({
-      companyName: "PT. QUICKBOM INDONESIA",
+      companyName: "PT. PRODUCT CONFIGURATOR INDONESIA",
       companyAddress: "Jl. Raya Industri No. 123, Jakarta Pusat",
       companyPhone: "(021) 1234-5678",
-      companyEmail: "procurement@quickbom.id",
+      companyEmail: "procurement@productconfigurator.id",
       documentTitle: "SURAT SERAH TERIMA MATERIAL",
       requesterTitle: "Requester",
       approverTitle: "Approved By",
@@ -320,7 +321,8 @@ export default function PDFConfigPage() {
       showMaterialDetails: true,
       showSignatureSection: true,
       includeAssemblyBreakdown: false,
-      customFooter: "Dokumen ini dibuat secara otomatis oleh sistem QuickBom"
+      customFooter: "Dokumen ini dibuat secara otomatis oleh sistem Product Configurator",
+      fontFamily: "helvetica"
     });
     toast({
       title: "Configuration Reset",
@@ -328,12 +330,7 @@ export default function PDFConfigPage() {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
+
 
   if (loading) {
     return (
@@ -444,6 +441,22 @@ export default function PDFConfigPage() {
                     onChange={(e) => setPdfConfig({ ...pdfConfig, customFooter: e.target.value })}
                     rows={2}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fontFamily">Font Style</Label>
+                  <Select
+                    value={pdfConfig.fontFamily}
+                    onValueChange={(value) => setPdfConfig({ ...pdfConfig, fontFamily: value })}
+                  >
+                    <SelectTrigger id="fontFamily">
+                      <SelectValue placeholder="Select font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="helvetica">Helvetica (Sans-serif)</SelectItem>
+                      <SelectItem value="times">Times New Roman (Serif)</SelectItem>
+                      <SelectItem value="courier">Courier (Monospace)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -589,7 +602,6 @@ export default function PDFConfigPage() {
                         <TableHead>Project Name</TableHead>
                         <TableHead>Template</TableHead>
                         <TableHead>Client</TableHead>
-                        <TableHead>Total Value</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -616,9 +628,7 @@ export default function PDFConfigPage() {
                               (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson)
                               : "-"}
                           </TableCell>
-                          <TableCell className="font-semibold">
-                            {formatCurrency(Number(project.totalPrice))}
-                          </TableCell>
+
                           <TableCell>
                             <Badge variant={project.status === 'COMPLETED' ? 'default' : 'secondary'}>
                               {project.status.replace('_', ' ')}
@@ -669,22 +679,21 @@ export default function PDFConfigPage() {
                                         <div><strong>Project:</strong> {project.name}</div>
                                         <div><strong>Template:</strong> {project.template?.name}</div>
                                         <div><strong>Client:</strong> {project.client?.contactPerson}</div>
-                                        <div><strong>Value:</strong> {formatCurrency(Number(project.totalPrice))}</div>
                                       </div>
                                     </div>
                                     <div className="border rounded-lg p-4 bg-muted/30">
                                       <h4 className="font-semibold mb-2">Signature Section</h4>
                                       <div className="flex justify-between text-sm">
                                         <div>
-                                          <strong>{pdfConfig.requesterTitle}</strong><br/>
-                                          ____________________<br/>
-                                          Nama: ____________________<br/>
+                                          <strong>{pdfConfig.requesterTitle}</strong><br />
+                                          ____________________<br />
+                                          Nama: ____________________<br />
                                           Jabatan: ____________________
                                         </div>
                                         <div>
-                                          <strong>{pdfConfig.approverTitle}</strong><br/>
-                                          ____________________<br/>
-                                          Nama: ____________________<br/>
+                                          <strong>{pdfConfig.approverTitle}</strong><br />
+                                          ____________________<br />
+                                          Nama: ____________________<br />
                                           Jabatan: ____________________
                                         </div>
                                       </div>

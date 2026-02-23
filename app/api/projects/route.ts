@@ -5,7 +5,7 @@ import { getAuthFromCookie, requireAuth } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const includeTimeline = searchParams.get('include') === 'timeline';
+
 
     const projects = await prisma.project.findMany({
       include: {
@@ -15,11 +15,7 @@ export async function GET(request: NextRequest) {
               include: {
                 assembly: {
                   include: {
-                    materials: {
-                      include: {
-                        material: true
-                      }
-                    }
+                    materials: true
                   }
                 }
               }
@@ -28,22 +24,6 @@ export async function GET(request: NextRequest) {
         },
         client: true,
         creator: true,
-        ...(includeTimeline && {
-          timeline: {
-            include: {
-              milestones: {
-                include: {
-                  tasks: true
-                }
-              },
-              tasks: {
-                include: {
-                  milestone: true
-                }
-              }
-            }
-          }
-        })
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -125,7 +105,8 @@ export async function POST(request: NextRequest) {
       fromTemplateId,
       assignedUsers,
       schematicDocs,
-      qualityCheckDocs
+      qualityCheckDocs,
+      crmInquiryId
     } = body;
 
     if (!name) {
@@ -145,11 +126,7 @@ export async function POST(request: NextRequest) {
             include: {
               assembly: {
                 include: {
-                  materials: {
-                    include: {
-                      material: true
-                    }
-                  }
+                  materials: true
                 }
               }
             }
@@ -164,39 +141,36 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Calculate total price from template
-      for (const templateAssembly of template.assemblies) {
-        const assembly = templateAssembly.assembly;
-        for (const assemblyMaterial of assembly.materials) {
-          const material = assemblyMaterial.material;
-          totalPrice += Number(material.price) * Number(assemblyMaterial.quantity) * Number(templateAssembly.quantity);
-        }
-      }
+      // Cost calculation removed
+      totalPrice = 0;
     }
 
+    const projectData: any = {
+      name,
+      description: description || null,
+      clientId: clientId || null,
+      projectType: projectType || null,
+      location: location || null,
+      area: area ? Number(area) : null,
+      budget: budget ? Number(budget) : null,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      actualStart: actualStart ? new Date(actualStart) : null,
+      actualEnd: actualEnd ? new Date(actualEnd) : null,
+      status: status || "PLANNING",
+      progress: progress ? Number(progress) : 0,
+      priority: priority || "MEDIUM",
+      schematicDocs: schematicDocs || null,
+      qualityCheckDocs: qualityCheckDocs || null,
+      fromTemplateId,
+      totalPrice,
+      createdBy: auth.userId,
+      assignedUsers: assignedUsers || [],
+      crmInquiryId: crmInquiryId ? Number(crmInquiryId) : null
+    };
+
     const project = await prisma.project.create({
-      data: {
-        name,
-        description: description || null,
-        clientId: clientId || null,
-        projectType: projectType || null,
-        location: location || null,
-        area: area ? Number(area) : null,
-        budget: budget ? Number(budget) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        actualStart: actualStart ? new Date(actualStart) : null,
-        actualEnd: actualEnd ? new Date(actualEnd) : null,
-        status: status || "PLANNING",
-        progress: progress ? Number(progress) : 0,
-        priority: priority || "MEDIUM",
-        schematicDocs: schematicDocs || null,
-        qualityCheckDocs: qualityCheckDocs || null,
-        fromTemplateId,
-        totalPrice,
-        createdBy: auth.userId,
-        assignedUsers: assignedUsers || []
-      },
+      data: projectData,
       include: {
         template: true,
         creator: true,
@@ -256,7 +230,8 @@ export async function PUT(request: NextRequest) {
       priority,
       assignedUsers,
       schematicDocs,
-      qualityCheckDocs
+      qualityCheckDocs,
+      crmInquiryId
     } = body;
 
     if (!id) {
@@ -273,27 +248,30 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const updateData: any = {
+      name,
+      description: description || null,
+      clientId: clientId || null,
+      projectType: projectType || null,
+      location: location || null,
+      area: area ? Number(area) : null,
+      budget: budget ? Number(budget) : null,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      actualStart: actualStart ? new Date(actualStart) : null,
+      actualEnd: actualEnd ? new Date(actualEnd) : null,
+      status: status || "PLANNING",
+      progress: progress ? Number(progress) : 0,
+      priority: priority || "MEDIUM",
+      ...(schematicDocs !== undefined && { schematicDocs }),
+      ...(qualityCheckDocs !== undefined && { qualityCheckDocs }),
+      assignedUsers: assignedUsers || [],
+      crmInquiryId: crmInquiryId ? Number(crmInquiryId) : null
+    };
+
     const project = await prisma.project.update({
       where: { id: Number(id) },
-      data: {
-        name,
-        description: description || null,
-        clientId: clientId || null,
-        projectType: projectType || null,
-        location: location || null,
-        area: area ? Number(area) : null,
-        budget: budget ? Number(budget) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        actualStart: actualStart ? new Date(actualStart) : null,
-        actualEnd: actualEnd ? new Date(actualEnd) : null,
-        status: status || "PLANNING",
-        progress: progress ? Number(progress) : 0,
-        priority: priority || "MEDIUM",
-        ...(schematicDocs !== undefined && { schematicDocs }),
-        ...(qualityCheckDocs !== undefined && { qualityCheckDocs }),
-        assignedUsers: assignedUsers || []
-      },
+      data: updateData,
       include: {
         template: {
           include: {
@@ -301,11 +279,7 @@ export async function PUT(request: NextRequest) {
               include: {
                 assembly: {
                   include: {
-                    materials: {
-                      include: {
-                        material: true
-                      }
-                    }
+                    materials: true
                   }
                 }
               }

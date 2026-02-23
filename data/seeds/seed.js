@@ -1,17 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * QuickBom Unified Database Seeder
+ * Product Configurator Unified Database Seeder
  *
  * Consolidates all seeding logic into a single file.
  * Supports restoring data from JSON dumps in /data.
  *
- * Usage:
- *   node data/seeds/seed.js <seeder-name>
- *
- * Examples:
- *   node data/seeds/seed.js users
- *   node data/seeds/seed.js all
+ * Updated to handle removal of local Material table and move to Snapshots.
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -29,7 +24,10 @@ const getDatabaseConfig = () => {
         return { datasourceUrl: supabaseUrl };
     } else {
         const localUrl = process.env.DATABASE_URL;
-        if (!localUrl) throw new Error('DATABASE_URL required in development');
+        if (!localUrl) {
+            // Fallback for local dev if DATABASE_URL is not in env but we want to use default
+            return { datasourceUrl: 'postgresql://quickbom:quickbom_password@localhost:5432/quickbom?schema=public' };
+        }
         console.log('[SEED] Using local PostgreSQL database');
         return { datasourceUrl: localUrl };
     }
@@ -103,24 +101,23 @@ async function seedClients(prisma) {
         try {
             ['lastPaymentDate', 'createdAt', 'updatedAt'].forEach(f => { if (c[f]) c[f] = new Date(c[f]); });
             ['annualRevenue', 'creditLimit', 'totalContractValue', 'outstandingBalance'].forEach(f => { if (c[f]) c[f] = c[f].toString(); });
-            await smartUpsert(prisma, 'client', c); // No unique field other than ID easily usable, maybe contactEmail but typically we rely on ID
+            await smartUpsert(prisma, 'client', c);
         } catch (e) { console.log(`Error client ${c.contactPerson}: ${e.message}`); }
     }
 }
 
-async function seedMaterials(prisma) {
-    console.log('🔧 Seeding Materials...');
+// Material seeding is now DEPRECATED as a table, 
+// but we keep this function to load the data for AssemblyMaterial snapshots
+async function getMaterialMap() {
     const dataPath = path.join(__dirname, '../../data/material.json');
-    if (!fs.existsSync(dataPath)) return console.log('⚠️ material.json not found');
+    if (!fs.existsSync(dataPath)) return new Map();
 
     const materials = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const map = new Map();
     for (const m of materials) {
-        try {
-            ['createdAt', 'updatedAt'].forEach(f => { if (m[f]) m[f] = new Date(m[f]); });
-            if (m.price) m.price = m.price.toString();
-            await smartUpsert(prisma, 'material', m, 'name');
-        } catch (e) { console.log(`Error material ${m.name}: ${e.message}`); }
+        map.set(m.id, m);
     }
+    return map;
 }
 
 async function seedAssemblyCategories(prisma) {
@@ -143,6 +140,9 @@ async function seedAssemblies(prisma) {
     const relPath = path.join(__dirname, '../../data/assemblyMaterial.json');
     if (!fs.existsSync(asmPath)) return console.log('⚠️ assembly.json not found');
 
+    // Load materials for snapshots
+    const materialMap = await getMaterialMap();
+
     const items = JSON.parse(fs.readFileSync(asmPath, 'utf8'));
     for (const i of items) {
         try {
@@ -152,15 +152,43 @@ async function seedAssemblies(prisma) {
     }
 
     if (fs.existsSync(relPath)) {
+        console.log('🔗 Seeding Assembly Materials (Snapshots)...');
         const rels = JSON.parse(fs.readFileSync(relPath, 'utf8'));
         for (const r of rels) {
             try {
-                if (r.quantity) r.quantity = r.quantity.toString();
+                const materialInfo = materialMap.get(r.materialId);
+                if (!materialInfo) {
+                    console.log(`   ⚠️ Skipping missing material ID ${r.materialId} for assembly ${r.assemblyId}`);
+                    continue;
+                }
+
+                const quantity = r.quantity ? r.quantity.toString() : "1";
+                const price = materialInfo.price ? materialInfo.price.toString() : "0";
+
                 await prisma.assemblyMaterial.upsert({
-                    where: { assemblyId_materialId: { assemblyId: r.assemblyId, materialId: r.materialId } },
-                    update: r, create: r
+                    where: { assemblyId_externalId: { assemblyId: r.assemblyId, externalId: r.materialId.toString() } },
+                    update: {
+                        quantity,
+                        price,
+                        name: materialInfo.name,
+                        partNumber: materialInfo.partNumber || null,
+                        manufacturer: materialInfo.manufacturer || null,
+                        unit: materialInfo.unit || "EACH"
+                    },
+                    create: {
+                        assemblyId: r.assemblyId,
+                        externalId: r.materialId.toString(),
+                        quantity,
+                        price,
+                        name: materialInfo.name,
+                        partNumber: materialInfo.partNumber || null,
+                        manufacturer: materialInfo.manufacturer || null,
+                        unit: materialInfo.unit || "EACH"
+                    }
                 });
-            } catch (e) { }
+            } catch (e) {
+                console.log(`   ❌ Error assemblyMaterial (Asm:${r.assemblyId} Mat:${r.materialId}): ${e.message.split('\n')[0]}`);
+            }
         }
     }
 }
@@ -175,7 +203,7 @@ async function seedAssemblyGroups(prisma) {
     for (const i of items) {
         try {
             ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await smartUpsert(prisma, 'assemblyGroup', i); // Often no unique name enforced strictly or not critical
+            await smartUpsert(prisma, 'assemblyGroup', i);
         } catch (e) { console.log(`Error group ${i.name}: ${e.message}`); }
     }
 
@@ -225,8 +253,7 @@ async function seedTemplates(prisma) {
 async function seedProjects(prisma) {
     console.log('🏗️ Seeding Projects...');
     const files = {
-        project: 'project.json', projectTimeline: 'projectTimeline.json', projectMilestone: 'projectMilestone.json',
-        projectTask: 'projectTask.json', projectOverrideHistory: 'projectOverrideHistory.json'
+        project: 'project.json'
     };
 
     const data = {};
@@ -243,41 +270,6 @@ async function seedProjects(prisma) {
             await smartUpsert(prisma, 'project', p);
         } catch (e) { }
     }
-
-    // Timelines
-    for (const t of data.projectTimeline) {
-        try {
-            ['startDate', 'endDate', 'createdAt', 'updatedAt'].forEach(f => { if (t[f]) t[f] = new Date(t[f]); });
-            if (t.progress) t.progress = t.progress.toString();
-            await prisma.projectTimeline.upsert({ where: { id: t.id }, update: t, create: t });
-        } catch (e) { }
-    }
-
-    // Milestones
-    for (const m of data.projectMilestone) {
-        try {
-            ['dueDate', 'actualDate'].forEach(f => { if (m[f]) m[f] = new Date(m[f]); });
-            if (m.progress) m.progress = m.progress.toString();
-            await prisma.projectMilestone.upsert({ where: { id: m.id }, update: m, create: m });
-        } catch (e) { }
-    }
-
-    // Tasks
-    for (const t of data.projectTask) {
-        try {
-            ['plannedStart', 'plannedEnd', 'actualStart', 'actualEnd'].forEach(f => { if (t[f]) t[f] = new Date(t[f]); });
-            ['effortHours', 'actualHours', 'progress', 'estimatedCost', 'actualCost'].forEach(f => { if (t[f]) t[f] = t[f].toString(); });
-            await prisma.projectTask.upsert({ where: { id: t.id }, update: t, create: t });
-        } catch (e) { }
-    }
-
-    // Override History
-    for (const h of data.projectOverrideHistory) {
-        try {
-            if (h.createdAt) h.createdAt = new Date(h.createdAt);
-            await prisma.projectOverrideHistory.upsert({ where: { id: h.id }, update: h, create: h });
-        } catch (e) { }
-    }
 }
 
 // --- MAIN RUNNER ---
@@ -285,9 +277,8 @@ async function seedProjects(prisma) {
 const SEEDERS = {
     users: { fn: seedUsers, deps: [] },
     clients: { fn: seedClients, deps: [] },
-    materials: { fn: seedMaterials, deps: [] },
     'assembly-categories': { fn: seedAssemblyCategories, deps: [] },
-    assemblies: { fn: seedAssemblies, deps: ['materials', 'assembly-categories'] },
+    assemblies: { fn: seedAssemblies, deps: ['assembly-categories'] },
     'assembly-groups': { fn: seedAssemblyGroups, deps: ['assemblies'] },
     templates: { fn: seedTemplates, deps: ['assemblies'] },
     projects: { fn: seedProjects, deps: ['clients', 'templates'] },
@@ -314,7 +305,7 @@ async function main() {
             const ran = new Set();
             // Explicit order handling via dependencies
             await runSeeder('users', prisma, ran);
-            await runSeeder('projects', prisma, ran); // Dependencies will trigger clients, templates, assemblies, etc.
+            await runSeeder('projects', prisma, ran);
             console.log('🎉 All Seeding Completed!');
         } else {
             await runSeeder(cmd, prisma);
@@ -333,6 +324,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-    seedUsers, seedClients, seedMaterials, seedAssemblies,
+    seedUsers, seedClients, seedAssemblies,
     seedAssemblyCategories, seedAssemblyGroups, seedTemplates, seedProjects
 };

@@ -154,10 +154,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Start initial verification attempt after base delay
       setTimeout(verifySession, baseDelay);
 
-        // Clear loading state after verification starts
-        setTimeout(() => {
-          setIsLoading(false);
-        }, baseDelay + 100); // Clear loading shortly after verification starts
+      // Clear loading state after verification starts
+      setTimeout(() => {
+        setIsLoading(false);
+      }, baseDelay + 100); // Clear loading shortly after verification starts
 
     } catch (error: any) {
       setAuthError(error.message);
@@ -167,42 +167,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router, setupSessionCheck]);
 
-      const logout = useCallback(async () => {
-        // 🔄 Set loading state BEFORE any operations
-        setIsLoggingOut(true);
+  const logout = useCallback(async () => {
+    // 🔄 Set loading state BEFORE any operations
+    setIsLoggingOut(true);
 
-        try {
-          // First clear the server-side session
-          const logoutResponse = await fetch("/api/auth/logout", {
-            method: "POST",
-            headers: { 'Cache-Control': 'no-cache' },
-            credentials: "include"
-          });
+    try {
+      // First clear the server-side session
+      const logoutResponse = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { 'Cache-Control': 'no-cache' },
+        credentials: "include"
+      });
 
-          if (!logoutResponse.ok) {
-            console.warn("[Auth] Logout API call failed, but proceeding with client-side cleanup");
-          }
+      if (!logoutResponse.ok) {
+        console.warn("[Auth] Logout API call failed, but proceeding with client-side cleanup");
+      }
 
-          // Wait a brief moment to ensure cookie is cleared server-side
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.warn("[Auth] Logout API error, proceeding with client-side cleanup:", error);
-        }
+      // Wait a brief moment to ensure cookie is cleared server-side
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (error) {
+      console.warn("[Auth] Logout API error, proceeding with client-side cleanup:", error);
+    }
 
-        // Clear state immediately for instant UI feedback
-        clearSessionCheck();
-      setUser(null);
-      setLoginTime(null); // Clear login time
-      setIsLoading(false);
-      setIsLoggingOut(false); // 🔄 Clear logout loading
-      setHasRedirectedAfterLogin(false); // Reset login redirect flag
-      setIsLoginRedirecting(false); // Reset login redirecting flag
+    // Clear state immediately for instant UI feedback
+    clearSessionCheck();
+    setUser(null);
+    setLoginTime(null); // Clear login time
+    setIsLoading(false);
+    setIsLoggingOut(false); // 🔄 Clear logout loading
+    setHasRedirectedAfterLogin(false); // Reset login redirect flag
+    setIsLoginRedirecting(false); // Reset login redirecting flag
 
-      showToast.success("Logged Out", "You have been successfully logged out.");
+    showToast.success("Logged Out", "You have been successfully logged out.");
 
-      // Navigate to login page
-      router.push("/login");
-      }, [clearSessionCheck, router]);
+    // Navigate to login page
+    router.push("/login");
+  }, [clearSessionCheck, router]);
 
   // Load user from existing session on app start
   const loadUserFromCookie = useCallback(async () => {
@@ -255,20 +255,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Allow access to dashboard routes - middleware will handle authentication
   useEffect(() => {
     const isPublicRoute = pathname === '/login' ||
-                         pathname === '/register' ||
-                         pathname === '/' ||
-                         pathname.startsWith('/api/');
+      pathname === '/register' ||
+      pathname === '/' ||
+      pathname.startsWith('/api/');
 
     const isDashboardRoute = pathname.startsWith('/(') ||
-                            pathname.startsWith('/assemblies') ||
-                            pathname.startsWith('/materials') ||
-                            pathname.startsWith('/projects') ||
-                            pathname.startsWith('/templates') ||
-                            pathname.startsWith('/clients') ||
-                            pathname.startsWith('/users') ||
-                            pathname.startsWith('/backups') ||
-                            pathname === '/gantt' ||
-                            pathname === '/dashboard';
+      pathname.startsWith('/assemblies') ||
+      pathname.startsWith('/materials') ||
+      pathname.startsWith('/projects') ||
+      pathname.startsWith('/templates') ||
+      pathname.startsWith('/clients') ||
+      pathname.startsWith('/users') ||
+      pathname.startsWith('/backups') ||
+      pathname === '/dashboard';
 
     // Only redirect to login for routes that are clearly not dashboard routes
     if (!user && !isLoading && !isPublicRoute && !isDashboardRoute) {

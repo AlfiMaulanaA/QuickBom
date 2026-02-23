@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/database-analysis - Get comprehensive database analysis
 export async function GET() {
   try {
     // Get counts for all main entities
     const [
-      materialsCount,
       assembliesCount,
       templatesCount,
       usersCount,
@@ -14,7 +15,6 @@ export async function GET() {
       assemblyMaterialsCount,
       templateAssembliesCount
     ] = await Promise.all([
-      prisma.material.count(),
       prisma.assembly.count(),
       prisma.template.count(),
       prisma.user.count(),
@@ -23,27 +23,9 @@ export async function GET() {
       prisma.templateAssembly.count()
     ]);
 
-    // Get detailed material analysis
-    const materialsByManufacturer = await prisma.material.groupBy({
-      by: ['manufacturer'],
-      _count: { manufacturer: true },
-      orderBy: { _count: { manufacturer: 'desc' } },
-      take: 10
-    });
-
-    const materialsByUnit = await prisma.material.groupBy({
-      by: ['unit'],
-      _count: { unit: true },
-      orderBy: { _count: { unit: 'desc' } }
-    });
-
-    // Get recent activity (last 30 days)
+    // Get recently created entities (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const recentMaterials = await prisma.material.count({
-      where: { createdAt: { gte: thirtyDaysAgo } }
-    });
 
     const recentAssemblies = await prisma.assembly.count({
       where: { createdAt: { gte: thirtyDaysAgo } }
@@ -57,13 +39,48 @@ export async function GET() {
       where: { createdAt: { gte: thirtyDaysAgo } }
     });
 
-    // Get average prices and value analysis
-    const priceStats = await prisma.material.aggregate({
-      _avg: { price: true },
-      _min: { price: true },
-      _max: { price: true },
-      _count: { price: true }
+    // Materials analysis (derived from AssemblyMaterial snapshots)
+    const assemblyMaterials = await prisma.assemblyMaterial.findMany({
+      select: {
+        externalId: true,
+        price: true,
+        manufacturer: true,
+        unit: true,
+        createdAt: true
+      }
     });
+
+    const uniqueMaterialsCount = new Set(assemblyMaterials.map(am => am.externalId)).size;
+    const recentMaterialsCount = assemblyMaterials.filter(am => am.createdAt >= thirtyDaysAgo).length;
+
+    // Price statistics from snapshots
+    const prices = assemblyMaterials.map(am => Number(am.price)).filter(p => p > 0);
+    const priceStats = {
+      average: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
+      min: prices.length > 0 ? Math.min(...prices) : 0,
+      max: prices.length > 0 ? Math.max(...prices) : 0,
+      count: prices.length
+    };
+
+    const manufacturerCounts = assemblyMaterials.reduce((acc: any, am) => {
+      if (am.manufacturer) {
+        acc[am.manufacturer] = (acc[am.manufacturer] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const materialsByManufacturer = Object.entries(manufacturerCounts)
+      .map(([manufacturer, count]) => ({ manufacturer, _count: { manufacturer: count } }))
+      .sort((a, b) => (b._count.manufacturer as number) - (a._count.manufacturer as number))
+      .slice(0, 10);
+
+    const unitCounts = assemblyMaterials.reduce((acc: any, am) => {
+      acc[am.unit] = (acc[am.unit] || 0) + 1;
+      return acc;
+    }, {});
+
+    const materialsByUnit = Object.entries(unitCounts)
+      .map(([unit, count]) => ({ unit, _count: { unit: count } }));
 
     // Get assembly complexity analysis (materials per assembly)
     const assemblyComplexity = await prisma.assembly.findMany({
@@ -94,7 +111,7 @@ export async function GET() {
 
     // Calculate estimated database size (rough estimate)
     const estimatedSize = (
-      materialsCount * 1024 + // ~1KB per material
+      uniqueMaterialsCount * 1024 + // ~1KB per material
       assembliesCount * 512 +  // ~0.5KB per assembly
       templatesCount * 256 +   // ~0.25KB per template
       usersCount * 2048 +      // ~2KB per user
@@ -105,22 +122,22 @@ export async function GET() {
 
     const analysis = {
       summary: {
-        totalEntities: materialsCount + assembliesCount + templatesCount + usersCount + projectsCount,
+        totalEntities: uniqueMaterialsCount + assembliesCount + templatesCount + usersCount + projectsCount,
         totalRelationships: assemblyMaterialsCount + templateAssembliesCount,
         estimatedSize,
         lastUpdated: new Date().toISOString()
       },
       entities: {
         materials: {
-          count: materialsCount,
-          recent: recentMaterials,
+          count: uniqueMaterialsCount,
+          recent: recentMaterialsCount,
           priceStats: {
-            average: priceStats._avg.price || 0,
-            min: priceStats._min.price || 0,
-            max: priceStats._max.price || 0,
-            withPrices: priceStats._count.price || 0
+            average: priceStats.average || 0,
+            min: priceStats.min || 0,
+            max: priceStats.max || 0,
+            withPrices: priceStats.count || 0
           },
-          byManufacturer: materialsByManufacturer.slice(0, 5),
+          byManufacturer: materialsByManufacturer,
           byUnit: materialsByUnit
         },
         assemblies: {
@@ -151,7 +168,7 @@ export async function GET() {
       },
       activity: {
         period: 'last_30_days',
-        materialsAdded: recentMaterials,
+        materialsAdded: recentMaterialsCount,
         assembliesCreated: recentAssemblies,
         templatesCreated: recentTemplates,
         projectsCreated: recentProjects

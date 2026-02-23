@@ -86,7 +86,7 @@ User Agent: ${errorDetails.userAgent}`;
         {/* Error Message */}
         <div className="mb-6 space-y-2">
           <p className="text-muted-foreground text-sm leading-relaxed">
-            We encountered an unexpected error. Don't worry, this has been logged and we're working on it.
+            We encountered an unexpected error. Don&apos;t worry, this has been logged and we&apos;re working on it.
           </p>
           {error.message && (
             <details className="mt-4 text-left">

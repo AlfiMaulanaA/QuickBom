@@ -63,11 +63,7 @@ export async function POST(request: NextRequest) {
           include: {
             assembly: {
               include: {
-                materials: {
-                  include: {
-                    material: true
-                  }
-                }
+                materials: true
               }
             }
           }
@@ -173,7 +169,7 @@ export async function POST(request: NextRequest) {
           if (item) {
             // Calculate cost from materials only (since price field is not included)
             const materialCost = item.assembly.materials?.reduce((total, am) => {
-              return total + (Number(am.material?.price || 0) * Number(am.quantity || 1));
+              return total + (Number(am.price || 0) * Number(am.quantity || 1));
             }, 0) || 0;
 
             // Final assembly cost: material cost * quantity

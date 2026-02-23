@@ -5,8 +5,9 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PDFDocument } from 'pdf-lib';
 
-const ILOVEPDF_PUBLIC_KEY = "project_public_a9f4bea676c8f8e97e06ec2a3b2a348185d8a57e59ba";
-const ILOVEPDF_SECRET_KEY = "secret_key_65a51e430b3e1c63e317f7785293a5a5_iBlqW554eb6973b71b5d88aeac55f67ca21ab";
+const ILOVEPDF_API_URL = process.env.ILOVEPDF_API_URL || "https://api.ilovepdf.com/v1";
+const ILOVEPDF_PUBLIC_KEY = process.env.ILOVEPDF_PUBLIC_KEY || "project_public_a9f4bea676c8f8e97e06ec2a3b2a348185d8a57e59ba";
+const ILOVEPDF_SECRET_KEY = process.env.ILOVEPDF_SECRET_KEY || "secret_key_65a51e430b3e1c63e317f7785293a5a5_iBlqW554eb6973b71b5d88aeac55f67ca21ab";
 
 // Initialize Supabase client (lazy initialization to avoid build-time errors)
 let supabase: any = null;
@@ -197,7 +198,7 @@ export async function POST(
         const formData = new FormData();
         formData.append('file', new Blob([new Uint8Array(pdfBuffers[i])], { type: 'application/pdf' }), `file_${i + 1}.pdf`);
 
-        const uploadResponse = await fetch('https://api.ilovepdf.com/v1/upload', {
+        const uploadResponse = await fetch(`${ILOVEPDF_API_URL}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`
@@ -215,7 +216,7 @@ export async function POST(
       }
 
       // Step 2b: Create merge task
-      const taskResponse = await fetch('https://api.ilovepdf.com/v1/tasks', {
+      const taskResponse = await fetch(`${ILOVEPDF_API_URL}/tasks`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -239,7 +240,7 @@ export async function POST(
       console.log(`✅ Created ilovepdf merge task: ${taskId}`);
 
       // Step 2c: Process the task
-      const processResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/process`, {
+      const processResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/process`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`,
@@ -261,7 +262,7 @@ export async function POST(
       console.log('✅ ilovepdf merge completed successfully');
 
       // Step 2d: Download the merged PDF
-      const downloadResponse = await fetch(`https://api.ilovepdf.com/v1/tasks/${taskId}/download`, {
+      const downloadResponse = await fetch(`${ILOVEPDF_API_URL}/tasks/${taskId}/download`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${ILOVEPDF_SECRET_KEY}`

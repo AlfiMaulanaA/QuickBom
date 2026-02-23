@@ -1,6 +1,6 @@
-# QuickBom Database Seeding System
+# Product Configurator Database Seeding System
 
-This directory contains comprehensive seed files for populating the QuickBom database with sample data for development, testing, and production environments (including Supabase).
+This directory contains comprehensive seed files for populating the Product Configurator database with sample data for development, testing, and production environments (including Supabase).
 
 ## 📁 File Structure
 
@@ -329,7 +329,7 @@ NODE_ENV=production npx prisma db push --force-reset
 NODE_ENV=production npm run db:seed
 
 # Output yang diharapkan:
-# 🌱 Starting QuickBom Comprehensive Database Seeding...
+# 🌱 Starting Product Configurator Comprehensive Database Seeding...
 # ✅ Users seeded: 17
 # ✅ Clients seeded: 8
 # ✅ Materials seeded: 74
@@ -463,4 +463,4 @@ NODE_ENV=production npm run dev
 
 ---
 
-**Happy coding with QuickBom! 🏗️✨**
+**Happy coding with Product Configurator! 🏗️✨**

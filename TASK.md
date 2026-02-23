@@ -1,1 +1,0 @@
-analisa pada semua fungsi pada hala,am /template, /template/create dan buatkan juga fungsi untuk halaman /template/edit

@@ -10,17 +10,17 @@ import WhatsAppService from '@/lib/whatsapp-service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phoneNumbers, phoneNumber, message, source, type, projectName, notificationType, eventType, details } = body;
+    const { phoneNumbers, phoneNumber, message, source, type, projectName, notificationType, details } = body;
 
     // Handle single message
     if (phoneNumber && message) {
-      const result = await WhatsAppService.sendMessage(phoneNumber, message, source || 'QuickBom-API');
+      const result = await WhatsAppService.sendMessage(phoneNumber, message, source || 'Product-Configurator-API');
       return NextResponse.json(result);
     }
 
     // Handle multiple messages
     if (phoneNumbers && message) {
-      const result = await WhatsAppService.sendMultiMessage(phoneNumbers, message, source || 'QuickBom-API');
+      const result = await WhatsAppService.sendMultiMessage(phoneNumbers, message, source || 'Product-Configurator-API');
       return NextResponse.json(result);
     }
 
@@ -35,16 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // Handle timeline notifications
-    if (type === 'timeline' && phoneNumbers && projectName && eventType) {
-      const result = await WhatsAppService.sendTimelineNotification(
-        phoneNumbers,
-        projectName,
-        eventType,
-        details
-      );
-      return NextResponse.json(result);
-    }
+
 
     // Handle bulk messages
     if (type === 'bulk' && phoneNumbers && message) {
@@ -53,7 +44,7 @@ export async function POST(request: NextRequest) {
       const result = await WhatsAppService.sendBulkMessages(
         phoneNumbers,
         message,
-        source || 'QuickBom-API',
+        source || 'Product-Configurator-API',
         batchSize,
         delay
       );
@@ -122,8 +113,8 @@ export async function GET(request: NextRequest) {
           description: 'Send single WhatsApp message',
           body: {
             phoneNumber: '6281234567890',
-            message: 'Hello from QuickBom!',
-            source: 'QuickBom-App'
+            message: 'Hello from Product Configurator!',
+            source: 'Product-Configurator-App'
           }
         },
         multiple_messages: {
@@ -131,8 +122,8 @@ export async function GET(request: NextRequest) {
           description: 'Send message to multiple recipients',
           body: {
             phoneNumbers: ['6281234567890', '6289876543210'],
-            message: 'Bulk message from QuickBom!',
-            source: 'QuickBom-App'
+            message: 'Bulk message from Product Configurator!',
+            source: 'Product-Configurator-App'
           }
         },
         project_notification: {
@@ -152,7 +143,7 @@ export async function GET(request: NextRequest) {
           body: {
             type: 'bulk',
             phoneNumbers: ['6281234567890', '6289876543210', '6285556667777'],
-            message: 'Important announcement from QuickBom!',
+            message: 'Important announcement from Product Configurator!',
             batchSize: 10,
             delay: 1000
           }

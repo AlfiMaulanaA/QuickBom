@@ -524,7 +524,7 @@ export default function UserManagementPage() {
                 <span className="text-sm text-muted-foreground">Active filters:</span>
                 {searchTerm && (
                   <Badge variant="secondary" className="gap-1">
-                    Search: "{searchTerm}"
+                    Search: &quot;{searchTerm}&quot;
                     <button
                       onClick={() => setSearchTerm("")}
                       className="ml-1 hover:bg-gray-300 rounded-full p-0.5"

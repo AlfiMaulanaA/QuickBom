@@ -1,24 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, LogIn, Eye, EyeOff, RefreshCw, Monitor, Blocks, BarChart3, Zap, Shield, Database, Wifi, Package } from "lucide-react";
+import {
+  Loader2,
+  LogIn,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  Layout,
+  Cpu
+} from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { showToast } from "@/lib/toast-utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import RealtimeClockWithRefresh from "@/components/realtime-clock";
-import { useTheme } from "next-themes";
+
+const features = [
+  {
+    icon: Layout,
+    title: "BOM Management",
+    description: "Structure complex products with multi-level assemblies."
+  },
+  {
+    icon: Zap,
+    title: "Instant Configurator",
+    description: "Generate project versions with real-time material calculations."
+  },
+  {
+    icon: ShieldCheck,
+    title: "Enterprise Security",
+    description: "Role-based access and secure data synchronization."
+  }
+];
 
 function LoginForm() {
   const { login } = useAuth();
@@ -27,6 +47,14 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleRefresh = () => {
     window.location.reload();
@@ -40,910 +68,283 @@ function LoginForm() {
       await login(email, password);
     } catch (err: any) {
       showToast.error("Login Failed", err.message || "Please check your credentials.");
-      setError(
-        err.message || "Failed to login. Please check your credentials."
-      );
+      setError(err.message || "Failed to login. Please check your credentials.");
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Enhanced Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Primary Floating Orbs */}
-        <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-primary rounded-full mix-blend-multiply filter blur-xl opacity-10"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent rounded-full mix-blend-multiply filter blur-xl opacity-10"
-          animate={{
-            x: [0, -30, 0],
-            y: [0, 30, 0],
-            scale: [1, 0.9, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-muted rounded-full mix-blend-multiply filter blur-xl opacity-5"
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 180, 360],
-            opacity: [0.05, 0.08, 0.05],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground font-poppins overflow-hidden relative transition-colors duration-500">
 
-        {/* NEW: Additional Animated Elements */}
+      {/* Dynamic Mesh Gradient Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.25] dark:opacity-40">
         <motion.div
-          className="absolute top-20 left-20 w-32 h-32 bg-purple-500/10 rounded-full blur-lg"
           animate={{
-            x: [0, 20, 0],
-            y: [0, -20, 0],
             scale: [1, 1.2, 1],
+            x: [0, 100, 0],
+            y: [0, 50, 0],
           }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-blue-600/20 rounded-full blur-[120px]"
         />
         <motion.div
-          className="absolute bottom-32 right-32 w-40 h-40 bg-blue-500/8 rounded-full blur-lg"
           animate={{
-            x: [0, -25, 0],
-            y: [0, 25, 0],
-            rotate: [0, 180, 360],
+            scale: [1.2, 1, 1.2],
+            x: [0, -80, 0],
+            y: [0, 100, 0],
           }}
-          transition={{
-            duration: 9,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] bg-indigo-600/20 rounded-full blur-[120px]"
         />
         <motion.div
-          className="absolute top-1/3 right-20 w-24 h-24 bg-green-500/12 rounded-full blur-lg"
           animate={{
-            scale: [1, 1.5, 1],
-            opacity: [0.1, 0.2, 0.1],
-            x: [0, 15, 0],
+            scale: [1, 1.3, 1],
+            x: [0, 50, 0],
+            y: [0, -100, 0],
           }}
-          transition={{
-            duration: 7,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 3
-          }}
-        />
-
-        {/* Floating Particles */}
-        <motion.div
-          className="absolute top-16 right-1/4 w-2 h-2 bg-primary/60 rounded-full"
-          animate={{
-            y: [0, -20, 0],
-            x: [0, 10, 0],
-            opacity: [0.6, 1, 0.6],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5
-          }}
-        />
-        <motion.div
-          className="absolute bottom-16 left-1/4 w-2 h-2 bg-accent/60 rounded-full"
-          animate={{
-            y: [0, 15, 0],
-            x: [0, -10, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1.5
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-16 w-1.5 h-1.5 bg-purple-500/70 rounded-full"
-          animate={{
-            y: [0, -15, 0],
-            opacity: [0.5, 0.9, 0.5],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2.5
-          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-[20%] left-[20%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]"
         />
       </div>
 
-      {/* Sparkle Effects - Additional Magic */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Modern Grid Overlay */}
+      <div className="absolute inset-0 z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-60 dark:opacity-20 pointer-events-none" />
+
+      {/* Floating Controls */}
+      <div className="fixed top-6 right-6 flex items-center gap-4 z-50">
         <motion.div
-          className="absolute top-32 left-32 w-1 h-1 bg-yellow-400 rounded-full"
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0, 1, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: 1,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-40 right-40 w-1 h-1 bg-blue-400 rounded-full"
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0, 1, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: 2,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute top-3/4 left-1/3 w-1 h-1 bg-pink-400 rounded-full"
-          animate={{
-            opacity: [0, 1, 0],
-            scale: [0, 1, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: 0.5,
-            ease: "easeInOut"
-          }}
-        />
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-background/40 backdrop-blur-md border border-border/50 rounded-full px-4 py-2 flex items-center gap-4 shadow-2xl"
+        >
+          <RealtimeClockWithRefresh />
+          <div className="w-px h-4 bg-border" />
+          <ThemeToggle />
+        </motion.div>
       </div>
 
-      {/* Header di atas dengan Theme Toggle & Real-time Clock */}
-      <div className="absolute top-4 right-4 flex items-center gap-3 z-20 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 border border-border/50 shadow-lg">
-        {/* Real-time Clock */}
-        <RealtimeClockWithRefresh />
+      <main className="relative z-10 grid lg:grid-cols-12 min-h-screen">
 
-        <div className="w-px h-4 bg-border"></div>
-
-        {/* Theme Toggle Button */}
-        <ThemeToggle />
-      </div>
-
-      {/* Footer di bawah dengan Version & Refresh */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-3 z-20 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 border border-border/50 shadow-lg">
-        <span className="text-xs text-muted-foreground font-medium">
-          v1.2.0
-        </span>
-
-        <div className="w-px h-4 bg-border"></div>
-
-        {/* Refresh Button */}
-        <Button variant="ghost" size="sm" onClick={handleRefresh} className="text-muted-foreground hover:text-foreground h-8 w-8 p-0">
-          <RefreshCw className="h-3 w-3" />
-        </Button>
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
-        {/* Left Section - App Description */}
-        <div className="relative flex flex-col justify-center items-center p-8 lg:p-12 z-10">
+        {/* Branding & Visual Side */}
+        <div className="hidden lg:flex lg:col-span-7 flex-col justify-between p-12 xl:p-20 relative overflow-hidden">
           <motion.div
-            className="max-w-lg w-full space-y-8"
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.8 }}
+            className="flex items-center gap-3"
           >
-            {/* Logo and Brand */}
-            <motion.div
-              className="flex items-center justify-start gap-3"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-                <Package className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div className="text-start">
-                <h1 className="text-4xl lg:text-5xl font-bold text-foreground">QuickBom</h1>
-                <p className="text-lg text-muted-foreground">Project Management</p>
-              </div>
-            </motion.div>
+            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]">
+              <span className="text-primary-foreground font-bold text-xl tracking-tighter">PC</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                Product Configurator
+              </h1>
+            </div>
+          </motion.div>
 
-            {/* Main Description */}
-            <motion.div
-              className="space-y-6 text-center lg:text-left"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-            >
-              <h2 className="text-2xl lg:text-3xl font-semibold text-foreground">
-                Advanced Project Management & Collaboration Platform
-              </h2>
-
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p className="text-lg">
-                  QuickBom is a cutting-edge platform for project management and collaboration,
-                  designed to streamline workflows and boost productivity for modern teams and
-                  organizations.
+          <div className="relative z-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeFeature}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-xl"
+              >
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  LATEST MODULE
+                </div>
+                <h2 className="text-5xl xl:text-6xl font-black mb-6 leading-[1.1] text-foreground">
+                  {features[activeFeature].title}
+                </h2>
+                <p className="text-xl text-muted-foreground leading-relaxed mb-10">
+                  {features[activeFeature].description}
                 </p>
+                <div className="flex gap-4">
+                  {features.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1 rounded-full transition-all duration-500 ${idx === activeFeature ? "w-12 bg-primary" : "w-4 bg-muted"}`}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-                {/* Falling Bricks Animation Container */}
-                {/* Falling Bricks Animation - Responsive Masonary Grid */}
-                <div className="relative py-4 px-2">
-                  <motion.div
-                    className="grid grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-3 justify-items-center"
-                    style={{
-                      perspective: "1000px",
-                      transformStyle: "preserve-3d"
-                    }}
-                  >
-                    {/* Row 1 - Bottom Row (3 bricks on mobile, 4 on desktop) */}
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -200,
-                        rotateX: -90,
-                        rotateZ: -15,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.0,
-                        delay: 0.2,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: 5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-blue-500 rounded-lg border-2 border-blue-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-blue-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                        }}
-                      >
-                        <Monitor className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Projects</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.2, duration: 0.6 }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="flex items-center gap-8 text-muted-foreground text-sm"
+          >
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-muted overflow-hidden ring-1 ring-border">
+                  <img src={`https://i.pravatar.cc/150?u=${i + 10}`} alt="User" />
+                </div>
+              ))}
+            </div>
+            <p>Trusted by 2,000+ manufacturing teams worldwide.</p>
+          </motion.div>
+
+          {/* Abstract SVG Decoration */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 dark:opacity-10 pointer-events-none text-foreground">
+            <svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="400" cy="400" r="399" stroke="currentColor" strokeWidth="0.5" />
+              <circle cx="400" cy="400" r="300" stroke="currentColor" strokeWidth="0.5" />
+              <circle cx="400" cy="400" r="200" stroke="currentColor" strokeWidth="0.5" />
+              <line x1="0" y1="400" x2="800" y2="400" stroke="currentColor" strokeWidth="0.5" />
+              <line x1="400" y1="0" x2="400" y2="800" stroke="currentColor" strokeWidth="0.5" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Access Panel Side */}
+        <div className="lg:col-span-5 flex flex-col justify-center items-center p-6 sm:p-12 relative">
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-[440px]"
+          >
+            {/* Mobile Branding */}
+            <div className="flex lg:hidden items-center justify-center gap-3 mb-10 text-foreground">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-primary-foreground font-bold text-lg tracking-tighter">PC</span>
+              </div>
+              <h1 className="text-xl font-bold tracking-tight">Product Configurator</h1>
+            </div>
+
+            <div className="bg-card/40 backdrop-blur-2xl border border-border/50 rounded-[2rem] p-8 sm:p-12 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] relative overflow-hidden group">
+
+              {/* Internal Glow */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-[60px] group-hover:bg-primary/30 transition-colors duration-700" />
+
+              <div className="relative z-10 text-center sm:text-left">
+                <h2 className="text-3xl font-bold mb-2 tracking-tight text-foreground">Welcome back</h2>
+                <p className="text-muted-foreground mb-10">Enter your credentials to manage your system</p>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-foreground/80 ml-1 text-sm font-medium">Work Email</Label>
+                    <div className="relative group">
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="name@company.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                        className="bg-background/50 border-border focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl h-12"
                       />
-                    </motion.div>
-
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -240,
-                        rotateX: -90,
-                        rotateZ: 10,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 0.4,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: -5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-green-500 rounded-lg border-2 border-green-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-green-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #22c55e, #16a34a)"
-                        }}
-                      >
-                        <Blocks className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Tasks</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.6, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -280,
-                        rotateX: -90,
-                        rotateZ: -8,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 0.6,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: 5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-purple-500 rounded-lg border-2 border-purple-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-purple-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #a855f7, #7c3aed)"
-                        }}
-                      >
-                        <LogIn className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Teams</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.8, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    {/* 4th brick only on desktop */}
-                    <motion.div
-                      className="hidden lg:block cursor-pointer group"
-                      style={{
-                        width: "120px",
-                        height: "55px",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -320,
-                        rotateX: -90,
-                        rotateZ: 15,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 0.8,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: -5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-red-500 rounded-lg border-2 border-red-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-red-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #ef4444, #dc2626)"
-                        }}
-                      >
-                        <RefreshCw className="w-4 h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-xs text-center leading-tight">Reports</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2.0, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    {/* Row 2 - Middle Row */}
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -400,
-                        rotateX: -90,
-                        rotateZ: -12,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 1.0,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: 5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-orange-500 rounded-lg border-2 border-orange-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-orange-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #f97316, #ea580c)"
-                        }}
-                      >
-                        <BarChart3 className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Timeline</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2.2, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -440,
-                        rotateX: -90,
-                        rotateZ: 5,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 1.2,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: -5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-cyan-500 rounded-lg border-2 border-cyan-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-cyan-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #06b6d4, #0891b2)"
-                        }}
-                      >
-                        <Zap className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Workflow</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2.4, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      className="cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 15vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -480,
-                        rotateX: -90,
-                        rotateZ: -5,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 1.4,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: 5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-yellow-500 rounded-lg border-2 border-yellow-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-yellow-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #eab308, #ca8a04)"
-                        }}
-                      >
-                        <Shield className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Notifications</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2.6, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    {/* 8th brick only on desktop */}
-                    <motion.div
-                      className="hidden lg:block cursor-pointer group"
-                      style={{
-                        width: "120px",
-                        height: "55px",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -520,
-                        rotateX: -90,
-                        rotateZ: 18,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 1.6,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: -5,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-pink-500 rounded-lg border-2 border-pink-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-pink-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #ec4899, #db2777)"
-                        }}
-                      >
-                        <Database className="w-4 h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-xs text-center leading-tight">Documents</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2.8, duration: 0.6 }}
-                      />
-                    </motion.div>
-
-                    {/* Row 3 - Top Row (Mobile: 1 brick centered, Desktop: 2 bricks) */}
-                    <motion.div
-                      className="col-span-3 lg:col-span-2 lg:col-start-2 cursor-pointer group"
-                      style={{
-                        width: "clamp(80px, 20vw, 120px)",
-                        height: "clamp(45px, 8vw, 55px)",
-                        maxWidth: "200px",
-                        transformStyle: "preserve-3d"
-                      }}
-                      initial={{
-                        y: -560,
-                        rotateX: -90,
-                        rotateZ: 0,
-                        opacity: 0
-                      }}
-                      animate={{
-                        y: 0,
-                        rotateX: 0,
-                        rotateZ: 0,
-                        opacity: 1
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        delay: 1.8,
-                        ease: [0.25, 0.46, 0.45, 0.94]
-                      }}
-                      whileHover={{
-                        scale: 1.05,
-                        z: 20,
-                        rotateX: -5,
-                        rotateY: 0,
-                        transition: { duration: 0.3 }
-                      }}
-                    >
-                      <motion.div
-                        className="w-full h-full bg-indigo-500 rounded-lg border-2 border-indigo-400 flex flex-col items-center justify-center p-1.5 shadow-xl hover:shadow-indigo-500/25"
-                        whileHover={{
-                          background: "linear-gradient(135deg, #6366f1, #4f46e5)"
-                        }}
-                      >
-                        <Wifi className="w-3 h-3 lg:w-4 lg:h-4 text-white mb-0.5" />
-                        <h3 className="font-bold text-white text-[10px] lg:text-xs text-center leading-tight">Collaboration</h3>
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-black/30 rounded-lg translate-x-1.5 translate-y-1.5 -z-10 blur-[1px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3.0, duration: 0.6 }}
-                      />
-                    </motion.div>
-                  </motion.div>
-
-                  {/* Simple ground indicator */}
-                  <div className="flex justify-center mt-4">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-6 bg-gray-400 rounded-t opacity-60"></div>
-                      <div className="w-2 h-4 bg-gray-500 rounded-t opacity-60"></div>
-                      <div className="w-2 h-8 bg-gray-600 rounded-t opacity-60"></div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between ml-1 text-foreground/80">
+                      <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                      <button type="button" className="text-xs text-primary hover:underline hover:text-primary/80 transition-colors">Forgot password?</button>
+                    </div>
+                    <div className="relative group">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isLoading}
+                        className="bg-background/50 border-border focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl h-12 pr-12"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 p-3 rounded-lg flex items-center gap-2"
+                    >
+                      <div className="w-1 h-4 bg-red-400 rounded-full" />
+                      {error}
+                    </motion.div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-xl shadow-primary/20 transition-all group overflow-hidden relative"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <span>Sign In</span>
+                          <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </span>
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full"
+                      animate={isLoading ? { x: "200%" } : {}}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                  </Button>
+                </form>
+
+                <div className="mt-8 pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] sm:text-xs text-muted-foreground font-medium">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-green-500/50" />
+                    <span>256-bit SSL Encryption Active</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button className="hover:text-foreground transition-colors">Privacy Policy</button>
+                    <button className="hover:text-foreground transition-colors">Terms of Service</button>
                   </div>
                 </div>
               </div>
-            </motion.div>
-
-            {/* Bottom Info */}
-            <motion.div
-              className="text-center lg:text-left pt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-            >
-              <p className="text-sm text-muted-foreground">
-                Access your project management dashboard easily and securely
-              </p>
-            </motion.div>
+            </div>
           </motion.div>
+
+          {/* Footer Support */}
+          <div className="mt-12 text-muted-foreground text-[10px] text-center max-w-[440px]">
+            &copy; 2026 Product Configurator. All rights reserved. <br className="sm:hidden" />
+            Designed for high-performance manufacturing teams.
+          </div>
         </div>
 
-        {/* Right Section - Login Form */}
-        <div className="relative flex flex-col justify-center items-center p-8 lg:p-12 z-10 bg-gradient-to-br from-background/50 to-muted/20 backdrop-blur-sm">
-          <motion.div
-            className="max-w-md w-full space-y-8"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            {/* Brand Header on Login Side */}
-            <motion.div
-              className="text-center lg:hidden"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Blocks className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground">QuickBom</h1>
-                  <p className="text-sm text-muted-foreground">Project Management</p>
-                </div>
-              </div>
-            </motion.div>
+      </main>
 
-            {/* Login Title */}
-            <motion.div
-              className="text-center space-y-2"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <h2 className="text-3xl font-bold text-foreground">Welcome back</h2>
-              <p className="text-muted-foreground">Sign in to access your project management dashboard</p>
-            </motion.div>
-
-            {/* Login Form */}
-            <motion.form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-            >
-              <motion.div
-                className="space-y-2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.9 }}
-              >
-                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  className="bg-input border-input text-foreground placeholder:text-muted-foreground focus:border-ring h-11"
-                />
-              </motion.div>
-
-              <motion.div
-                className="space-y-2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 1.0 }}
-              >
-                <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    className="pr-12 bg-input border-input text-foreground placeholder:text-muted-foreground focus:border-ring h-11"
-                  />
-                  <motion.button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded-md transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </motion.button>
-                </div>
-              </motion.div>
-
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              {/* Submit Button */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 1.1 }}
-              >
-                <motion.div
-                  whileHover={{
-                    scale: 1.02,
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg h-12 text-base"
-                    type="submit"
-                    disabled={isLoading}
-                    onKeyDown={(e) => {
-                      // Prevent default browser behavior for Enter key
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        // Manually trigger form submission
-                        const form = e.currentTarget.form;
-                        if (form) {
-                          const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
-                          form.dispatchEvent(submitEvent);
-                        }
-                      }
-                    }}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Sign In
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </motion.form>
-
-            {/* Footer */}
-            <motion.div
-              className="text-center text-xs text-muted-foreground pt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 1.2 }}
-            >
-              Secured project management platform
-            </motion.div>
-          </motion.div>
-        </div>
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          onClick={handleRefresh}
+          className="w-10 h-10 rounded-full bg-background/60 backdrop-blur-md border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          title="Reload system"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
