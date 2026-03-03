@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Package, Save, X, Upload, File, Plus, Search, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import MaterialSelector from "@/components/material-selector";
 
@@ -16,6 +17,7 @@ interface Material {
   id: number;
   name: string;
   partNumber: string | null;
+  partDesc: string | null;
   manufacturer: string | null;
   unit: string;
   price: number;
@@ -72,7 +74,7 @@ export default function EditAssemblyPage() {
     description: "",
     module: "ELECTRICAL" as 'ELECTRONIC' | 'ELECTRICAL' | 'ASSEMBLY' | 'INSTALLATION' | 'MECHANICAL',
     categoryId: "",
-    materials: [] as { materialId: number; quantity: number }[]
+    materials: [] as SelectedMaterial[]
   });
   const [assemblyDocs, setAssemblyDocs] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,9 +105,18 @@ export default function EditAssemblyPage() {
         const data = await response.json();
         setAssembly(data);
         // Convert Snapshot materials to compatible format
-        const currentMaterials = data.materials.map((am: any) => ({
+        const currentMaterials: SelectedMaterial[] = data.materials.map((am: any) => ({
           materialId: Number(am.externalId),
-          quantity: Number(am.quantity)
+          quantity: Number(am.quantity),
+          material: {
+            id: Number(am.externalId),
+            name: am.name,
+            partNumber: am.partNumber,
+            partDesc: am.partDesc,
+            manufacturer: am.manufacturer,
+            unit: am.unit,
+            price: Number(am.price)
+          }
         }));
 
         setFormData({
@@ -121,6 +132,7 @@ export default function EditAssemblyPage() {
           id: Number(am.externalId),
           name: am.name,
           partNumber: am.partNumber,
+          partDesc: am.partDesc,
           manufacturer: am.manufacturer,
           unit: am.unit,
           price: Number(am.price)
@@ -166,6 +178,7 @@ export default function EditAssemblyPage() {
           id: m.id,
           name: m.partName,
           partNumber: m.partNumber,
+          partDesc: m.partDesc,
           manufacturer: m.mfr,
           unit: m.unitMeasure,
           price: m.priceToIDR
@@ -230,18 +243,16 @@ export default function EditAssemblyPage() {
           module: formData.module,
           categoryId: parseInt(formData.categoryId),
           docs: null, // We'll handle documents separately
-          materials: formData.materials.map(m => {
-            const materialInfo = materials.find(mat => mat.id === m.materialId);
-            return {
-              externalId: m.materialId,
-              quantity: m.quantity,
-              name: materialInfo?.name || "Unknown",
-              partNumber: materialInfo?.partNumber,
-              manufacturer: materialInfo?.manufacturer,
-              unit: materialInfo?.unit || "pcs",
-              price: materialInfo?.price || 0
-            };
-          })
+          materials: formData.materials.map(m => ({
+            externalId: m.materialId.toString(),
+            quantity: m.quantity,
+            name: m.material.name,
+            partNumber: m.material.partNumber,
+            partDesc: m.material.partDesc,
+            manufacturer: m.material.manufacturer,
+            unit: m.material.unit,
+            price: m.material.price
+          }))
         }),
       });
 
@@ -316,9 +327,8 @@ export default function EditAssemblyPage() {
   };
 
   const calculateTotalCost = () => {
-    return formData.materials.reduce((total, material) => {
-      const materialInfo = materials.find(m => m.id === material.materialId);
-      return total + ((materialInfo?.price || 0) * material.quantity);
+    return formData.materials.reduce((total, sm) => {
+      return total + (sm.material.price * sm.quantity);
     }, 0);
   };
 
@@ -615,25 +625,21 @@ export default function EditAssemblyPage() {
             {formData.materials.length > 0 ? (
               <div className="space-y-4">
                 {/* Header */}
-                <div className="grid grid-cols-12 gap-4 pb-2 border-b font-medium text-sm text-muted-foreground">
-                  <div className="col-span-6">Material Name</div>
-                  <div className="col-span-3 text-center">Quantity</div>
-                  <div className="col-span-3 text-right">Price</div>
+                <div className="flex items-center justify-between pb-2 border-b text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div>Material Details</div>
+                  <div className="w-32 text-center">Composition Qty</div>
                 </div>
 
                 {/* Materials List */}
                 <div className="space-y-2">
                   {(() => {
-                    // Get full material data with search and sort
-                    const materialsWithData = formData.materials.map(material => {
-                      const materialInfo = materials.find(m => m.id === material.materialId);
-                      return materialInfo ? { ...material, material: materialInfo } : null;
-                    }).filter(Boolean) as Array<{ materialId: number; quantity: number; material: Material }>;
+                    const materialsWithData = formData.materials;
 
                     // Filter by search term
                     const filteredMaterials = materialsWithData.filter(item => {
                       const searchLower = materialSearchTerm.toLowerCase();
                       return item.material.name.toLowerCase().includes(searchLower) ||
+                        (item.material.partDesc && item.material.partDesc.toLowerCase().includes(searchLower)) ||
                         (item.material.partNumber && item.material.partNumber.toLowerCase().includes(searchLower));
                     });
 
@@ -643,8 +649,8 @@ export default function EditAssemblyPage() {
 
                       switch (materialSortBy) {
                         case "name":
-                          aValue = a.material.name.toLowerCase();
-                          bValue = b.material.name.toLowerCase();
+                          aValue = (a.material.partDesc || a.material.name).toLowerCase();
+                          bValue = (b.material.partDesc || b.material.name).toLowerCase();
                           break;
                         case "partNumber":
                           aValue = (a.material.partNumber || "").toLowerCase();
@@ -666,43 +672,75 @@ export default function EditAssemblyPage() {
                     });
 
                     return sortedMaterials.map((item, index) => (
-                      <div key={item.materialId} className="grid grid-cols-12 gap-4 items-center p-3 bg-muted/50 rounded-lg border">
-                        <div className="col-span-6">
-                          <div className="flex flex-col">
-                            <span className="font-medium">{item.material.name}</span>
+                      <div key={item.materialId} className="group relative flex items-center justify-between p-4 bg-background hover:bg-muted/30 transition-all border rounded-xl shadow-sm">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-sm text-foreground truncate">
+                              {item.material.partDesc || item.material.name}
+                            </h4>
+                            <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 bg-muted/30 uppercase border-none">{item.material.unit}</Badge>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground line-clamp-1 mb-2 italic">
+                            {item.material.name}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3">
                             {item.material.partNumber && (
-                              <span className="text-xs text-muted-foreground">PN: {item.material.partNumber}</span>
+                              <div className="flex items-center gap-1 text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                                <span>PN:</span>
+                                <span className="font-mono">{item.material.partNumber === "0" ? "N/A" : item.material.partNumber}</span>
+                              </div>
+                            )}
+                            {item.material.manufacturer && (
+                              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-2 py-0.5 rounded-full">
+                                <span>Mfr:</span>
+                                <span>{item.material.manufacturer}</span>
+                              </div>
                             )}
                           </div>
                         </div>
-                        <div className="col-span-3 text-center">
-                          <span className="text-sm font-medium">{item.quantity}</span>
-                          <span className="text-xs text-muted-foreground ml-1">
-                            {item.material.unit}
-                          </span>
-                        </div>
-                        <div className="col-span-3 text-right">
-                          <div className="font-semibold text-green-600 dark:text-green-400">
-                            {formatCurrency(item.material.price * item.quantity)}
+
+                        <div className="flex items-center gap-6 flex-shrink-0">
+                          <div className="w-32 flex flex-col items-center justify-center bg-muted/20 rounded-lg p-2 border border-dashed hover:border-primary/50 transition-colors">
+                            <Input
+                              type="number"
+                              step="any"
+                              value={item.quantity === 0 ? "" : item.quantity}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                const newMaterials = formData.materials.map(m =>
+                                  m.materialId === item.materialId ? { ...m, quantity: isNaN(val) ? 0 : Math.max(0, val) } : m
+                                );
+                                setFormData({ ...formData, materials: newMaterials });
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-20 h-8 text-center text-lg font-black text-primary bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary shadow-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              min="0"
+                            />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{item.material.unit}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatCurrency(item.material.price)}/{item.material.unit}
-                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                materials: formData.materials.filter(m => m.materialId !== item.materialId)
+                              });
+                            }}
+                            className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
                         </div>
                       </div>
                     ));
                   })()}
                 </div>
 
-                {/* Total Cost */}
-                <div className="flex justify-end items-center font-semibold text-lg pt-4 border-t">
-                  <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground">Total Cost:</span>
-                    <span className="text-green-600 dark:text-green-400 text-xl">
-                      {formatCurrency(calculateTotalCost())}
-                    </span>
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-muted rounded-lg">
@@ -749,20 +787,10 @@ export default function EditAssemblyPage() {
                 onSelectionChange={(selectedMaterials) => {
                   setFormData({
                     ...formData,
-                    materials: selectedMaterials.map(sm => ({
-                      materialId: sm.materialId,
-                      quantity: sm.quantity
-                    }))
+                    materials: selectedMaterials
                   });
                 }}
-                initialSelectedMaterials={formData.materials.map(material => {
-                  const materialInfo = materials.find(m => m.id === material.materialId);
-                  return materialInfo ? {
-                    materialId: material.materialId,
-                    quantity: material.quantity,
-                    material: materialInfo
-                  } : null;
-                }).filter(Boolean) as any[]}
+                initialSelectedMaterials={formData.materials}
                 onClose={() => setIsMaterialSelectorOpen(false)}
               />
             </div>
@@ -908,7 +936,16 @@ export default function EditAssemblyPage() {
                               ...formData,
                               materials: [...formData.materials, {
                                 materialId: createdMaterial.id,
-                                quantity: 1
+                                quantity: 1,
+                                material: {
+                                  id: createdMaterial.id,
+                                  name: createdMaterial.name,
+                                  partNumber: createdMaterial.partNumber,
+                                  partDesc: null,
+                                  manufacturer: createdMaterial.manufacturer,
+                                  unit: createdMaterial.unit,
+                                  price: createdMaterial.price
+                                }
                               }]
                             });
                           } else {

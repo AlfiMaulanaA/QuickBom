@@ -11,10 +11,8 @@ import {
   ArrowLeft,
   Download,
   FileText,
-  Calculator,
   Package,
   Building,
-  DollarSign,
   BarChart3,
   Settings,
   Eye,
@@ -24,19 +22,14 @@ import {
 } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 
-interface Material {
-  id: number;
+interface AssemblyMaterial {
+  id?: string;
   name: string;
   partNumber: string | null;
+  partDesc: string | null;
   manufacturer: string | null;
   unit: string;
-}
-
-interface AssemblyMaterial {
-  id?: number;
-  materialId: number;
   quantity: number;
-  material: Material;
 }
 
 interface Assembly {
@@ -44,6 +37,7 @@ interface Assembly {
   name: string;
   description: string | null;
   materials: AssemblyMaterial[];
+  category: { id: number; name: string; color: string | null };
   module: 'ELECTRONIC' | 'ELECTRICAL' | 'ASSEMBLY' | 'INSTALLATION' | 'MECHANICAL';
 }
 
@@ -68,12 +62,15 @@ interface BOQItem {
   no: string;
   manufacturer: string;
   partNumber: string;
+  partDesc: string; // Added partDesc
   item: string;
   qty: number;
   unit: string;
   assemblyName: string;
+  categoryName: string;
   isModuleHeader?: boolean;
   isAssemblyHeader?: boolean;
+  isInstallation?: boolean; // Track if it's installation
 }
 
 export default function TemplateBOQPage() {
@@ -81,6 +78,7 @@ export default function TemplateBOQPage() {
   const router = useRouter();
   const [template, setTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'breakdown' | 'consolidated'>('breakdown');
   const { toast } = useToast();
 
   const templateId = params.id as string;
@@ -149,16 +147,21 @@ export default function TemplateBOQPage() {
       const assemblies = assembliesByModule[moduleName];
       if (!assemblies || assemblies.length === 0) return;
 
+      const isInstallationModule = moduleName === 'INSTALLATION';
+
       // Add module header
       boqItems.push({
         no: moduleNumber.toString(),
         manufacturer: "",
         partNumber: "",
+        partDesc: "",
         item: `${moduleName} MODULE`,
         qty: 0,
         unit: "",
         assemblyName: "",
-        isModuleHeader: true
+        categoryName: "",
+        isModuleHeader: true,
+        isInstallation: isInstallationModule
       });
 
       let assemblyNumber = 1;
@@ -175,29 +178,34 @@ export default function TemplateBOQPage() {
           no: `${moduleNumber}.${assemblyNumber}`,
           manufacturer: "-",
           partNumber: "-",
+          partDesc: assembly.description || "",
           item: assembly.name,
           qty: assemblyQuantity,
           unit: "Assembly",
           assemblyName: assembly.name,
-          isAssemblyHeader: true
+          categoryName: assembly.category?.name || "",
+          isAssemblyHeader: true,
+          isInstallation: isInstallationModule
         });
 
         // Add material rows for this assembly
         if (assembly.materials && Array.isArray(assembly.materials)) {
           assembly.materials.forEach((assemblyMaterial, materialIndex) => {
-            if (!assemblyMaterial || !assemblyMaterial.material) return;
+            if (!assemblyMaterial) return;
 
-            const material = assemblyMaterial.material;
             const materialQuantity = Number(assemblyMaterial.quantity || 0) * assemblyQuantity;
 
             boqItems.push({
               no: `${moduleNumber}.${assemblyNumber}.${materialIndex + 1}`,
-              manufacturer: material.manufacturer || "",
-              partNumber: material.partNumber || "",
-              item: material.name || "",
+              manufacturer: assemblyMaterial.manufacturer || "",
+              partNumber: assemblyMaterial.partNumber || "",
+              partDesc: assemblyMaterial.partDesc || "",
+              item: assemblyMaterial.name || "",
               qty: materialQuantity,
-              unit: material.unit || "",
-              assemblyName: assembly.name
+              unit: assemblyMaterial.unit || "",
+              assemblyName: assembly.name,
+              categoryName: assembly.category?.name || "",
+              isInstallation: isInstallationModule
             });
           });
         }
@@ -211,12 +219,75 @@ export default function TemplateBOQPage() {
     return boqItems;
   }, [template]);
 
+  const consolidatedData = useMemo(() => {
+    if (!template) return { typical: [], installation: [] };
+
+    const typicalMap = new Map<string, {
+      name: string;
+      partNumber: string;
+      partDesc: string;
+      manufacturer: string;
+      unit: string;
+      totalQuantity: number;
+    }>();
+
+    const installation: Array<{
+      name: string;
+      partNumber: string;
+      partDesc: string;
+      manufacturer: string;
+      unit: string;
+      quantity: number;
+      assemblyName: string;
+    }> = [];
+
+    template.assemblies.forEach((ta) => {
+      const assembly = ta.assembly;
+      const assemblyQty = Number(ta.quantity);
+      const isInst = assembly.module === 'INSTALLATION';
+
+      assembly.materials.forEach((am) => {
+        const totalQty = Number(am.quantity) * assemblyQty;
+        if (isInst) {
+          installation.push({
+            name: am.name,
+            partNumber: am.partNumber || "",
+            partDesc: am.partDesc || "",
+            manufacturer: am.manufacturer || "",
+            unit: am.unit,
+            quantity: totalQty,
+            assemblyName: assembly.name
+          });
+        } else {
+          const key = `${am.name}_${am.partNumber || ''}_${am.manufacturer || ''}_${am.unit}`;
+          if (typicalMap.has(key)) {
+            typicalMap.get(key)!.totalQuantity += totalQty;
+          } else {
+            typicalMap.set(key, {
+              name: am.name,
+              partNumber: am.partNumber || "",
+              partDesc: am.partDesc || "",
+              manufacturer: am.manufacturer || "",
+              unit: am.unit,
+              totalQuantity: totalQty
+            });
+          }
+        }
+      });
+    });
+
+    return {
+      typical: Array.from(typicalMap.values()),
+      installation
+    };
+  }, [template]);
+
 
 
   const exportToExcelHandler = () => {
     if (!template || boqData.length === 0) return;
 
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Assembly Name"];
+    const headers = ["No", "Manufacturer", "PN", "Item", "Description", "Qty", "Unit", "Category", "Assembly Name"];
 
     const data = [
       [`BILL OF QUANTITY - ${template.name.toUpperCase()}`],
@@ -231,17 +302,19 @@ export default function TemplateBOQPage() {
         item.manufacturer,
         item.partNumber,
         item.item,
+        item.partDesc,
         item.qty,
         item.unit,
+        item.categoryName,
         item.assemblyName
       ])
     ];
 
-    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_BOQ`, "BOQ");
+    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Full_Breakdown`, "Full Breakdown");
 
     toast({
-      title: "BOQ Exported",
-      description: "Bill of Quantity has been exported to Excel",
+      title: "Detailed BOQ Exported",
+      description: "Complete Bill of Quantity has been exported to Excel",
     });
   };
 
@@ -252,9 +325,9 @@ export default function TemplateBOQPage() {
       `BILL OF QUANTITY - ${template.name}`,
       `Generated on: ${new Date().toLocaleString()}`,
       "",
-      "No\tManufactur\tPN\tItem\tQty\tUnit\tAssembly Name",
+      "No\tManufacturer\tPN\tItem\tDescription\tQty\tUnit\tCategory\tAssembly Name",
       ...boqData.map(item =>
-        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.assemblyName}`
+        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.partDesc}\t${item.qty}\t${item.unit}\t${item.categoryName}\t${item.assemblyName}`
       )
     ].join("\n");
 
@@ -276,15 +349,30 @@ export default function TemplateBOQPage() {
   const exportCombinedExcel = () => {
     if (!template) return;
 
-    // Create a map to consolidate materials
-    const materialMap = new Map<string, {
+    // Create a map to consolidate typical materials
+    const typicalMaterialMap = new Map<string, {
       name: string;
       partNumber: string;
+      partDesc: string;
       manufacturer: string;
       unit: string;
       totalQuantity: number;
-      assemblies: string[];
+      assemblies: Set<string>;
     }>();
+
+    // List for installation materials (listed separately)
+    const installationMaterials: Array<{
+      no: string;
+      name: string;
+      partNumber: string;
+      partDesc: string;
+      manufacturer: string;
+      unit: string;
+      quantity: number;
+      assemblyName: string;
+    }> = [];
+
+    let instIndex = 1;
 
     // Process all assemblies and their materials
     template.assemblies.forEach((templateAssembly) => {
@@ -292,68 +380,92 @@ export default function TemplateBOQPage() {
 
       const assembly = templateAssembly.assembly;
       const assemblyQuantity = Number(templateAssembly.quantity);
+      const isInstallation = assembly.module === 'INSTALLATION';
 
       if (assembly.materials && Array.isArray(assembly.materials)) {
         assembly.materials.forEach((assemblyMaterial) => {
-          if (!assemblyMaterial || !assemblyMaterial.material) return;
+          if (!assemblyMaterial) return;
 
-          const material = assemblyMaterial.material;
           const materialQuantity = Number(assemblyMaterial.quantity || 0) * assemblyQuantity;
 
-          // Create unique key for material consolidation
-          const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}`;
-
-          if (materialMap.has(materialKey)) {
-            // Update existing material
-            const existing = materialMap.get(materialKey)!;
-            existing.totalQuantity += materialQuantity;
-            if (!existing.assemblies.includes(assembly.name)) {
-              existing.assemblies.push(assembly.name);
-            }
-          } else {
-            // Add new material
-            materialMap.set(materialKey, {
-              name: material.name || '',
-              partNumber: material.partNumber || '',
-              manufacturer: material.manufacturer || '',
-              unit: material.unit || '',
-              totalQuantity: materialQuantity,
-              assemblies: [assembly.name]
+          if (isInstallation) {
+            // Add to installation list (KEEP SEPARATE)
+            installationMaterials.push({
+              no: `INST-${instIndex++}`,
+              name: assemblyMaterial.name,
+              partNumber: assemblyMaterial.partNumber || "",
+              partDesc: assemblyMaterial.partDesc || "",
+              manufacturer: assemblyMaterial.manufacturer || "",
+              unit: assemblyMaterial.unit,
+              quantity: materialQuantity,
+              assemblyName: assembly.name
             });
+          } else {
+            // Group by Material Properties (TYPICAL)
+            const materialKey = `${assemblyMaterial.name}_${assemblyMaterial.partNumber || ''}_${assemblyMaterial.manufacturer || ''}_${assemblyMaterial.unit}`;
+
+            if (typicalMaterialMap.has(materialKey)) {
+              const existing = typicalMaterialMap.get(materialKey)!;
+              existing.totalQuantity += materialQuantity;
+              existing.assemblies.add(assembly.name);
+            } else {
+              typicalMaterialMap.set(materialKey, {
+                name: assemblyMaterial.name,
+                partNumber: assemblyMaterial.partNumber || "",
+                partDesc: assemblyMaterial.partDesc || "",
+                manufacturer: assemblyMaterial.manufacturer || "",
+                unit: assemblyMaterial.unit,
+                totalQuantity: materialQuantity,
+                assemblies: new Set([assembly.name])
+              });
+            }
           }
         });
       }
     });
 
-    // Convert map to array for Excel export
-    const consolidatedMaterials = Array.from(materialMap.values());
+    // Convert typical materials map to array
+    const typicalMaterials = Array.from(typicalMaterialMap.values());
 
-    const headers = ["No", "Manufacturer", "Part Number", "Item", "Total Qty", "Unit", "Used in Assemblies"];
+    const headers = ["No", "Manufacturer", "Part Number", "Item", "Description", "Total Qty", "Unit", "Used in Assemblies"];
 
     const data = [
       [`CONSOLIDATED BILL OF QUANTITY - ${template.name.toUpperCase()}`],
       [`Generated on: ${new Date().toLocaleString()}`],
-      [`Template Description: ${template.description || "No description"}`],
-      [`Total Assemblies: ${template.assemblies?.length || 0}`],
-      [`Unique Materials: ${consolidatedMaterials.length}`],
+      [`Project Description: ${template.description || "No description"}`],
       [],
+      [`----- TYPICAL MATERIALS (SUMMARIZED) -----`],
       headers,
-      ...consolidatedMaterials.map((material, index) => [
+      ...typicalMaterials.map((material, index) => [
         index + 1,
         material.manufacturer,
         material.partNumber,
         material.name,
+        material.partDesc,
         material.totalQuantity,
         material.unit,
-        material.assemblies.join('; ')
+        Array.from(material.assemblies).join('; ')
+      ]),
+      [],
+      [`----- INSTALLATION MATERIALS (SEPARATED) -----`],
+      ["No", "Manufacturer", "Part Number", "Item", "Description", "Qty", "Unit", "From Assembly"],
+      ...installationMaterials.map((material) => [
+        material.no,
+        material.manufacturer,
+        material.partNumber,
+        material.name,
+        material.partDesc,
+        material.quantity,
+        material.unit,
+        material.assemblyName
       ])
     ];
 
-    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Combined_BOQ`, "Combined BOQ");
+    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Consolidated_BOQ`, "BOQ");
 
     toast({
-      title: "Combined BOQ Exported",
-      description: "Consolidated Bill of Quantity has been exported to Excel",
+      title: "Consolidated BOQ Exported",
+      description: "Typical materials summarized and installation materials separated.",
     });
   };
 
@@ -411,6 +523,24 @@ export default function TemplateBOQPage() {
         </div>
 
         <div className="flex gap-2 flex-shrink-0">
+          <div className="bg-muted p-1 rounded-lg flex mr-4">
+            <Button
+              variant={viewMode === 'breakdown' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('breakdown')}
+              className="text-xs h-8"
+            >
+              Breakdown
+            </Button>
+            <Button
+              variant={viewMode === 'consolidated' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('consolidated')}
+              className="text-xs h-8"
+            >
+              Consolidated
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={copyToClipboard}
@@ -420,19 +550,11 @@ export default function TemplateBOQPage() {
             Copy
           </Button>
           <Button
-            variant="outline"
-            onClick={exportToExcelHandler}
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Download Excel
-          </Button>
-          <Button
             onClick={exportCombinedExcel}
             className="flex items-center gap-2"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            Download Combined Excel
+            Download BOQ
           </Button>
         </div>
       </div>
@@ -455,7 +577,7 @@ export default function TemplateBOQPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Materials</CardTitle>
-            <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4">
             <div className="text-lg sm:text-2xl font-bold">{totalMaterials}</div>
@@ -500,81 +622,129 @@ export default function TemplateBOQPage() {
                     <TableHead className="min-w-[120px] text-xs font-medium">Manufacturer</TableHead>
                     <TableHead className="min-w-[100px] text-xs font-medium">Part Number</TableHead>
                     <TableHead className="min-w-[200px] text-xs font-medium">Item</TableHead>
+                    <TableHead className="min-w-[200px] text-xs font-medium">Description</TableHead> {/* Added Description */}
                     <TableHead className="min-w-[80px] text-xs font-medium text-right">Qty</TableHead>
                     <TableHead className="min-w-[60px] text-xs font-medium">Unit</TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-medium">Category</TableHead>
                     <TableHead className="min-w-[120px] text-xs font-medium">Assembly Name</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {boqData.map((item, index) => {
-                    const isModuleHeader = item.isModuleHeader;
-                    const isAssemblyHeader = item.isAssemblyHeader;
+                  {viewMode === 'breakdown' ? (
+                    boqData.map((item, index) => {
+                      const isModuleHeader = item.isModuleHeader;
+                      const isAssemblyHeader = item.isAssemblyHeader;
 
-                    return (
-                      <TableRow
-                        key={`${item.no}-${index}`}
-                        className={`${isModuleHeader
-                          ? 'bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold'
-                          : isAssemblyHeader
-                            ? 'bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800'
-                            : 'hover:bg-muted/30'
-                          }`}
-                      >
-                        <TableCell className={`text-xs font-mono ${isModuleHeader ? 'text-purple-900 dark:text-purple-100 font-bold' :
-                          isAssemblyHeader ? 'text-blue-900 dark:text-blue-100 font-semibold' :
-                            'text-muted-foreground'
-                          }`}>
-                          {item.no}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {item.manufacturer === "-" || isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            item.manufacturer || <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs font-mono">
-                          {item.partNumber === "-" || isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            item.partNumber || <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className={`text-sm ${isModuleHeader ? 'font-bold text-purple-900 dark:text-purple-100' :
-                          isAssemblyHeader ? 'font-semibold text-blue-900 dark:text-blue-100' : ''
-                          }`}>
-                          {isModuleHeader ? (
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-purple-600" />
-                              {item.item}
-                            </div>
-                          ) : isAssemblyHeader ? (
-                            <div className="flex items-center gap-2">
-                              <Building className="h-4 w-4 text-blue-600" />
-                              {item.item}
-                            </div>
-                          ) : (
-                            item.item
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-right font-mono">
-                          {isModuleHeader ? '-' : item.qty.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
+                      if (isModuleHeader) {
+                        return (
+                          <TableRow key={`${item.no}-${index}`} className="bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold">
+                            <TableCell colSpan={9} className="text-sm font-bold text-purple-900 dark:text-purple-100 py-3 uppercase tracking-wider">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-purple-600" />
+                                {item.no}. {item.item}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      if (isAssemblyHeader) {
+                        return (
+                          <TableRow key={`${item.no}-${index}`} className="bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800">
+                            <TableCell className="text-xs font-mono text-blue-900 dark:text-blue-100 font-bold pl-4">
+                              {item.no}
+                            </TableCell>
+                            <TableCell colSpan={4} className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                              <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-blue-600" />
+                                {item.item}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-bold text-blue-900 dark:text-blue-100">
+                              {item.qty}
+                            </TableCell>
+                            <TableCell className="text-xs text-blue-900 dark:text-blue-100">
+                              Assm
+                            </TableCell>
+                            <TableCell colSpan={2} className="text-xs text-blue-900 dark:text-blue-100 italic">
+                              {item.categoryName || "-"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return (
+                        <TableRow key={`${item.no}-${index}`} className={`hover:bg-muted/30 ${item.isInstallation ? 'bg-orange-50/20' : ''}`}>
+                          <TableCell className="text-xs font-mono text-muted-foreground pl-8">
+                            {item.no}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {item.manufacturer || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs font-mono">
+                            {item.partNumber || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs font-medium pl-6 border-l-2 border-blue-100 dark:border-blue-900">
+                            {item.item}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={item.partDesc}>
+                            {item.partDesc || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-bold">
+                            {item.qty.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-xs">
                             <Badge variant="outline" className="text-xs">
                               {item.unit}
                             </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {isModuleHeader ? '-' : item.assemblyName}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.categoryName || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.assemblyName}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <>
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell colSpan={9} className="text-sm py-2 px-4 border-l-4 border-blue-500">
+                          TYPICAL MATERIALS (CONSOLIDATED)
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
+                      {consolidatedData.typical.map((item, idx) => (
+                        <TableRow key={`typ-${idx}`} className="hover:bg-muted/30">
+                          <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="text-xs">{item.manufacturer}</TableCell>
+                          <TableCell className="text-xs font-mono">{item.partNumber}</TableCell>
+                          <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={item.partDesc}>{item.partDesc}</TableCell>
+                          <TableCell className="text-xs text-right font-bold">{item.totalQuantity.toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{item.unit}</TableCell>
+                          <TableCell colSpan={2} className="text-xs text-muted-foreground italic">Summarized Typical</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell colSpan={9} className="text-sm py-2 px-4 border-l-4 border-orange-500">
+                          INSTALLATION MATERIALS (SEPARATED)
+                        </TableCell>
+                      </TableRow>
+                      {consolidatedData.installation.map((item, idx) => (
+                        <TableRow key={`inst-${idx}`} className="hover:bg-muted/30 bg-orange-50/10">
+                          <TableCell className="text-xs text-muted-foreground">INST-{idx + 1}</TableCell>
+                          <TableCell className="text-xs">{item.manufacturer}</TableCell>
+                          <TableCell className="text-xs font-mono">{item.partNumber}</TableCell>
+                          <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={item.partDesc}>{item.partDesc}</TableCell>
+                          <TableCell className="text-xs text-right font-bold">{item.quantity.toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{item.unit}</TableCell>
+                          <TableCell colSpan={2} className="text-xs text-muted-foreground italic">{item.assemblyName}</TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </div>

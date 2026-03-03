@@ -13,16 +13,16 @@ import {
   AlertTriangle,
   Info,
   ArrowRight,
-  DollarSign,
-  ShoppingCart,
-  Calculator,
   Save,
   RefreshCw,
   Cpu,
   Zap,
   Wrench,
   Truck,
-  Cog
+  Cog,
+  X,
+  RotateCcw,
+  BarChart3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { AssemblyGroup, ValidationResult, Assembly } from "@/lib/types/assembly";
@@ -181,8 +181,10 @@ export default function CategoryBasedSelector({
         break;
 
       case 'CHOOSE_ONE':
-        // Only one selection allowed
-        newSelections = [assemblyId];
+        // Toggle: if already selected, remove it. Otherwise, select only this one.
+        newSelections = currentSelections.includes(assemblyId)
+          ? []
+          : [assemblyId];
         break;
 
       case 'OPTIONAL':
@@ -228,6 +230,54 @@ export default function CategoryBasedSelector({
     onSelectionChange?.(newSelectionsState);
   };
 
+  const handleClearModule = (moduleKey: string) => {
+    const moduleGroups = groupsByModule[moduleKey] || [];
+    const newSelections = { ...selections };
+
+    moduleGroups.forEach(group => {
+      if (!newSelections[group.categoryId]) {
+        newSelections[group.categoryId] = {};
+      }
+      newSelections[group.categoryId][group.id] = [];
+    });
+
+    setSelections(newSelections);
+    onSelectionChange?.(newSelections);
+
+    toast({
+      title: "Module Cleared",
+      description: `All selections in the ${moduleKey.toLowerCase()} module have been removed.`,
+    });
+  };
+
+  const handleResetModule = (moduleKey: string) => {
+    const moduleGroups = groupsByModule[moduleKey] || [];
+    const newSelections = { ...selections };
+
+    moduleGroups.forEach(group => {
+      if (!newSelections[group.categoryId]) {
+        newSelections[group.categoryId] = {};
+      }
+
+      if (group.groupType === 'REQUIRED') {
+        newSelections[group.categoryId][group.id] = group.items.map(item => item.assemblyId);
+      } else if (group.groupType === 'CHOOSE_ONE') {
+        const defaultItem = group.items.find(item => item.isDefault) || group.items[0];
+        newSelections[group.categoryId][group.id] = defaultItem ? [defaultItem.assemblyId] : [];
+      } else {
+        newSelections[group.categoryId][group.id] = [];
+      }
+    });
+
+    setSelections(newSelections);
+    onSelectionChange?.(newSelections);
+
+    toast({
+      title: "Module Reset",
+      description: `Selections in the ${moduleKey.toLowerCase()} module have been reset to defaults.`,
+    });
+  };
+
   const getGroupTypeIcon = (type: string) => {
     switch (type) {
       case 'REQUIRED': return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -246,13 +296,6 @@ export default function CategoryBasedSelector({
       case 'CONFLICT': return 'Conflicts';
       default: return type;
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
   };
 
   const isItemSelected = (categoryId: number, groupId: string, assemblyId: number) => {
@@ -335,7 +378,9 @@ export default function CategoryBasedSelector({
                 ? 'text-green-700 dark:text-green-300'
                 : 'text-red-700 dark:text-red-300'}`}>
                 {validationResult.isValid ? (
-                  `Ready to create template with ${formatCurrency(validationResult.totalCost)} total cost`
+                  `Ready to create template with ${validationResult.breakdown.reduce((sum, cat) =>
+                    sum + cat.groups.reduce((gSum, g) => gSum + g.assemblies.length, 0), 0
+                  )} assemblies selected`
                 ) : (
                   `${validationResult.errors.length} error(s) need to be fixed`
                 )}
@@ -352,17 +397,53 @@ export default function CategoryBasedSelector({
         return (
           <Card key={moduleKey}>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${moduleInfo.color}`}>
-                  {moduleInfo.icon}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${moduleInfo.color}`}>
+                    {moduleInfo.icon}
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">{moduleInfo.label} Module</CardTitle>
+                    <CardDescription>{moduleInfo.description}</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-xl">{moduleInfo.label} Module</CardTitle>
-                  <CardDescription>{moduleInfo.description}</CardDescription>
+
+                <div className="flex items-center gap-2">
+                  <div className="mr-4 text-right hidden md:block">
+                    <div className="text-sm font-medium">
+                      {(() => {
+                        let count = 0;
+                        moduleGroups.forEach(g => {
+                          count += selections[g.categoryId]?.[g.id]?.length || 0;
+                        });
+                        return `${count} selected`;
+                      })()}
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => handleResetModule(moduleKey)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Reset
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 gap-1.5"
+                    onClick={() => handleClearModule(moduleKey)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Clear All
+                  </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <Separator />
+            <CardContent className="space-y-6 pt-6">
               {moduleGroups.map(group => {
                 const groupBreakdown = validationResult?.breakdown
                   .find(b => b.categoryId === group.categoryId)?.groups
@@ -392,14 +473,6 @@ export default function CategoryBasedSelector({
                       {group.items.map(item => {
                         const isSelected = isItemSelected(group.categoryId, group.id, item.assemblyId);
                         const isDisabled = isItemDisabled(group.categoryId, group.id, item.assemblyId);
-                        // Always calculate cost - not just for selected items
-                        const validatedCost = groupBreakdown?.assemblies
-                          .find(a => a.assemblyId === item.assemblyId)?.cost;
-
-                        // Use validated cost if available, otherwise use base assembly price
-                        const itemCost = (validatedCost !== undefined && validatedCost > 0)
-                          ? validatedCost
-                          : (Number(item.assembly.price || 0) * Number(item.quantity || 1));
 
                         return (
                           <div
@@ -439,9 +512,6 @@ export default function CategoryBasedSelector({
                               </div>
 
                               <div className="text-right flex-shrink-0">
-                                <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                  {formatCurrency(itemCost)}
-                                </div>
                                 <div className="text-sm text-muted-foreground dark:text-gray-400">
                                   Qty: {item.quantity}
                                 </div>
@@ -459,17 +529,6 @@ export default function CategoryBasedSelector({
                       })}
                     </div>
 
-                    {/* Group Cost Summary */}
-                    {groupBreakdown && (
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Group Total:</span>
-                          <span className="text-lg font-bold text-green-600">
-                            {formatCurrency(groupBreakdown.cost)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -483,7 +542,7 @@ export default function CategoryBasedSelector({
         <Card className="border-primary/20 dark:border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5" />
               Selection Summary
             </CardTitle>
           </CardHeader>
@@ -499,10 +558,12 @@ export default function CategoryBasedSelector({
               </div>
 
               <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600 mb-1">
-                  {formatCurrency(validationResult.totalCost)}
+                <div className="text-2xl font-bold text-blue-600 mb-1">
+                  {validationResult.breakdown.reduce((sum, cat) =>
+                    sum + cat.groups.reduce((gSum, g) => gSum + g.assemblies.reduce((aSum, a) => aSum + a.quantity, 0), 0), 0
+                  )}
                 </div>
-                <div className="text-sm text-muted-foreground">Total Cost</div>
+                <div className="text-sm text-muted-foreground">Total Units</div>
               </div>
 
               <div className="text-center p-4 bg-muted/50 rounded-lg">

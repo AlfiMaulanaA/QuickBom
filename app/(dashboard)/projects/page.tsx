@@ -13,10 +13,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, FolderOpen, DollarSign, Calculator, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Trash2, FolderOpen, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File, FileSpreadsheet, Calculator, DollarSign, Check, ChevronsUpDown, ListTree, Combine, Calculator as CalcIcon, LayoutGrid } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface Template {
   id: number;
@@ -51,8 +56,7 @@ interface Project {
   clientId: string | null;
   client: Client | null;
   projectType: string | null;
-  location: string | null;
-  area: number | null;
+  budget: number | null;
   startDate: Date | null;
   endDate: Date | null;
   actualStart: Date | null;
@@ -91,13 +95,18 @@ export default function ProjectsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [clients, setClients] = useState<Client[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [inquirySearchTerm, setInquirySearchTerm] = useState("");
+  const [isInquiryPopoverOpen, setIsInquiryPopoverOpen] = useState(false);
+  const [isBoqDialogOpen, setIsBoqDialogOpen] = useState(false);
+  const [isBoqLoading, setIsBoqLoading] = useState(false);
+  const [boqData, setBoqData] = useState<any>(null);
+  const [activeBoqTab, setActiveBoqTab] = useState("hierarchy");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     clientId: "",
     projectType: "",
-    location: "",
-    area: "",
+    budget: "",
     startDate: "",
     endDate: "",
     actualStart: "",
@@ -127,10 +136,35 @@ export default function ProjectsPage() {
       const response = await fetch("/api/crm/inquiries?role=Estimator&id=0");
       if (response.ok) {
         const data = await response.json();
+        console.log("Client [fetchInquiries]: Success, items:", data.length);
         setInquiries(data);
+      } else {
+        console.error("Client [fetchInquiries]: Failed, status:", response.status);
       }
     } catch (error) {
       console.error("Failed to fetch inquiries:", error);
+    }
+  };
+
+  const fetchBoqData = async (projectId: number) => {
+    setIsBoqLoading(true);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/boq`);
+      if (response.ok) {
+        const data = await response.json();
+        setBoqData(data);
+        setIsBoqDialogOpen(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch BOQ data",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching BOQ:", error);
+    } finally {
+      setIsBoqLoading(false);
     }
   };
 
@@ -204,8 +238,7 @@ export default function ProjectsPage() {
         description: formData.description || null,
         clientId: formData.clientId || null,
         projectType: formData.projectType || null,
-        location: formData.location || null,
-        area: formData.area ? Number(formData.area) : null,
+        budget: formData.budget ? Number(formData.budget) : null,
         startDate: formData.startDate || null,
         endDate: formData.endDate || null,
         actualStart: formData.actualStart || null,
@@ -248,8 +281,6 @@ export default function ProjectsPage() {
           description: "",
           clientId: "",
           projectType: "",
-          location: "",
-          area: "",
           startDate: "",
           endDate: "",
           actualStart: "",
@@ -259,6 +290,7 @@ export default function ProjectsPage() {
           priority: "MEDIUM",
           fromTemplateId: "",
           crmInquiryId: "",
+          budget: "",
           assignedUsers: []
         });
       } else {
@@ -285,8 +317,7 @@ export default function ProjectsPage() {
       description: project.description || "",
       clientId: project.clientId || "",
       projectType: project.projectType || "",
-      location: project.location || "",
-      area: project.area?.toString() || "",
+      budget: project.budget?.toString() || "",
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
       actualStart: project.actualStart ? new Date(project.actualStart).toISOString().split('T')[0] : "",
@@ -402,20 +433,30 @@ export default function ProjectsPage() {
     if (!confirm(`Are you sure you want to delete ${selectedProjects.length} projects?`)) return;
 
     try {
-      const deletePromises = selectedProjects.map(id =>
-        fetch(`/api/projects/${id}`, { method: "DELETE" })
-      );
-
-      const results = await Promise.all(deletePromises);
-      const successCount = results.filter(r => r.ok).length;
-
-      toast({
-        title: "Bulk Delete Completed",
-        description: `Successfully deleted ${successCount} out of ${selectedProjects.length} projects`,
+      const response = await fetch("/api/projects", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedProjects }),
       });
 
-      fetchProjects();
-      setSelectedProjects([]);
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Bulk Delete Completed",
+          description: data.message || `Successfully deleted ${data.deletedCount} projects`,
+        });
+        fetchProjects();
+        setSelectedProjects([]);
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to delete projects",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -442,8 +483,7 @@ export default function ProjectsPage() {
       description: project.description || "",
       clientId: project.clientId || "",
       projectType: project.projectType || "",
-      location: project.location || "",
-      area: project.area?.toString() || "",
+      budget: project.budget?.toString() || "",
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
       actualStart: project.actualStart ? new Date(project.actualStart).toISOString().split('T')[0] : "",
@@ -793,11 +833,11 @@ export default function ProjectsPage() {
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Residential">Residential</SelectItem>
-                        <SelectItem value="Commercial">Commercial</SelectItem>
-                        <SelectItem value="Industrial">Industrial</SelectItem>
-                        <SelectItem value="Infrastructure">Infrastructure</SelectItem>
-                        <SelectItem value="Renovation">Renovation</SelectItem>
+                        <SelectItem value="datacenter">Datacenter</SelectItem>
+                        <SelectItem value="panel">Panel</SelectItem>
+                        <SelectItem value="battery">Battery</SelectItem>
+                        <SelectItem value="rectifier">Rectifier</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -820,7 +860,7 @@ export default function ProjectsPage() {
                   <Users className="h-4 w-4" />
                   Client & Template
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Changed to 3 cols */}
                   <div className="space-y-2">
                     <Label htmlFor="clientId">Client</Label>
                     <Select
@@ -832,13 +872,102 @@ export default function ProjectsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">No client</SelectItem>
-                        {clients?.map((client) => (
+                        {clients?.filter(c => c.id).map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.clientType === 'COMPANY' ? client.companyName : client.contactPerson}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2 flex flex-col">
+                    <Label htmlFor="crmInquiryId">Inquiry (External CRM) {inquiries.length > 0 && `(${inquiries.length})`}</Label>
+                    <Popover open={isInquiryPopoverOpen} onOpenChange={setIsInquiryPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={isInquiryPopoverOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          {formData.crmInquiryId && formData.crmInquiryId !== "none"
+                            ? inquiries.find((iq) => String(iq.id || iq.value) === formData.crmInquiryId)?.text ||
+                            inquiries.find((iq) => String(iq.id || iq.value) === formData.crmInquiryId)?.title ||
+                            `Selected Inquiry (${formData.crmInquiryId})`
+                            : "Select Inquiry"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search inquiry..."
+                            value={inquirySearchTerm}
+                            onValueChange={setInquirySearchTerm}
+                          />
+                          <CommandList>
+                            <CommandEmpty>No inquiry found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="none"
+                                onSelect={() => {
+                                  setFormData({ ...formData, crmInquiryId: "none" });
+                                  setIsInquiryPopoverOpen(false);
+                                  setInquirySearchTerm("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.crmInquiryId === "none" ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                No inquiry
+                              </CommandItem>
+                              {inquiries
+                                .filter((iq: any) => {
+                                  if (!inquirySearchTerm) return true;
+                                  const search = inquirySearchTerm.toLowerCase();
+                                  const text = (iq.text || iq.title || "").toLowerCase();
+                                  const val = String(iq.id || iq.value || "").toLowerCase();
+                                  return text.includes(search) || val.includes(search);
+                                })
+                                .slice(0, 50) // Show only 50 for performance
+                                .map((inquiry: any) => {
+                                  const id = String(inquiry.id || inquiry.value);
+                                  return (
+                                    <CommandItem
+                                      key={id}
+                                      value={id}
+                                      onSelect={() => {
+                                        setFormData({ ...formData, crmInquiryId: id });
+                                        setIsInquiryPopoverOpen(false);
+                                        setInquirySearchTerm("");
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          formData.crmInquiryId === id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{inquiry.text || inquiry.title || `IQ-${id}`}</span>
+                                        {inquiry.inquiryNumber && <span className="text-[10px] text-muted-foreground">{inquiry.inquiryNumber}</span>}
+                                      </div>
+                                    </CommandItem>
+                                  );
+                                })}
+                            </CommandGroup>
+                            {inquiries.length > 50 && !inquirySearchTerm && (
+                              <div className="p-2 text-center text-xs text-muted-foreground border-t">
+                                Type to search among {inquiries.length} items...
+                              </div>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="template">Template</Label>
@@ -847,100 +976,42 @@ export default function ProjectsPage() {
                       onValueChange={(value) => setFormData({ ...formData, fromTemplateId: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a template to base this project on" />
+                        <SelectValue placeholder="Select a template" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">No template (Custom Project)</SelectItem>
-                        {templates?.map((template) => (
-                          <SelectItem key={template.id} value={template.id.toString()}>
+                        {templates?.filter(t => t.id).map((template) => (
+                          <SelectItem key={template.id} value={String(template.id)}>
                             {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Selecting a template will automatically calculate the project cost
-                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Location & Area */}
+              {/* Project Budget */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Location & Area
+                  <Target className="h-4 w-4" />
+                  Budgeting information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="budget">Approved Budget</Label>
                     <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Project location address"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="area">Area (m²)</Label>
-                    <Input
-                      id="area"
+                      id="budget"
                       type="number"
-                      value={formData.area}
-                      onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                      placeholder="e.g., 150"
-                      min="0"
-                      step="0.01"
+                      value={formData.budget}
+                      onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                      placeholder="e.g., 50000000"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Budget & Schedule */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Budget & Schedule
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Planned Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">Planned End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="actualStart">Actual Start Date</Label>
-                    <Input
-                      id="actualStart"
-                      type="date"
-                      value={formData.actualStart}
-                      onChange={(e) => setFormData({ ...formData, actualStart: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="actualEnd">Actual End Date</Label>
-                    <Input
-                      id="actualEnd"
-                      type="date"
-                      value={formData.actualEnd}
-                      onChange={(e) => setFormData({ ...formData, actualEnd: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
+
 
               {/* Status & Progress */}
               <div className="space-y-4">
@@ -1079,8 +1150,7 @@ export default function ProjectsPage() {
                       description: "",
                       clientId: "",
                       projectType: "",
-                      location: "",
-                      area: "",
+                      budget: "",
                       startDate: "",
                       endDate: "",
                       actualStart: "",
@@ -1160,8 +1230,8 @@ export default function ProjectsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Projects</SelectItem>
                   <SelectItem value="none">Custom Projects</SelectItem>
-                  {templates?.map((template) => (
-                    <SelectItem key={template.id} value={template.id.toString()}>
+                  {templates?.filter(t => t.id).map((template) => (
+                    <SelectItem key={template.id} value={String(template.id)}>
                       {template.name}
                     </SelectItem>
                   ))}
@@ -1196,7 +1266,7 @@ export default function ProjectsPage() {
             </div>
           </CardTitle>
           <CardDescription>
-            All construction projects and their details
+            All projects and their details
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1242,7 +1312,7 @@ export default function ProjectsPage() {
                     </TableHead>
                     <TableHead className="text-center">Schematic Docs</TableHead>
                     <TableHead className="text-center">Quality Check Docs</TableHead>
-                    <TableHead>Location</TableHead>
+                    <TableHead>Type/Budget</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Progress</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1400,8 +1470,8 @@ export default function ProjectsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium">{project.location || "-"}</span>
-                          <span className="text-xs text-muted-foreground">{project.area ? project.area + " m²" : "-"}</span>
+                          <span className="text-sm font-medium">{project.projectType || "-"}</span>
+                          <span className="text-xs text-muted-foreground">{project.budget ? "Rp" + Number(project.budget).toLocaleString() : "-"}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1416,17 +1486,32 @@ export default function ProjectsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setIsDetailsDialogOpen(true);
-                            }}
-                            title="View project details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                title="More actions"
+                              >
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => fetchBoqData(project.id)}>
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                View BOQ
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedProject(project);
+                                setIsDetailsDialogOpen(true);
+                              }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
 
                           <Button
                             variant="ghost"
@@ -1512,11 +1597,11 @@ export default function ProjectsPage() {
                       <SelectValue placeholder="Select project type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Residential">Residential</SelectItem>
-                      <SelectItem value="Commercial">Commercial</SelectItem>
-                      <SelectItem value="Industrial">Industrial</SelectItem>
-                      <SelectItem value="Infrastructure">Infrastructure</SelectItem>
-                      <SelectItem value="Renovation">Renovation</SelectItem>
+                      <SelectItem value="datacenter">Datacenter</SelectItem>
+                      <SelectItem value="panel">Panel</SelectItem>
+                      <SelectItem value="battery">Battery</SelectItem>
+                      <SelectItem value="rectifier">Rectifier</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1539,7 +1624,7 @@ export default function ProjectsPage() {
                 <Users className="h-4 w-4" />
                 Client & Template
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Changed to 3 cols */}
                 <div className="space-y-2">
                   <Label htmlFor="edit-clientId">Client</Label>
                   <Select
@@ -1551,13 +1636,102 @@ export default function ProjectsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No client</SelectItem>
-                      {clients?.map((client) => (
+                      {clients?.filter(c => c.id).map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.clientType === 'COMPANY' ? client.companyName : client.contactPerson}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2 flex flex-col">
+                  <Label htmlFor="edit-crmInquiryId">Inquiry (External CRM) {inquiries.length > 0 && `(${inquiries.length})`}</Label>
+                  <Popover open={isInquiryPopoverOpen} onOpenChange={setIsInquiryPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isInquiryPopoverOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.crmInquiryId && formData.crmInquiryId !== "none"
+                          ? inquiries.find((iq) => String(iq.id || iq.value) === formData.crmInquiryId)?.text ||
+                          inquiries.find((iq) => String(iq.id || iq.value) === formData.crmInquiryId)?.title ||
+                          `Selected Inquiry (${formData.crmInquiryId})`
+                          : "Select Inquiry"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search inquiry..."
+                          value={inquirySearchTerm}
+                          onValueChange={setInquirySearchTerm}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No inquiry found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                setFormData({ ...formData, crmInquiryId: "none" });
+                                setIsInquiryPopoverOpen(false);
+                                setInquirySearchTerm("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.crmInquiryId === "none" ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              No inquiry
+                            </CommandItem>
+                            {inquiries
+                              .filter((iq: any) => {
+                                if (!inquirySearchTerm) return true;
+                                const search = inquirySearchTerm.toLowerCase();
+                                const text = (iq.text || iq.title || "").toLowerCase();
+                                const val = String(iq.id || iq.value || "").toLowerCase();
+                                return text.includes(search) || val.includes(search);
+                              })
+                              .slice(0, 50)
+                              .map((inquiry: any) => {
+                                const id = String(inquiry.id || inquiry.value);
+                                return (
+                                  <CommandItem
+                                    key={id}
+                                    value={id}
+                                    onSelect={() => {
+                                      setFormData({ ...formData, crmInquiryId: id });
+                                      setIsInquiryPopoverOpen(false);
+                                      setInquirySearchTerm("");
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        formData.crmInquiryId === id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{inquiry.text || inquiry.title || `IQ-${id}`}</span>
+                                      {inquiry.inquiryNumber && <span className="text-[10px] text-muted-foreground">{inquiry.inquiryNumber}</span>}
+                                    </div>
+                                  </CommandItem>
+                                );
+                              })}
+                          </CommandGroup>
+                          {inquiries.length > 50 && !inquirySearchTerm && (
+                            <div className="p-2 text-center text-xs text-muted-foreground border-t">
+                              Type to search among {inquiries.length} items...
+                            </div>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-template">Template</Label>
@@ -1566,100 +1740,42 @@ export default function ProjectsPage() {
                     onValueChange={(value) => setFormData({ ...formData, fromTemplateId: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a template to base this project on" />
+                      <SelectValue placeholder="Select a template" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No template (Custom Project)</SelectItem>
-                      {templates?.map((template) => (
-                        <SelectItem key={template.id} value={template.id.toString()}>
+                      {templates?.filter(t => t.id).map((template) => (
+                        <SelectItem key={template.id} value={String(template.id)}>
                           {template.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Selecting a template will automatically populate the project structure
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Location & Area */}
+            {/* Project Budget */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Location & Area
+                <Target className="h-4 w-4" />
+                Budgeting Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-location">Location</Label>
+                  <Label htmlFor="edit-budget">Approved Budget</Label>
                   <Input
-                    id="edit-location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Project location address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-area">Area (m²)</Label>
-                  <Input
-                    id="edit-area"
+                    id="edit-budget"
                     type="number"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    placeholder="e.g., 150"
-                    min="0"
-                    step="0.01"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    placeholder="e.g., 50000000"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Schedule */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Schedule
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-startDate">Planned Start Date</Label>
-                  <Input
-                    id="edit-startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-endDate">Planned End Date</Label>
-                  <Input
-                    id="edit-endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-actualStart">Actual Start Date</Label>
-                  <Input
-                    id="edit-actualStart"
-                    type="date"
-                    value={formData.actualStart}
-                    onChange={(e) => setFormData({ ...formData, actualStart: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-actualEnd">Actual End Date</Label>
-                  <Input
-                    id="edit-actualEnd"
-                    type="date"
-                    value={formData.actualEnd}
-                    onChange={(e) => setFormData({ ...formData, actualEnd: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
+
 
             {/* Status & Progress */}
             <div className="space-y-4">
@@ -1732,8 +1848,7 @@ export default function ProjectsPage() {
                     description: "",
                     clientId: "",
                     projectType: "",
-                    location: "",
-                    area: "",
+                    budget: "",
                     startDate: "",
                     endDate: "",
                     actualStart: "",
@@ -1983,7 +2098,7 @@ export default function ProjectsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
+                    <BarChart3 className="h-5 w-5" />
                     Template Breakdown
                   </CardTitle>
                   <CardDescription>
@@ -2054,6 +2169,13 @@ export default function ProjectsPage() {
                           </div>
                         );
                       })}
+                    </div>
+
+                    <div className="pt-2 border-t flex justify-end">
+                      <Button variant="default" size="sm" onClick={() => fetchBoqData(selectedProject.id)}>
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Detailed BOQ View
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -2142,6 +2264,232 @@ export default function ProjectsPage() {
           </div>
         </DialogContent>
       </Dialog >
+
+      {/* Project BOQ View Dialog */}
+      <Dialog open={isBoqDialogOpen} onOpenChange={setIsBoqDialogOpen}>
+        <DialogContent className="max-w-5xl w-full max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl flex items-center gap-2">
+                  <Calculator className="h-6 w-6 text-blue-600" />
+                  Bill Of Quantities (BOQ)
+                </DialogTitle>
+                <DialogDescription className="text-lg font-medium text-foreground mt-1">
+                  Project: &quot;{boqData?.projectName}&quot;
+                </DialogDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (boqData) {
+                    const csvRows = [];
+                    csvRows.push(["Category", "Part Name", "Part Number", "Description", "Manufacturer", "Quantity", "Unit"]);
+
+                    boqData.consolidated.typical.forEach((m: any) => {
+                      csvRows.push([
+                        "Typical",
+                        m.name,
+                        m.partNumber,
+                        m.partDesc,
+                        m.manufacturer,
+                        m.totalQuantity,
+                        m.unit
+                      ]);
+                    });
+
+                    boqData.consolidated.installation.forEach((m: any) => {
+                      csvRows.push([
+                        "Installation",
+                        m.name,
+                        m.partNumber,
+                        m.partDesc,
+                        m.manufacturer,
+                        m.quantity,
+                        m.unit
+                      ]);
+                    });
+
+                    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `BOQ_${boqData.projectName.replace(/\s+/g, '_')}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <Tabs value={activeBoqTab} onValueChange={setActiveBoqTab} className="flex-1 flex flex-col min-h-0">
+            <div className="px-6 border-b">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="hierarchy" className="flex items-center gap-2">
+                  <ListTree className="h-4 w-4" />
+                  Hierarchy View
+                </TabsTrigger>
+                <TabsTrigger value="consolidated" className="flex items-center gap-2">
+                  <Combine className="h-4 w-4" />
+                  Consolidated View
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-hidden p-6 pt-2">
+              <TabsContent value="hierarchy" className="mt-0 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-4 mt-2">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                    Assemblies & Materials
+                  </h3>
+                  <Badge variant="outline" className="px-3 py-1 bg-blue-50/50">
+                    Total: {boqData?.summary.totalAssemblies} Assemblies
+                  </Badge>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2">
+                  <Accordion type="multiple" className="w-full space-y-4">
+                    {boqData?.hierarchy.map((assembly: any, idx: number) => (
+                      <AccordionItem key={assembly.id || idx} value={`item-${idx}`} className="border rounded-lg px-4 bg-muted/20 hover:bg-muted/30 transition-colors">
+                        <AccordionTrigger className="hover:no-underline py-4">
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="text-base font-semibold text-left">{assembly.name}</span>
+                            <div className="flex gap-4 text-xs text-muted-foreground font-normal">
+                              <span className="flex items-center gap-1"><Badge variant="outline" className="text-[10px] h-4">{assembly.module}</Badge></span>
+                              <span className="flex items-center gap-1">Qty: <b>{assembly.quantity}</b></span>
+                              <span className="flex items-center gap-1">Items: <b>{assembly.materials.length}</b></span>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="rounded-md border bg-background overflow-hidden mt-2 mb-4">
+                            <Table>
+                              <TableHeader className="bg-muted/50">
+                                <TableRow>
+                                  <TableHead className="w-[40%]">Material/Part</TableHead>
+                                  <TableHead>Mfr</TableHead>
+                                  <TableHead className="text-right">Qty/Assy</TableHead>
+                                  <TableHead className="text-right">Total Qty</TableHead>
+                                  <TableHead className="text-right">Unit</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {assembly.materials.map((m: any, mIdx: number) => (
+                                  <TableRow key={mIdx} className="hover:bg-muted/30">
+                                    <TableCell>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium text-sm">{m.name}</span>
+                                        <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m.partNumber || m.partDesc || 'No part number'}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                                    <TableCell className="text-right font-mono text-xs">{m.quantityPerAssembly}</TableCell>
+                                    <TableCell className="text-right font-mono font-semibold text-blue-600">{m.totalQuantity}</TableCell>
+                                    <TableCell className="text-right text-xs">{m.unit}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="consolidated" className="mt-0 h-full flex flex-col">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full overflow-hidden pt-4">
+                  {/* Typical Materials */}
+                  <div className="flex flex-col h-full border rounded-lg bg-background shadow-sm overflow-hidden">
+                    <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
+                      <h3 className="font-bold flex items-center gap-2">
+                        <Package className="h-5 w-5 text-blue-500" />
+                        Typical Materials
+                      </h3>
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">{boqData?.summary.totalTypicalItems} Items</Badge>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                          <TableRow>
+                            <TableHead>Part Information</TableHead>
+                            <TableHead className="text-right">Total Qty</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {boqData?.consolidated.typical.map((m: any, idx: number) => (
+                            <TableRow key={idx} className="hover:bg-muted/10">
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium line-clamp-1">{m.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">{m.partNumber || m.manufacturer || 'No details'}</span>
+                                  <div className="flex gap-1 mt-1">
+                                    {m.assemblies.slice(0, 2).map((a: string, aid: number) => (
+                                      <Badge key={aid} variant="outline" className="text-[9px] px-1 h-3">{a}</Badge>
+                                    ))}
+                                    {m.assemblies.length > 2 && <span className="text-[9px] text-muted-foreground">+{m.assemblies.length - 2} more</span>}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-bold text-blue-600">{m.totalQuantity}</div>
+                                <div className="text-[10px] text-muted-foreground uppercase">{m.unit}</div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Installation Materials */}
+                  <div className="flex flex-col h-full border rounded-lg bg-background shadow-sm overflow-hidden">
+                    <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
+                      <h3 className="font-bold flex items-center gap-2">
+                        <Plus className="h-5 w-5 text-orange-500" />
+                        Installation Materials
+                      </h3>
+                      <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">{boqData?.summary.totalInstallationItems} Items</Badge>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                          <TableRow>
+                            <TableHead>Installation Item</TableHead>
+                            <TableHead className="text-right">Quantity</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {boqData?.consolidated.installation.map((m: any, idx: number) => (
+                            <TableRow key={idx} className="hover:bg-muted/10">
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium line-clamp-1">{m.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">{m.assemblyName}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-bold text-orange-600">{m.quantity}</div>
+                                <div className="text-[10px] text-muted-foreground uppercase">{m.unit}</div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
       {/* Document Details Dialog */}
       < Dialog open={isDocumentDetailsOpen} onOpenChange={setIsDocumentDetailsOpen} >

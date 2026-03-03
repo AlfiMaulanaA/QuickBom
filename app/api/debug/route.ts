@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
     console.log('[DEBUG] Environment check');
     console.log('NODE_ENV:', process.env.NODE_ENV);
     console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('SUPABASE_DATABASE_URL exists:', !!process.env.SUPABASE_DATABASE_URL);
 
     // Test database connection
     console.log('[DEBUG] Testing database connection...');
@@ -19,7 +18,7 @@ export async function GET(request: NextRequest) {
       SELECT table_name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-      AND table_name IN ('User', 'Client', 'Material', 'Assembly', 'AssemblyGroup', 'AssemblyGroupItem', 'Template', 'AssemblyCategory')
+      AND table_name IN ('User', 'Client', 'Assembly', 'AssemblyGroup', 'AssemblyGroupItem', 'Template', 'AssemblyCategory')
       ORDER BY table_name
     ` as any[];
 
@@ -29,7 +28,6 @@ export async function GET(request: NextRequest) {
     const counts = {
       users: 0,
       clients: 0,
-      materials: 0,
       assemblies: 0,
       assemblyGroups: 0,
       assemblyGroupItems: 0,
@@ -39,7 +37,6 @@ export async function GET(request: NextRequest) {
 
     try { counts.users = await prisma.user.count(); } catch (e: any) { console.log('User count error:', e?.message); }
     try { counts.clients = await prisma.client.count(); } catch (e: any) { console.log('Client count error:', e?.message); }
-    try { counts.materials = await prisma.material.count(); } catch (e: any) { console.log('Material count error:', e?.message); }
     try { counts.assemblies = await prisma.assembly.count(); } catch (e: any) { console.log('Assembly count error:', e?.message); }
     try { counts.assemblyGroups = await prisma.assemblyGroup.count(); } catch (e: any) { console.log('AssemblyGroup count error:', e?.message); }
     try { counts.assemblyGroupItems = await prisma.assemblyGroupItem.count(); } catch (e: any) { console.log('AssemblyGroupItem count error:', e?.message); }

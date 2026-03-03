@@ -7,10 +7,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  // Note: For production with Supabase, the DATABASE_URL will be automatically
-  // switched to SUPABASE_DATABASE_URL by our database utility
-  // DIRECT_URL is used for migrations and schema operations
 }
 
 // ENUMS FOR USER SYSTEM
@@ -261,6 +257,7 @@ model AssemblyMaterial {
   externalId   String   // ID from CRM (stored as String for flexibility)
   name         String   // Material Name (partName)
   partNumber   String?  // Part Number
+  partDesc     String?  // Part Description
   manufacturer String?  // Manufacturer (mfr)
   unit         String   // Unit (unitMeasure)
   price        Decimal  @default(0) // Price (priceToIDR) captured at time of addition/sync
@@ -368,8 +365,6 @@ model Project {
 
   // Project details
   projectType String? // Residential, Commercial, Infrastructure, etc.
-  location    String? // Project location address
-  area        Decimal? // Project area in m²
   budget      Decimal? // Approved budget
   totalPrice  Decimal  @default(0) // Calculated total from assemblies
 

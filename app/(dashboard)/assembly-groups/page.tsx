@@ -27,12 +27,13 @@ import {
   AlertTriangle,
   Info,
   ArrowRight,
-  Calculator,
   ChevronLeft,
   ChevronRight,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Upload,
+  BarChart3
 } from "lucide-react";
-import { exportToExcel } from "@/lib/excel";
+import { exportToExcel, readFromExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -359,6 +360,16 @@ export default function AssemblyGroupsPage() {
     }
   };
 
+  const toggleAssemblySelection = (assemblyId: number) => {
+    setSelectedAssemblies(prev => {
+      if (prev.includes(assemblyId)) {
+        return prev.filter(id => id !== assemblyId);
+      } else {
+        return [...prev, assemblyId];
+      }
+    });
+  };
+
   const createGroup = async () => {
     if (!selectedCategoryId || !newGroupName.trim()) {
       toast({
@@ -492,7 +503,7 @@ export default function AssemblyGroupsPage() {
   };
 
   const exportToExcelHandler = () => {
-    const headers = ["Category", "Group Name", "Type", "Assemblies Count", "Created", "Description"];
+    const headers = ["Category", "Group Name", "Type", "Description"];
 
     // Prepare Data
     const data: any[][] = [
@@ -501,14 +512,76 @@ export default function AssemblyGroupsPage() {
         group.category.name,
         group.name,
         group.groupType,
-        group.items.length,
-        new Date(group.createdAt).toLocaleDateString(),
         group.description || ""
       ])
     ];
 
     exportToExcel(data, "assembly_groups", "Groups");
     setIsExportDialogOpen(false);
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const data = await readFromExcel(file);
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const row of data) {
+        const name = row["Group Name"] || row.name || row["Name"];
+        const categoryName = row.Category || row.category;
+        const type = row.Type || row.type || "OPTIONAL";
+
+        if (!name || !categoryName) {
+          failCount++;
+          continue;
+        }
+
+        // Find Category
+        const category = categories.find(c => c.name.toLowerCase() === categoryName.toString().toLowerCase());
+        if (!category) {
+          failCount++;
+          continue;
+        }
+
+        const groupData = {
+          categoryId: category.id,
+          name: name.toString(),
+          description: (row.Description || row.description || "").toString(),
+          groupType: type.toString().toUpperCase() as any,
+          items: [] // Initial import starts with no items, or we could add item support in future
+        };
+
+        const response = await fetch('/api/assembly-groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(groupData),
+        });
+
+        if (response.ok) successCount++;
+        else failCount++;
+      }
+
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${successCount} groups. ${failCount} failed.`,
+      });
+      fetchData();
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to read or import Excel file",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
   };
 
   if (loading) {
@@ -575,7 +648,7 @@ export default function AssemblyGroupsPage() {
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Assemblies</CardTitle>
-            <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4">
             <div className="text-lg sm:text-2xl font-bold">
@@ -646,6 +719,19 @@ export default function AssemblyGroupsPage() {
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Export Excel
                 </Button>
+                <div className="relative">
+                  <Button variant="outline" size="sm" className="relative overflow-hidden cursor-pointer" disabled={loading}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Excel
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={handleImportExcel}
+                      disabled={loading}
+                    />
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1061,22 +1147,18 @@ export default function AssemblyGroupsPage() {
                 <div className="border rounded-lg p-4 max-h-96 overflow-y-auto bg-muted/20">
                   <div className="grid gap-3">
                     {filteredAssemblies.map(assembly => (
-                      <div key={assembly.id} className="flex items-center space-x-3 p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors">
+                      <div
+                        key={assembly.id}
+                        className="flex items-center space-x-3 p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => toggleAssemblySelection(assembly.id)}
+                      >
                         <Checkbox
                           id={`assembly-create-${assembly.id}`}
                           checked={selectedAssemblies.includes(assembly.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedAssemblies(prev => [...prev, assembly.id]);
-                            } else {
-                              setSelectedAssemblies(prev => prev.filter(id => id !== assembly.id));
-                            }
-                          }}
+                          onCheckedChange={() => toggleAssemblySelection(assembly.id)}
+                          onClick={(e) => e.stopPropagation()}
                         />
-                        <label
-                          htmlFor={`assembly-create-${assembly.id}`}
-                          className="flex-1 cursor-pointer"
-                        >
+                        <div className="flex-1">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm leading-tight">{assembly.name}</div>
@@ -1102,7 +1184,7 @@ export default function AssemblyGroupsPage() {
                               )}
                             </div>
                           </div>
-                        </label>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1272,22 +1354,18 @@ export default function AssemblyGroupsPage() {
                 <div className="border rounded-lg p-4 max-h-96 overflow-y-auto bg-muted/20">
                   <div className="grid gap-3">
                     {filteredAssemblies.map(assembly => (
-                      <div key={assembly.id} className="flex items-center space-x-3 p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors">
+                      <div
+                        key={assembly.id}
+                        className="flex items-center space-x-3 p-3 bg-background rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => toggleAssemblySelection(assembly.id)}
+                      >
                         <Checkbox
                           id={`assembly-edit-${assembly.id}`}
                           checked={selectedAssemblies.includes(assembly.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedAssemblies(prev => [...prev, assembly.id]);
-                            } else {
-                              setSelectedAssemblies(prev => prev.filter(id => id !== assembly.id));
-                            }
-                          }}
+                          onCheckedChange={() => toggleAssemblySelection(assembly.id)}
+                          onClick={(e) => e.stopPropagation()}
                         />
-                        <label
-                          htmlFor={`assembly-edit-${assembly.id}`}
-                          className="flex-1 cursor-pointer"
-                        >
+                        <div className="flex-1">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm leading-tight">{assembly.name}</div>
@@ -1313,7 +1391,7 @@ export default function AssemblyGroupsPage() {
                               )}
                             </div>
                           </div>
-                        </label>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -27,7 +27,7 @@ export function exportToExcel(
     });
     return { wch: Math.min(maxLen + 2, 50) }; // Cap width at 50 chars
   }) || [];
-  
+
   ws['!cols'] = colWidths;
 
   // Append worksheet to workbook
@@ -35,4 +35,31 @@ export function exportToExcel(
 
   // Write file
   XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+
+/**
+ * Reads data from an Excel file
+ * @param file The file object from input change event
+ * @returns A promise that resolves to an array of objects
+ */
+export function readFromExcel<T = any>(file: File): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as T[];
+        resolve(jsonData);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsBinaryString(file);
+  });
 }

@@ -17,12 +17,10 @@ import {
   Save,
   Settings,
   Package,
-  Calculator,
   Upload,
   File,
   CheckCircle,
   AlertTriangle,
-  ShoppingCart,
   Eye,
   FileText,
   X,
@@ -31,12 +29,12 @@ import {
   Minus,
   Check,
   Clock,
-  DollarSign,
   Search,
   Trash2,
   FolderOpen,
   Edit,
-  Loader2
+  Loader2,
+  BarChart3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -189,9 +187,7 @@ export default function EditTemplatePage() {
           assemblyId: ta.assemblyId,
           quantity: ta.quantity,
           assembly: ta.assembly,
-          estimatedCost: calculateAssemblyCost(ta.assembly) * ta.quantity
         }));
-
         setSelectedAssemblies(selectedAssembliesData);
 
         // Initialize selections based on existing assemblies
@@ -236,22 +232,16 @@ export default function EditTemplatePage() {
         const data = await response.json();
         setFilteredAssemblyGroups(data);
         setAssemblyGroups(data);
+
+        // If no groups found, automatically move to the selection tab to show the navigation/redirect button
+        if (data.length === 0) {
+          setActiveTab("select");
+        }
       }
     } catch (error) {
       console.error('Failed to fetch assembly groups for category:', error);
     }
   };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
-
-  // Calculate total cost from validation result
-  const totalTemplateCost = validationResult?.totalCost ||
-    selectedAssemblies.reduce((sum, sa) => sum + sa.estimatedCost, 0);
 
   // Calculate template statistics
   const templateStats = useMemo(() => {
@@ -266,27 +256,19 @@ export default function EditTemplatePage() {
         ), 0
       );
 
-      const avgAssemblyCost = totalAssemblies > 0 ? totalTemplateCost / totalAssemblies : 0;
-
       return {
         totalAssemblies,
         totalMaterials,
-        avgAssemblyCost,
-        totalCost: totalTemplateCost
       };
     } else {
       // Fallback to selected assemblies
       const totalAssemblies = selectedAssemblies.length;
-      const avgAssemblyCost = totalAssemblies > 0 ? totalTemplateCost / totalAssemblies : 0;
-
       return {
         totalAssemblies,
         totalMaterials: selectedAssemblies.reduce((sum, sa) => sum + sa.assembly.materials.length, 0),
-        avgAssemblyCost,
-        totalCost: totalTemplateCost
       };
     }
-  }, [validationResult, selectedAssemblies, totalTemplateCost]);
+  }, [validationResult, selectedAssemblies]);
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -403,13 +385,10 @@ export default function EditTemplatePage() {
                 // Check if we already have this assembly selected to preserve its manual quantity
                 const existingSelection = selectedAssemblies.find(sa => sa.assemblyId === assembly.assemblyId);
                 const quantity = existingSelection ? existingSelection.quantity : assembly.quantity;
-                const cost = calculateAssemblyCost(fullAssembly) * quantity;
-
                 selectedAssembliesFromGroups.push({
                   assemblyId: assembly.assemblyId,
                   quantity: quantity,
                   assembly: fullAssembly,
-                  estimatedCost: cost
                 });
               }
             });
@@ -431,13 +410,6 @@ export default function EditTemplatePage() {
   // Check if we have any groups to work with
   const hasAssemblyGroups = assemblyGroups.length > 0;
 
-  // Calculate cost for an assembly
-  const calculateAssemblyCost = (assembly: any) => {
-    return assembly.materials?.reduce((total: number, am: any) => {
-      return total + (Number(am.material?.price || 0) * Number(am.quantity || 1));
-    }, 0) || 0;
-  };
-
   // Update assembly quantity
   const updateAssemblyQuantity = (assemblyId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -447,11 +419,9 @@ export default function EditTemplatePage() {
 
     const updated = selectedAssemblies.map((sa: any) => {
       if (sa.assemblyId === assemblyId) {
-        const cost = calculateAssemblyCost(sa.assembly);
         return {
           ...sa,
           quantity: newQuantity,
-          estimatedCost: cost * newQuantity
         };
       }
       return sa;
@@ -712,11 +682,11 @@ export default function EditTemplatePage() {
                     Assembly groups define the selection rules for different assembly categories.
                   </p>
                   <Button
-                    onClick={() => setActiveTab("manage")}
-                    className="mt-4"
+                    onClick={() => router.push("/assembly-groups")}
+                    className="mt-4 bg-primary hover:bg-primary/90 flex items-center gap-2"
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Create Assembly Groups
+                    <Plus className="h-4 w-4" />
+                    Go to Assembly Groups
                   </Button>
                 </CardContent>
               </Card>
@@ -784,8 +754,6 @@ export default function EditTemplatePage() {
                       >
                         <option value="name-asc">Name (A-Z)</option>
                         <option value="name-desc">Name (Z-A)</option>
-                        <option value="cost-asc">Cost (Low-High)</option>
-                        <option value="cost-desc">Cost (High-Low)</option>
                       </select>
                       <Button
                         type="button"
@@ -819,10 +787,6 @@ export default function EditTemplatePage() {
                             aValue = a.assembly.name.toLowerCase();
                             bValue = b.assembly.name.toLowerCase();
                             break;
-                          case "cost":
-                            aValue = a.estimatedCost;
-                            bValue = b.estimatedCost;
-                            break;
                           default:
                             return 0;
                         }
@@ -836,7 +800,6 @@ export default function EditTemplatePage() {
 
                     return filteredAndSortedAssemblies.map((sa) => {
                       const assembly = sa.assembly;
-                      const unitCost = calculateAssemblyCost(assembly);
 
                       return (
                         <Card key={sa.assemblyId} className="p-6">
@@ -849,11 +812,7 @@ export default function EditTemplatePage() {
                                 </p>
                               )}
                               <div className="flex items-center gap-4 mt-3 text-sm">
-                                <span className="text-muted-foreground">Unit Cost:</span>
-                                <span className="font-semibold text-green-600 dark:text-green-400">
-                                  {formatCurrency(unitCost)}
-                                </span>
-                                <span className="text-muted-foreground">Materials:</span>
+                                <span className="text-muted-foreground">Components:</span>
                                 <Badge variant="secondary">
                                   {assembly.materials?.length || 0} items
                                 </Badge>
@@ -896,16 +855,6 @@ export default function EditTemplatePage() {
                                 </Button>
                               </div>
 
-                              {/* Cost Display */}
-                              <div className="text-right min-w-[140px]">
-                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                  {formatCurrency(sa.estimatedCost)}
-                                </div>
-                                <div className="text-xs text-muted-foreground dark:text-gray-400">
-                                  Total Cost
-                                </div>
-                              </div>
-
                               {/* Remove Button */}
                               <Button
                                 variant="destructive"
@@ -944,7 +893,7 @@ export default function EditTemplatePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
+                    <BarChart3 className="h-5 w-5" />
                     Configuration Summary
                   </CardTitle>
                 </CardHeader>
@@ -962,13 +911,6 @@ export default function EditTemplatePage() {
                         {selectedAssemblies.reduce((total, sa) => total + sa.quantity, 0)}
                       </div>
                       <div className="text-sm text-muted-foreground">Total Quantity</div>
-                    </div>
-
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(totalTemplateCost)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Cost</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1189,9 +1131,7 @@ export default function EditTemplatePage() {
                           groups: Record<number, {
                             groupName: string;
                             assemblies: any[];
-                            totalCost: number;
                           }>;
-                          totalCost: number;
                         }> = {};
 
                         selectedAssemblies.forEach((sa) => {
@@ -1203,7 +1143,6 @@ export default function EditTemplatePage() {
                               categoryName: category.name,
                               categoryColor: category.color,
                               groups: {},
-                              totalCost: 0
                             };
                           }
 
@@ -1215,13 +1154,10 @@ export default function EditTemplatePage() {
                             groupedAssemblies[category.id].groups[groupKey] = {
                               groupName,
                               assemblies: [],
-                              totalCost: 0
                             };
                           }
 
                           groupedAssemblies[category.id].groups[groupKey].assemblies.push(sa);
-                          groupedAssemblies[category.id].groups[groupKey].totalCost += sa.estimatedCost;
-                          groupedAssemblies[category.id].totalCost += sa.estimatedCost;
                         });
 
                         return Object.entries(groupedAssemblies).map(([categoryId, categoryData], categoryIndex) => (
@@ -1238,10 +1174,6 @@ export default function EditTemplatePage() {
                                     <span>{Object.keys(categoryData.groups).length} groups</span>
                                     <span className="text-muted-foreground/50">•</span>
                                     <span>{Object.values(categoryData.groups).reduce((sum, g) => sum + g.assemblies.length, 0)} assemblies</span>
-                                    <span className="text-muted-foreground/50">•</span>
-                                    <span className="font-medium text-green-600 dark:text-green-400">
-                                      {formatCurrency(categoryData.totalCost)}
-                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -1263,11 +1195,6 @@ export default function EditTemplatePage() {
                                           <p className="text-xs text-muted-foreground">
                                             {group.assemblies.length} assemblies
                                           </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right mr-4">
-                                        <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                          {formatCurrency(group.totalCost)}
                                         </div>
                                       </div>
                                     </div>
@@ -1292,15 +1219,6 @@ export default function EditTemplatePage() {
                                               ×{assembly.quantity}
                                             </Badge>
                                           </div>
-                                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                            <span>Unit: {formatCurrency(calculateAssemblyCost(assembly.assembly))}</span>
-                                          </div>
-                                        </div>
-
-                                        <div className="text-right flex-shrink-0 mr-4">
-                                          <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                            {formatCurrency(assembly.estimatedCost)}
-                                          </div>
                                         </div>
                                       </div>
                                     ))}
@@ -1322,12 +1240,12 @@ export default function EditTemplatePage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                    <Calculator className="h-4 w-4" />
+                    <BarChart3 className="h-4 w-4" />
                   </div>
                   <div>
                     <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Template Statistics</CardTitle>
                     <CardDescription className="text-sm text-muted-foreground dark:text-gray-400">
-                      Overview of your template composition and estimated costs
+                      Overview of your template composition
                     </CardDescription>
                   </div>
                 </div>
@@ -1346,20 +1264,6 @@ export default function EditTemplatePage() {
                       {validationResult?.breakdown.length || 1}
                     </div>
                     <div className="text-xs text-muted-foreground">Categories</div>
-                  </div>
-
-                  <div className="text-center p-3 bg-muted/50 rounded-lg border">
-                    <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-1">
-                      {formatCurrency(templateStats.avgAssemblyCost)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Avg Cost</div>
-                  </div>
-
-                  <div className="text-center p-3 bg-muted/50 rounded-lg border">
-                    <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-1">
-                      {formatCurrency(templateStats.totalCost)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Total Cost</div>
                   </div>
                 </div>
               </CardContent>

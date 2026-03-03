@@ -168,3 +168,38 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+export async function DELETE(request: NextRequest) {
+  try {
+    const { ids } = await request.json();
+
+    if (!ids || !Array.isArray(ids)) {
+      return NextResponse.json(
+        { error: "Invalid request: ids array is required" },
+        { status: 400 }
+      );
+    }
+
+    if (ids.length === 0) {
+      return NextResponse.json(
+        { message: "No IDs provided, nothing to delete" },
+        { status: 200 }
+      );
+    }
+
+    const deleteCount = await prisma.template.deleteMany({
+      where: { id: { in: ids } }
+    });
+
+    return NextResponse.json({
+      message: `Successfully deleted ${deleteCount.count} templates`,
+      deletedCount: deleteCount.count
+    });
+
+  } catch (error: any) {
+    console.error('API Error [DELETE /api/templates]:', error);
+    return NextResponse.json(
+      { error: "Failed to delete templates", details: error.message },
+      { status: 500 }
+    );
+  }
+}

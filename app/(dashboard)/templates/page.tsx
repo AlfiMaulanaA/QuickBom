@@ -12,12 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, FileText, Settings, DollarSign, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Package, BarChart3, Clock, X, ChevronLeft, ChevronRight, Eye, Upload, File, Calendar, FileSpreadsheet } from "lucide-react";
-import { exportToExcel } from "@/lib/excel";
+import { Plus, Edit, Trash2, FileText, Settings, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Package, BarChart3, Clock, X, ChevronLeft, ChevronRight, Eye, Upload, File, Calendar, FileSpreadsheet } from "lucide-react";
+import { exportToExcel, readFromExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React from "react";
 
 interface Material {
   id: number;
@@ -33,6 +34,7 @@ interface AssemblyMaterial {
   externalId: string;
   name: string;
   partNumber: string | null;
+  partDesc?: string | null;
   manufacturer: string | null;
   unit: string;
   price: number;
@@ -81,7 +83,6 @@ export default function TemplatesPage() {
   const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [assembliesCountFilter, setAssembliesCountFilter] = useState("all");
-  const [costFilter, setCostFilter] = useState("all");
   const [projectsCountFilter, setProjectsCountFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "createdAt">("createdAt");
@@ -204,13 +205,6 @@ export default function TemplatesPage() {
   // calculateEstimatedCost removed as per request to hide price logic from UI
 
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
-
   // Filter and sort templates
   const processedTemplates = useMemo(() => {
     let filtered = templates.filter(template => {
@@ -265,7 +259,7 @@ export default function TemplatesPage() {
     });
 
     return filtered;
-  }, [templates, searchTerm, assembliesCountFilter, costFilter, projectsCountFilter, dateFilter, sortBy, sortOrder]);
+  }, [templates, searchTerm, assembliesCountFilter, projectsCountFilter, dateFilter, sortBy, sortOrder]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -290,68 +284,37 @@ export default function TemplatesPage() {
   const confirmBulkDelete = async () => {
     setIsBulkDeleteDialogOpen(false);
 
-    let successCount = 0;
-    let errorMessages: string[] = [];
-    let constraintErrors: string[] = [];
-
     try {
-      // Process deletions sequentially to avoid overwhelming the server
-      for (const id of selectedTemplates) {
-        try {
-          const response = await fetch(`/api/templates/${id}`, { method: "DELETE" });
-          const data = await response.json();
+      const response = await fetch("/api/templates", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedTemplates }),
+      });
 
-          if (response.ok) {
-            successCount++;
-          } else if (response.status === 409) {
-            // Constraint violation - template is used in projects
-            constraintErrors.push(`${id}: ${data.message}`);
-          } else {
-            // Other error
-            errorMessages.push(`${id}: ${data.error || 'Unknown error'}`);
-          }
-        } catch (error) {
-          errorMessages.push(`${id}: Network error`);
-        }
-      }
+      const data = await response.json();
 
-      // Show results
-      if (successCount > 0) {
+      if (response.ok) {
         toast({
           title: "Bulk Delete Completed",
-          description: `Successfully deleted ${successCount} out of ${selectedTemplates.length} templates`,
+          description: data.message || `Successfully deleted ${data.deletedCount} templates`,
         });
-      }
-
-      // Show constraint errors as warnings
-      if (constraintErrors.length > 0) {
+        fetchTemplates();
+        setSelectedTemplates([]);
+      } else {
         toast({
-          title: "Some Templates Could Not Be Deleted",
-          description: `${constraintErrors.length} templates are used in projects and cannot be deleted.`,
+          title: "Error",
+          description: data.error || "Failed to delete templates",
           variant: "destructive",
         });
-        console.log('Constraint errors:', constraintErrors);
       }
-
-      // Show other errors
-      if (errorMessages.length > 0) {
-        toast({
-          title: "Some Deletions Failed",
-          description: `${errorMessages.length} templates could not be deleted due to errors.`,
-          variant: "destructive",
-        });
-        console.log('Delete errors:', errorMessages);
-      }
-
-      fetchTemplates();
-      setSelectedTemplates([]);
     } catch (error) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred during bulk delete",
+        description: "Failed to delete templates",
         variant: "destructive",
       });
-      console.error('Bulk delete error:', error);
     }
   };
 
@@ -450,72 +413,135 @@ export default function TemplatesPage() {
     setIsExportDialogOpen(false);
   };
 
-  const exportTemplatesWithMaterials = () => {
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Template Name", "Description"];
-    const data: any[][] = [
-      ["TEMPLATES WITH COMPLETE MATERIALS BREAKDOWN"],
-      [],
-      headers
+  const exportSingleTemplateExcel = (template: Template) => {
+    const headers = [
+      "Template Name",
+      "Template Description",
+      "Assembly name",
+      "Assembly description",
+      "Assembly module",
+      "Assembly category",
+      "Assembly Qty",
+      "part number",
+      "manufactur",
+      "material desc",
+      "qty",
+      "unit"
     ];
 
-    let rowNumber = 1;
+    const data: any[][] = [headers];
+
+    if (template.assemblies.length === 0) {
+      data.push([
+        template.name,
+        template.description || "",
+        "-", "-", "-", "-", 0, "-", "-", "-", 0, "-"
+      ]);
+    } else {
+      template.assemblies.forEach(ta => {
+        const assembly = ta.assembly;
+        // Find full assembly from state to get module and category if available
+        const fullAssembly = assemblies.find(a => a.id === assembly.id) || assembly as any;
+
+        if (assembly.materials.length === 0) {
+          data.push([
+            template.name,
+            template.description || "",
+            assembly.name,
+            assembly.description || "",
+            fullAssembly.module || "-",
+            fullAssembly.category?.name || "-",
+            ta.quantity,
+            "-", "-", "-", 0, "-"
+          ]);
+        } else {
+          assembly.materials.forEach(material => {
+            data.push([
+              template.name,
+              template.description || "",
+              assembly.name,
+              assembly.description || "",
+              fullAssembly.module || "-",
+              fullAssembly.category?.name || "-",
+              ta.quantity,
+              material.partNumber || "-",
+              material.manufacturer || "-",
+              material.partDesc || material.name || "-",
+              material.quantity,
+              material.unit
+            ]);
+          });
+        }
+      });
+    }
+
+    exportToExcel(data, `${template.name.replace(/[^a-zA-Z0-9]/g, '_')}_full_export`, "Template Detail");
+  };
+
+  const exportAllTemplatesFull = () => {
+    const headers = [
+      "Template Name",
+      "Template Description",
+      "Assembly name",
+      "Assembly description",
+      "Assembly module",
+      "Assembly category",
+      "Assembly Qty",
+      "part number",
+      "manufactur",
+      "material desc",
+      "qty",
+      "unit"
+    ];
+
+    const data: any[][] = [headers];
 
     processedTemplates.forEach(template => {
-      // Template entry
-      data.push([
-        rowNumber++,
-        "-",
-        "-",
-        template.name,
-        1,
-        "Template",
-        0,
-        0,
-        template.name,
-        template.description || ""
-      ]);
-
-      // Assembly entries for this template
-      template.assemblies.forEach(assembly => {
-        const assemblyQuantity = Number(assembly.quantity);
-        const assemblyUnitCost = 0;
-        const assemblyTotalCost = 0;
-
-        // Assembly entry
+      if (template.assemblies.length === 0) {
         data.push([
-          rowNumber++,
-          "-",
-          "-",
-          assembly.assembly.name,
-          assemblyQuantity,
-          "Assembly",
           template.name,
-          assembly.assembly.description || ""
+          template.description || "",
+          "-", "-", "-", "-", 0, "-", "-", "-", 0, "-"
         ]);
+      } else {
+        template.assemblies.forEach(ta => {
+          const assembly = ta.assembly;
+          const fullAssembly = assemblies.find(a => a.id === assembly.id) || assembly as any;
 
-        // Material entries for this assembly
-        assembly.assembly.materials.forEach(material => {
-          const materialTotalCost = 0;
-          data.push([
-            rowNumber++,
-            material.manufacturer || "",
-            material.partNumber || "",
-            material.name,
-            Number(material.quantity),
-            material.unit,
-            0,
-            0,
-            template.name,
-            `Material in ${assembly.assembly.name}`
-          ]);
+          if (assembly.materials.length === 0) {
+            data.push([
+              template.name,
+              template.description || "",
+              assembly.name,
+              assembly.description || "",
+              fullAssembly.module || "-",
+              fullAssembly.category?.name || "-",
+              ta.quantity,
+              "-", "-", "-", 0, "-"
+            ]);
+          } else {
+            assembly.materials.forEach(material => {
+              data.push([
+                template.name,
+                template.description || "",
+                assembly.name,
+                assembly.description || "",
+                fullAssembly.module || "-",
+                fullAssembly.category?.name || "-",
+                ta.quantity,
+                material.partNumber || "-",
+                material.manufacturer || "-",
+                material.partDesc || material.name || "-",
+                material.quantity,
+                material.unit
+              ]);
+            });
+          }
         });
-      });
+      }
     });
 
-    exportToExcel(data, processedTemplates.length === 1
-      ? `${processedTemplates[0].name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_with_materials`
-      : "all_templates_with_materials", "Templates Breakdown");
-    setIsExportDialogOpen(false);
+    exportToExcel(data, `templates_full_export_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`, "All Templates");
   };
 
   const exportConsolidatedMaterials = () => {
@@ -772,6 +798,138 @@ export default function TemplatesPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const rawData = await readFromExcel(file);
+
+      const templateMap = new Map<string, any>();
+      const categoryResponse = await fetch("/api/assembly-categories");
+      const categories = categoryResponse.ok ? await categoryResponse.json() : [];
+      const defaultCategory = categories.length > 0 ? categories[0] : null;
+
+      rawData.forEach((row: any) => {
+        const templateName = row["Template Name"] || row.templateName || row.name || row["Template"];
+        if (!templateName) return;
+
+        if (!templateMap.has(templateName)) {
+          templateMap.set(templateName, {
+            name: templateName,
+            description: row["Template Description"] || row.templateDescription || "",
+            assembliesMap: new Map<string, any>()
+          });
+        }
+
+        const template = templateMap.get(templateName);
+
+        const assemblyName = row["Assembly name"] || row["Assembly Name"] || row.assemblyName || row.Item || row.itemName;
+        if (!assemblyName || assemblyName === "-") return;
+
+        if (!template.assembliesMap.has(assemblyName)) {
+          template.assembliesMap.set(assemblyName, {
+            name: assemblyName,
+            description: row["Assembly description"] || row["Assembly Description"] || row.assemblyDescription || "",
+            module: row["Assembly module"] || row["Module"] || row.module || 'ELECTRICAL',
+            categoryName: row["Assembly category"] || row["Category"] || row.category || "",
+            assemblyQuantity: Number(row["Assembly Qty"] || row["qty"] || row["Qty"] || row.quantity || 1),
+            materials: []
+          });
+        }
+
+        const assemblyData = template.assembliesMap.get(assemblyName);
+
+        const partNumber = row["part number"] || row["Part Number"] || row.partNumber;
+        const partDesc = row["material desc"] || row["Material Desc"] || row.materialDesc || row["Material Name"] || row.materialName;
+
+        if ((partNumber && partNumber !== "-") || (partDesc && partDesc !== "-")) {
+          assemblyData.materials.push({
+            name: partDesc || partNumber || "Unknown Material",
+            partDesc: partDesc === "-" ? "" : partDesc,
+            partNumber: partNumber === "-" ? "" : partNumber,
+            manufacturer: row["manufactur"] || row["Manufacturer"] || row.manufacturer || "",
+            unit: row["unit"] || row["Unit"] || row.unit || "pcs",
+            quantity: Number(row["qty"] || row["Material Qty"] || row["Quantity"] || row.quantity || 1),
+            price: 0,
+            externalId: `IMPORT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+          });
+        }
+      });
+
+      let importedCount = 0;
+      let errorCount = 0;
+
+      for (const [tName, tData] of templateMap.entries()) {
+        const assembliesToLink = [];
+
+        for (const [aName, aData] of tData.assembliesMap.entries()) {
+          let assemblyInfo = assemblies.find(a => a.name.toLowerCase() === aName.toString().toLowerCase());
+
+          if (!assemblyInfo) {
+            const cat = categories.find((c: any) => c.name.toLowerCase() === aData.categoryName?.toString().toLowerCase());
+            const finalCategoryId = cat ? cat.id : (defaultCategory ? defaultCategory.id : 1);
+
+            const createAssmRes = await fetch("/api/assemblies", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: aData.name,
+                description: aData.description,
+                categoryId: finalCategoryId,
+                module: aData.module.toString().toUpperCase(),
+                materials: aData.materials
+              })
+            });
+
+            if (createAssmRes.ok) {
+              assemblyInfo = await createAssmRes.json();
+            }
+          }
+
+          if (assemblyInfo) {
+            assembliesToLink.push({
+              assemblyId: assemblyInfo.id,
+              quantity: aData.assemblyQuantity
+            });
+          }
+        }
+
+        if (assembliesToLink.length === 0) continue;
+
+        const response = await fetch("/api/templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: tData.name,
+            description: tData.description,
+            assemblies: assembliesToLink
+          })
+        });
+
+        if (response.ok) importedCount++;
+        else errorCount++;
+      }
+
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${importedCount} templates. ${errorCount} failed.`,
+      });
+      fetchTemplates();
+      fetchAssemblies();
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to read or import Excel file",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
   if (loading) {
     return (
       <div className="p-6">
@@ -851,7 +1009,7 @@ export default function TemplatesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium truncate">Active Projects</CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4">
             <div className="text-lg sm:text-2xl font-bold">
@@ -911,7 +1069,6 @@ export default function TemplatesPage() {
                   onClick={() => {
                     setSearchTerm("");
                     setAssembliesCountFilter("all");
-                    setCostFilter("all");
                     setProjectsCountFilter("all");
                     setDateFilter("all");
                   }}
@@ -972,6 +1129,27 @@ export default function TemplatesPage() {
               </div>
 
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsExportDialogOpen(true)}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export Excel
+                </Button>
+                <div className="relative">
+                  <Button variant="outline" size="sm" className="relative overflow-hidden cursor-pointer" disabled={loading}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Excel
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={handleImportExcel}
+                      disabled={loading}
+                    />
+                  </Button>
+                </div>
                 {selectedTemplates.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -982,7 +1160,7 @@ export default function TemplatesPage() {
             </div>
 
             {/* Active Filters Display */}
-            {(searchTerm || assembliesCountFilter !== "all" || costFilter !== "all" || projectsCountFilter !== "all" || dateFilter !== "all") && (
+            {(searchTerm || assembliesCountFilter !== "all" || projectsCountFilter !== "all" || dateFilter !== "all") && (
               <div className="flex flex-wrap gap-2 pt-2 border-t">
                 <span className="text-sm text-muted-foreground">Active filters:</span>
                 {searchTerm && (
@@ -1232,10 +1410,11 @@ export default function TemplatesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => exportToCSV()}
-                              title="Export CSV"
+                              onClick={() => exportSingleTemplateExcel(template)}
+                              title="Export Excel Detail"
+                              className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                             >
-                              <Download className="h-4 w-4" />
+                              <FileSpreadsheet className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -1348,14 +1527,14 @@ export default function TemplatesPage() {
               </Button>
 
               <Button
-                onClick={exportTemplatesWithMaterials}
+                onClick={exportAllTemplatesFull}
                 className="w-full justify-start h-auto p-3 sm:p-4 text-left"
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium text-sm sm:text-base">Complete Breakdown (Templates + Materials)</div>
+                  <div className="font-medium text-sm sm:text-base">Master Template Export (Hierarchical)</div>
                   <div className="text-xs sm:text-sm text-muted-foreground mt-1">
-                    Full details including all assembly materials
+                    Export all templates with detailed assembly and material breakdowns for complete migration
                   </div>
                 </div>
               </Button>
@@ -1441,58 +1620,77 @@ export default function TemplatesPage() {
               </div>
             </div>
 
-            {/* Assemblies Table */}
+            {/* Assemblies & Materials Table */}
             <div className="border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+              <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
                 <Table>
-                  <TableHeader className="bg-muted/50">
+                  <TableHeader className="bg-muted/50 sticky top-0">
                     <TableRow>
-                      <TableHead className="w-8 text-xs font-medium">#</TableHead>
                       <TableHead className="text-xs font-medium">Assembly Name</TableHead>
-                      <TableHead className="text-xs font-medium">Description</TableHead>
-                      <TableHead className="text-xs font-medium">Quantity</TableHead>
-                      <TableHead className="text-xs font-medium">Materials Count</TableHead>
+                      <TableHead className="text-xs font-medium">Assembly Category</TableHead>
+                      <TableHead className="text-xs font-medium">Material Name</TableHead>
+                      <TableHead className="text-xs font-medium">Part Number</TableHead>
+                      <TableHead className="text-xs font-medium">Manufacturer</TableHead>
+                      <TableHead className="text-xs font-medium text-right">Quantity</TableHead>
+                      <TableHead className="text-xs font-medium">Unit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedTemplate?.assemblies.map((templateAssembly, index) => {
+                    {selectedTemplate?.assemblies.map((templateAssembly, aIndex) => {
                       const assembly = templateAssembly.assembly;
+                      const fullAssembly = assemblies.find(a => a.id === assembly.id) || assembly as any;
                       const quantity = Number(templateAssembly.quantity);
 
-                      // Cost calculation logic removed
-
-
                       return (
-                        <TableRow key={templateAssembly.id} className="hover:bg-muted/30">
-                          <TableCell className="text-xs text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setSelectedAssembly(assembly);
-                                setIsAssemblyDetailsDialogOpen(true);
-                              }}
-                              className="hover:text-primary hover:underline text-left"
-                              title="Click to view assembly materials"
-                            >
-                              {assembly.name}
-                            </button>
-                          </TableCell>
-                          <TableCell className="text-xs max-w-xs truncate">
-                            {assembly.description || "-"}
-                          </TableCell>
-                          <TableCell className="text-xs text-center">
-                            <Badge variant="outline" className="text-xs">
-                              {quantity}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-center">
-                            <Badge variant="secondary" className="text-xs">
-                              {assembly.materials.length} materials
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={templateAssembly.id || aIndex}>
+                          {/* Assembly Header Row */}
+                          <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800">
+                            <TableCell className="text-sm font-semibold text-blue-900 dark:text-blue-100 py-2">
+                              {assembly.name} <span className="text-xs font-normal text-muted-foreground ml-2">({quantity}x assemblies)</span>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground py-2">
+                              {fullAssembly.category?.name || "-"}
+                            </TableCell>
+                            <TableCell colSpan={5} className="text-xs italic text-muted-foreground py-2">
+                              {assembly.description || "No description"}
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Material Rows for this Assembly */}
+                          {assembly.materials.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4 italic">
+                                No materials in this assembly
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            assembly.materials.map((material, mIndex) => {
+                              const totalMatQty = Number(material.quantity || 0) * quantity;
+
+                              return (
+                                <TableRow key={`${templateAssembly.id}-mat-${mIndex}`} className="hover:bg-muted/30">
+                                  <TableCell className="pl-6 border-l-2 border-blue-200 dark:border-blue-800"></TableCell>
+                                  <TableCell></TableCell>
+                                  <TableCell className="text-xs font-medium">
+                                    {material.partDesc || material.name}
+                                  </TableCell>
+                                  <TableCell className="text-xs font-mono">
+                                    {material.partNumber || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-xs">
+                                    {material.manufacturer || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-right font-bold">
+                                    {totalMatQty.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell className="text-xs">
+                                    {material.unit}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>

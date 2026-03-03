@@ -15,6 +15,7 @@ interface Material {
   id: number;
   name: string;
   partNumber: string | null;
+  partDesc: string | null;
   manufacturer: string | null;
   unit: string;
   price: number;
@@ -71,6 +72,7 @@ export default function MaterialSelector({
           id: m.id,
           name: m.partName,
           partNumber: m.partNumber,
+          partDesc: m.partDesc,
           manufacturer: m.mfr,
           unit: m.unitMeasure,
           price: m.priceToIDR
@@ -260,64 +262,94 @@ export default function MaterialSelector({
                 const selectedMaterial = getSelectedMaterial(material.id);
 
                 return (
-                  <Card key={material.id} className={`cursor-pointer transition-colors ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-muted/50'}`}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between gap-3">
+                  <Card key={material.id} className={`transition-all duration-200 ${isSelected ? 'ring-2 ring-primary bg-primary/5 shadow-sm border-primary/20' : 'hover:bg-muted/30 hover:border-muted-foreground/20'}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
                         {/* Checkbox */}
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={(checked) => handleMaterialToggle(material, checked as boolean)}
-                        />
+                        <div className="pt-1">
+                          <Checkbox
+                            id={`material-${material.id}`}
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleMaterialToggle(material, checked as boolean)}
+                            className="h-5 w-5 rounded-md"
+                          />
+                        </div>
 
                         {/* Material Info */}
-                        <div className="flex-1" onClick={() => handleMaterialToggle(material, !isSelected)}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">{material.name}</h4>
-                              <div className="text-xs text-muted-foreground">
-                                {material.partNumber && (
-                                  <span>Part: {material.partNumber}</span>
-                                )}
+                        <div className="flex-1 cursor-pointer min-w-0" onClick={() => handleMaterialToggle(material, !isSelected)}>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between gap-2">
+                              {/* Highlight Part Desc as primary title */}
+                              <h4 className="font-semibold text-base text-foreground leading-tight truncate">
+                                {material.partDesc || material.name}
+                              </h4>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 bg-muted/50 border-none">{material.unit}</Badge>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 ml-4">
-                              <Badge variant="outline" className="text-xs px-1 py-0">{material.unit}</Badge>
-                              <span className="text-green-600 dark:text-green-400 font-medium text-xs">
-                                {formatCurrency(material.price)}
-                              </span>
+
+                            {/* Part Name as secondary info */}
+                            <p className="text-xs text-muted-foreground line-clamp-1 italic">
+                              {material.name}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                              {material.partNumber && (
+                                <div className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                  <span className="opacity-70">PN:</span>
+                                  <span className="font-mono">{material.partNumber === "0" ? "N/A" : material.partNumber}</span>
+                                </div>
+                              )}
+                              {material.manufacturer && (
+                                <div className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                  <span className="opacity-70">Mfr:</span>
+                                  <span>{material.manufacturer}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
 
                         {/* Quantity Controls - Only show when selected */}
                         {isSelected && selectedMaterial && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2 self-center bg-background rounded-lg border p-1 shadow-sm">
                             <Button
                               type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => decrementQuantity(material.id)}
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                decrementQuantity(material.id);
+                              }}
                               disabled={selectedMaterial.quantity <= 0}
-                              className="h-6 w-6 p-0"
+                              className="h-8 w-8 hover:bg-muted"
                             >
-                              <Minus className="h-2.5 w-2.5" />
+                              <Minus className="h-4 w-4" />
                             </Button>
                             <Input
                               type="number"
+                              step="any"
+                              value={selectedMaterial.quantity === 0 && selectedMaterial.quantity.toString() !== "0." ? "" : selectedMaterial.quantity}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                handleQuantityChange(material.id, isNaN(val) ? 0 : Math.max(0, val));
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-14 h-8 text-center text-sm font-bold px-1 bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary shadow-none"
+                              onClick={(e) => e.stopPropagation()}
                               min="0"
-                              step="0.01"
-                              value={selectedMaterial.quantity}
-                              onChange={(e) => handleQuantityChange(material.id, parseFloat(e.target.value) || 0)}
-                              className="w-16 h-6 text-center text-xs"
                             />
                             <Button
                               type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => incrementQuantity(material.id)}
-                              className="h-6 w-6 p-0"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                incrementQuantity(material.id);
+                              }}
+                              className="h-8 w-8 hover:bg-muted"
                             >
-                              <Plus className="h-2.5 w-2.5" />
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </div>
                         )}
@@ -370,45 +402,76 @@ export default function MaterialSelector({
               ) : (
                 <div className="space-y-3">
                   {selectedMaterials.map((selectedMaterial) => (
-                    <Card key={selectedMaterial.materialId} className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                      <CardContent className="p-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{selectedMaterial.material.name}</h4>
-                            <div className="text-xs text-muted-foreground">
-                              {selectedMaterial.quantity} × {formatCurrency(selectedMaterial.material.price)}
-                            </div>
+                    <div key={selectedMaterial.materialId} className="group relative bg-background border rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="flex flex-col gap-1 mb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-xs text-foreground leading-snug line-clamp-2 pr-4">
+                            {selectedMaterial.material.partDesc || selectedMaterial.material.name}
+                          </h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleMaterialToggle(selectedMaterial.material, false)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        {selectedMaterial.material.partDesc && (
+                          <div className="text-[10px] text-muted-foreground italic line-clamp-1">
+                            {selectedMaterial.material.name}
                           </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-green-600 dark:text-green-400">
-                              {formatCurrency(selectedMaterial.material.price * selectedMaterial.quantity)}
-                            </div>
+                        )}
+                        {selectedMaterial.material.partNumber && (
+                          <div className="text-[10px] font-mono text-muted-foreground">
+                            PN: {selectedMaterial.material.partNumber === "0" ? "N/A" : selectedMaterial.material.partNumber}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-dashed">
+                        <div className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded text-muted-foreground uppercase">
+                          {selectedMaterial.material.unit}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-primary/10 text-primary px-1 py-0.5 rounded-lg border border-primary/20">
                             <Button
                               type="button"
                               variant="ghost"
-                              size="sm"
-                              onClick={() => handleMaterialToggle(selectedMaterial.material, false)}
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                              size="icon"
+                              onClick={() => decrementQuantity(selectedMaterial.materialId)}
+                              disabled={selectedMaterial.quantity <= 0}
+                              className="h-5 w-5 hover:bg-primary/20 text-primary"
                             >
-                              <X className="h-3 w-3" />
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              step="any"
+                              value={selectedMaterial.quantity === 0 && selectedMaterial.quantity.toString() !== "0." ? "" : selectedMaterial.quantity}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                handleQuantityChange(selectedMaterial.materialId, isNaN(val) ? 0 : Math.max(0, val));
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-10 h-5 text-center text-[10px] font-bold p-0 bg-transparent border-none focus-visible:ring-0 shadow-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              min="0"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => incrementQuantity(selectedMaterial.materialId)}
+                              className="h-5 w-5 hover:bg-primary/20 text-primary"
+                            >
+                              <Plus className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {selectedMaterials.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="flex justify-between items-center font-semibold">
-                        <span>Total Cost:</span>
-                        <span className="text-green-600 dark:text-green-400">
-                          {formatCurrency(calculateTotalCost())}
-                        </span>
                       </div>
-                    </>
-                  )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

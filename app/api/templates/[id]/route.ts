@@ -16,7 +16,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           include: {
             assembly: {
               include: {
-                materials: true
+                materials: true,
+                category: true
               }
             }
           }

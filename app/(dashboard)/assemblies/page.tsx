@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Trash2, Settings, Search, Download, ArrowUpDown, MoreHorizontal, Clock, ChevronLeft, ChevronRight, Loader2, Package, Eye, Edit, Minus, Copy, File, FileText, Upload, X, FileSpreadsheet } from "lucide-react";
-import { exportToExcel } from "@/lib/excel";
+import { exportToExcel, readFromExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -34,8 +34,10 @@ interface AssemblyMaterial {
   externalId: string;
   name: string;
   partNumber: string | null;
+  partDesc: string | null;
   manufacturer: string | null;
   unit: string;
+  price: number;
   quantity: number;
 }
 
@@ -93,11 +95,12 @@ export default function AssembliesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [assemblyToDelete, setAssemblyToDelete] = useState<number | null>(null);
+  const [allCategories, setAllCategories] = useState<AssemblyCategory[]>([]);
   const { toast } = useToast();
 
   const fetchAssemblies = async () => {
     try {
-      console.log('[Page] Assemblies - Starting fetch');
+      console.log('[Page] Assemblies - Starting');
       const response = await fetch("/api/assemblies");
       console.log(`[Page] Assemblies - Response status: ${response.status}`);
 
@@ -140,9 +143,22 @@ export default function AssembliesPage() {
     }
   };
 
+  const fetchAllCategories = async () => {
+    try {
+      const response = await fetch("/api/assembly-categories");
+      if (response.ok) {
+        const data = await response.json();
+        setAllCategories(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch all categories:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAssemblies();
     fetchMaterials();
+    fetchAllCategories();
   }, []);
 
   // Reset visible items when filters change
@@ -284,61 +300,46 @@ export default function AssembliesPage() {
   const confirmBulkDelete = async () => {
     setIsBulkDeleteDialogOpen(false);
 
-    let successCount = 0;
-    let errorMessages: string[] = [];
-    let constraintErrors: string[] = [];
-
     try {
-      // Process deletions sequentially to avoid overwhelming the server
-      for (const id of selectedAssemblies) {
-        try {
-          const response = await fetch(`/api/assemblies/${id}`, { method: "DELETE" });
-          const data = await response.json();
+      const response = await fetch("/api/assemblies", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedAssemblies }),
+      });
 
-          if (response.ok) {
-            successCount++;
-          } else if (response.status === 409) {
-            // Constraint violation - assembly is used in templates
-            constraintErrors.push(`${id}: ${data.message}`);
-          } else {
-            // Other error
-            errorMessages.push(`${id}: ${data.error || 'Unknown error'}`);
-          }
-        } catch (error) {
-          errorMessages.push(`${id}: Network error`);
-        }
-      }
+      const data = await response.json();
 
-      // Show results
-      if (successCount > 0) {
+      if (response.ok) {
         toast({
           title: "Bulk Delete Completed",
-          description: `Successfully deleted ${successCount} out of ${selectedAssemblies.length} assemblies`,
+          description: data.message || `Successfully deleted ${data.deletedCount} assemblies`,
         });
-      }
 
-      // Show constraint errors as warnings
-      if (constraintErrors.length > 0) {
+        if (data.skippedCount > 0) {
+          toast({
+            title: "Some Assemblies Skipped",
+            description: `${data.skippedCount} assemblies are in use and were not deleted.`,
+            variant: "destructive",
+          });
+        }
+
+        fetchAssemblies();
+        setSelectedAssemblies([]);
+      } else if (response.status === 409) {
         toast({
-          title: "Some Assemblies Could Not Be Deleted",
-          description: `${constraintErrors.length} assemblies are used in templates and cannot be deleted.`,
+          title: "Cannot Delete Assemblies",
+          description: data.details || "Selected assemblies are used in templates or groups.",
           variant: "destructive",
         });
-        console.log('Constraint errors:', constraintErrors);
-      }
-
-      // Show other errors
-      if (errorMessages.length > 0) {
+      } else {
         toast({
-          title: "Some Deletions Failed",
-          description: `${errorMessages.length} assemblies could not be deleted due to errors.`,
+          title: "Error",
+          description: data.error || "Failed to delete assemblies",
           variant: "destructive",
         });
-        console.log('Delete errors:', errorMessages);
       }
-
-      fetchAssemblies();
-      setSelectedAssemblies([]);
     } catch (error) {
       toast({
         title: "Error",
@@ -359,31 +360,217 @@ export default function AssembliesPage() {
   };
 
   const exportToExcelHandler = () => {
-    const headers = ["Name", "Description", "Materials Count", "Created"];
-    const data = [
-      headers,
-      ...processedAssemblies.map(assembly => [
-        assembly.name,
-        assembly.description || "",
-        assembly.materials.length,
-        new Date(assembly.createdAt).toLocaleDateString()
-      ])
+    const headers = [
+      "Assembly name",
+      "Assembly description",
+      "Assembly module",
+      "Assembly category",
+      "part number",
+      "manufactur",
+      "material desc",
+      "qty",
+      "unit"
     ];
 
-    exportToExcel(data, "assemblies", "Assemblies List");
+    const data: any[][] = [headers];
+
+    processedAssemblies.forEach(assembly => {
+      if (assembly.materials.length === 0) {
+        data.push([
+          assembly.name,
+          assembly.description || "",
+          assembly.module,
+          assembly.category?.name || "",
+          "-", "-", "-", 0, "-"
+        ]);
+      } else {
+        assembly.materials.forEach(material => {
+          data.push([
+            assembly.name,
+            assembly.description || "",
+            assembly.module,
+            assembly.category?.name || "",
+            material.partNumber || "-",
+            material.manufacturer || "-",
+            material.partDesc || material.name || "-",
+            material.quantity,
+            material.unit
+          ]);
+        });
+      }
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    exportToExcel(data, `assemblies_full_export_${timestamp}`, "Assemblies");
+  };
+
+  const exportSingleAssemblyExcel = (assembly: Assembly) => {
+    const headers = [
+      "Assembly name",
+      "Assembly description",
+      "Assembly module",
+      "Assembly category",
+      "part number",
+      "manufactur",
+      "material desc",
+      "qty",
+      "unit"
+    ];
+
+    const data: any[][] = [headers];
+
+    if (assembly.materials.length === 0) {
+      data.push([
+        assembly.name,
+        assembly.description || "",
+        assembly.module,
+        assembly.category?.name || "",
+        "-", "-", "-", 0, "-"
+      ]);
+    } else {
+      assembly.materials.forEach(material => {
+        data.push([
+          assembly.name,
+          assembly.description || "",
+          assembly.module,
+          assembly.category?.name || "",
+          material.partNumber || "-",
+          material.manufacturer || "-",
+          material.partDesc || material.name || "-",
+          material.quantity,
+          material.unit
+        ]);
+      });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    exportToExcel(data, `${assembly.name.replace(/[^a-zA-Z0-9]/g, '_')}_full_export_${timestamp}`, "Assembly Detail");
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const rawData = await readFromExcel(file);
+
+      // Group by assembly name
+      const assemblyMap = new Map<string, any>();
+
+      rawData.forEach((row: any) => {
+        const assemblyName = row["Assembly name"] || row["Assembly Name"] || row.assemblyName || row.Name || row.name;
+        if (!assemblyName) return;
+
+        if (!assemblyMap.has(assemblyName)) {
+          assemblyMap.set(assemblyName, {
+            name: assemblyName,
+            description: row["Assembly description"] || row["Assembly Description"] || row.assemblyDescription || row.Description || row.description || "",
+            module: row["Assembly module"] || row["Module"] || row.module || 'ELECTRICAL',
+            categoryName: row["Assembly category"] || row["Category"] || row.category || "",
+            materials: []
+          });
+        }
+
+        const partNumber = row["part number"] || row["Part Number"] || row.partNumber;
+        const partDesc = row["material desc"] || row["Material Desc"] || row.materialDesc || row["Material Name"] || row.materialName;
+
+        if ((partNumber && partNumber !== "-") || (partDesc && partDesc !== "-")) {
+          const entry = assemblyMap.get(assemblyName);
+          entry.materials.push({
+            name: partDesc || partNumber || "Unknown Material",
+            partDesc: partDesc === "-" ? "" : partDesc,
+            partNumber: partNumber === "-" ? "" : partNumber,
+            manufacturer: row["manufactur"] || row["Manufacturer"] || row.manufacturer || "",
+            unit: row["unit"] || row["Unit"] || row.unit || "pcs",
+            quantity: Number(row["qty"] || row["Quantity"] || row.quantity || row.qty || 1),
+            price: 0,
+            externalId: `IMPORT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+          });
+        }
+      });
+
+      let importedCount = 0;
+      let errorCount = 0;
+
+      for (const [name, assemblyData] of assemblyMap.entries()) {
+        const category = allCategories.find(c => c.name.toLowerCase() === assemblyData.categoryName?.toString().toLowerCase());
+
+        if (!category && assemblyData.categoryName) {
+          console.warn(`Category not found for assembly ${name}: ${assemblyData.categoryName}`);
+        }
+
+        const defaultCategory = allCategories.length > 0 ? allCategories[0] : null;
+        const finalCategoryId = category ? category.id : (defaultCategory ? defaultCategory.id : 1);
+
+        const response = await fetch("/api/assemblies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: assemblyData.name,
+            description: assemblyData.description,
+            categoryId: finalCategoryId,
+            module: assemblyData.module.toString().toUpperCase(),
+            materials: assemblyData.materials
+          })
+        });
+
+        if (response.ok) importedCount++;
+        else errorCount++;
+      }
+
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${importedCount} assemblies with materials. ${errorCount} failed.`,
+      });
+      fetchAssemblies();
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to read or import Excel file",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      if (e.target) e.target.value = "";
+    }
   };
 
   const handleDuplicate = async (assembly: Assembly) => {
     try {
-      // Create duplicate data with new name
+      // Safely get category ID
+      const categoryId = assembly.categoryId || assembly.category?.id;
+
+      if (!categoryId) {
+        toast({
+          title: "Error",
+          description: "Cannot duplicate: Category information is missing",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create duplicate data with new name and all required fields
       const duplicateData = {
         name: `${assembly.name} (Copy)`,
         description: assembly.description,
+        categoryId: Number(categoryId),
+        module: assembly.module,
+        docs: assembly.docs,
         materials: assembly.materials.map(am => ({
           externalId: am.externalId,
-          quantity: am.quantity
+          name: am.name,
+          partNumber: am.partNumber,
+          partDesc: am.partDesc,
+          manufacturer: am.manufacturer,
+          unit: am.unit,
+          price: Number(am.price || 0),
+          quantity: Number(am.quantity)
         }))
       };
+
+      console.log('Duplicating assembly with data:', duplicateData);
 
       const response = await fetch("/api/assemblies", {
         method: "POST",
@@ -400,14 +587,15 @@ export default function AssembliesPage() {
         });
         fetchAssemblies();
       } else {
-        const error = await response.json();
+        const errorData = await response.json();
         toast({
           title: "Error",
-          description: error.error || "Failed to duplicate assembly",
+          description: errorData.error || "Failed to duplicate assembly",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('Duplicate error:', error);
       toast({
         title: "Error",
         description: "Failed to duplicate assembly",
@@ -620,6 +808,19 @@ export default function AssembliesPage() {
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Export Excel
                 </Button>
+                <div className="relative">
+                  <Button variant="outline" className="relative overflow-hidden cursor-pointer" disabled={loading}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Excel
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={handleImportExcel}
+                      disabled={loading}
+                    />
+                  </Button>
+                </div>
                 {selectedAssemblies.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -882,6 +1083,22 @@ export default function AssembliesPage() {
                                       <p>Delete Assembly</p>
                                     </TooltipContent>
                                   </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => exportSingleAssemblyExcel(assembly)}
+                                        className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                      >
+                                        <FileSpreadsheet className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Export Detail Excel</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 </div>
                               </TooltipProvider>
                             </TableCell>
@@ -1034,6 +1251,21 @@ export default function AssembliesPage() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => exportSingleAssemblyExcel(assembly)}
+                                className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              >
+                                <FileSpreadsheet className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Export Detail Excel</p>
+                            </TooltipContent>
+                          </Tooltip>
                           <p>Delete Assembly</p>
                         </TooltipContent>
                       </Tooltip>
@@ -1173,9 +1405,8 @@ export default function AssembliesPage() {
                     <TableRow>
                       <TableHead className="w-8 text-xs font-medium">#</TableHead>
                       <TableHead className="text-xs font-medium">Material Name</TableHead>
+                      <TableHead className="text-xs font-medium">Description</TableHead>
                       <TableHead className="text-xs font-medium">Part Number</TableHead>
-                      <TableHead className="text-xs font-medium">Manufacturer</TableHead>
-                      <TableHead className="text-xs font-medium">Unit</TableHead>
                       <TableHead className="text-xs font-medium text-right">Quantity</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1183,14 +1414,27 @@ export default function AssembliesPage() {
                     {selectedAssembly?.materials.map((am, index) => (
                       <TableRow key={am.id || index} className="hover:bg-muted/30">
                         <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
-                        <TableCell className="text-sm">{am.name}</TableCell>
-                        <TableCell className="text-xs font-mono">{am.partNumber || "-"}</TableCell>
-                        <TableCell className="text-xs">{am.manufacturer || "-"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">{am.unit}</Badge>
+                        <TableCell className="text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{am.name}</span>
+                            {am.manufacturer && (
+                              <span className="text-[10px] text-muted-foreground uppercase">{am.manufacturer}</span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-xs text-right">
-                          {Number(am.quantity).toLocaleString()}
+                        <TableCell className="text-xs italic text-muted-foreground max-w-md">
+                          {am.partDesc || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-mono font-bold bg-muted px-1.5 py-0.5 rounded">{am.partNumber || "-"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold">{Number(am.quantity).toLocaleString()}</span>
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 border-none bg-muted/50">{am.unit}</Badge>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

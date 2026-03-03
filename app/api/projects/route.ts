@@ -150,8 +150,6 @@ export async function POST(request: NextRequest) {
       description: description || null,
       clientId: clientId || null,
       projectType: projectType || null,
-      location: location || null,
-      area: area ? Number(area) : null,
       budget: budget ? Number(budget) : null,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
@@ -253,8 +251,6 @@ export async function PUT(request: NextRequest) {
       description: description || null,
       clientId: clientId || null,
       projectType: projectType || null,
-      location: location || null,
-      area: area ? Number(area) : null,
       budget: budget ? Number(budget) : null,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
@@ -296,6 +292,49 @@ export async function PUT(request: NextRequest) {
     console.error("Project update error:", error);
     return NextResponse.json(
       { error: "Failed to update project", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await requireAuth(request);
+    if (!auth?.userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const { ids } = await request.json();
+
+    if (!ids || !Array.isArray(ids)) {
+      return NextResponse.json(
+        { error: "Invalid request: ids array is required" },
+        { status: 400 }
+      );
+    }
+
+    if (ids.length === 0) {
+      return NextResponse.json(
+        { message: "No IDs provided, nothing to delete" },
+        { status: 200 }
+      );
+    }
+
+    const deleteCount = await prisma.project.deleteMany({
+      where: { id: { in: ids } }
+    });
+
+    return NextResponse.json({
+      message: `Successfully deleted ${deleteCount.count} projects`,
+      deletedCount: deleteCount.count
+    });
+
+  } catch (error: any) {
+    console.error('API Error [DELETE /api/projects]:', error);
+    return NextResponse.json(
+      { error: "Failed to delete projects", details: error.message },
       { status: 500 }
     );
   }

@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, FolderOpen, Search, ArrowUpDown, MoreHorizontal, Settings, Eye, Edit, Loader2, ChevronLeft, ChevronRight, Save, FileSpreadsheet } from "lucide-react";
-import { exportToExcel } from "@/lib/excel";
+import { Plus, Trash2, FolderOpen, Search, ArrowUpDown, MoreHorizontal, Settings, Eye, Edit, Loader2, ChevronLeft, ChevronRight, Save, FileSpreadsheet, Upload } from "lucide-react";
+import { exportToExcel, readFromExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -254,6 +254,59 @@ export default function AssemblyCategoriesPage() {
     exportToExcel(data, "assembly-categories", "Categories");
   };
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsSubmitting(true);
+      const data = await readFromExcel(file);
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const row of data) {
+        const name = row.Name || row.name;
+        if (!name) {
+          failCount++;
+          continue;
+        }
+
+        const categoryData = {
+          name: name.toString(),
+          description: (row.Description || row.description || "").toString(),
+          color: (row.Color || row.color || "#3b82f6").toString(),
+          icon: (row.Icon || row.icon || "FolderOpen").toString()
+        };
+
+        const response = await fetch('/api/assembly-categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryData),
+        });
+
+        if (response.ok) successCount++;
+        else failCount++;
+      }
+
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${successCount} categories. ${failCount} failed.`,
+      });
+      fetchCategories();
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to read or import Excel file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+      e.target.value = "";
+    }
+  };
+
   const isNewItem = (createdAt: string) => {
     const createdDate = new Date(createdAt);
     const now = new Date();
@@ -411,6 +464,19 @@ export default function AssemblyCategoriesPage() {
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Export Excel
                 </Button>
+                <div className="relative">
+                  <Button variant="outline" className="relative overflow-hidden cursor-pointer" disabled={isSubmitting}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Excel
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={handleImportExcel}
+                      disabled={isSubmitting}
+                    />
+                  </Button>
+                </div>
                 {selectedCategories.length > 0 && (
                   <Button variant="destructive" onClick={handleBulkDelete}>
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -1002,8 +1068,8 @@ export default function AssemblyCategoriesPage() {
                       type="button"
                       onClick={() => setCreateFormData(prev => ({ ...prev, color }))}
                       className={`w-12 h-12 rounded-lg border-2 transition-all ${createFormData.color === color
-                          ? "border-primary scale-110"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary scale-110"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                       style={{ backgroundColor: color }}
                       title={`Select color ${color}`}
@@ -1036,8 +1102,8 @@ export default function AssemblyCategoriesPage() {
                       type="button"
                       onClick={() => setCreateFormData(prev => ({ ...prev, icon }))}
                       className={`p-3 border rounded-lg transition-all ${createFormData.icon === icon
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                       title={`Select icon ${icon}`}
                     >
@@ -1204,8 +1270,8 @@ export default function AssemblyCategoriesPage() {
                       type="button"
                       onClick={() => setEditFormData(prev => ({ ...prev, color }))}
                       className={`w-12 h-12 rounded-lg border-2 transition-all ${editFormData.color === color
-                          ? "border-primary scale-110"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary scale-110"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                       style={{ backgroundColor: color }}
                       title={`Select color ${color}`}
@@ -1238,8 +1304,8 @@ export default function AssemblyCategoriesPage() {
                       type="button"
                       onClick={() => setEditFormData(prev => ({ ...prev, icon }))}
                       className={`p-3 border rounded-lg transition-all ${editFormData.icon === icon
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                       title={`Select icon ${icon}`}
                     >

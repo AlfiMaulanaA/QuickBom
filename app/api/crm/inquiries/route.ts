@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 
         // Fetch inquiries from External CRM Service
         const inquiries = await CrmService.getInquiryDropdown(role, id);
+        console.log(`API [inquiries]: Fetched ${inquiries?.length} items from CRM`);
 
         return NextResponse.json(inquiries);
     } catch (error: any) {

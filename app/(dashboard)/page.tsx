@@ -12,8 +12,6 @@ import {
   Settings,
   FileText,
   FolderOpen,
-  DollarSign,
-  Calculator,
   TrendingUp,
   Users,
   Activity,
@@ -158,8 +156,8 @@ export default function MainDashboardPage() {
           total: analytics.materials.total,
           topUsed: analytics.materials.topUsed || [],
           recentCount: analytics.materials.recentCount,
-          withFullSpecs: analytics.materials.withPrices,
-          withoutFullSpecs: analytics.materials.withoutPrices,
+          withFullSpecs: analytics.materials.withFullSpecs || 0,
+          withoutFullSpecs: analytics.materials.withoutFullSpecs || 0,
           manufacturersCount: analytics.materials.manufacturersCount,
           unitTypesCount: analytics.materials.unitTypesCount,
           categoriesCount: analytics.materials.categoriesCount
@@ -296,16 +294,6 @@ export default function MainDashboardPage() {
     }
   };
 
-
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
 
   const formatRelativeTime = (timestamp: string) => {
     const now = new Date();
@@ -611,7 +599,7 @@ export default function MainDashboardPage() {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4" />
                   Unit Types
                 </CardTitle>
               </CardHeader>
@@ -1113,7 +1101,7 @@ export default function MainDashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
+                  <BarChart3 className="h-5 w-5" />
                   Predictive Analytics
                 </CardTitle>
                 <CardDescription>

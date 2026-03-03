@@ -99,12 +99,17 @@ export async function PUT(
       docs: docs || null
     };
 
-    // Add materials if provided
     if (materials && materials.length > 0) {
       updateData.materials = {
         create: materials.map((m: any) => ({
-          materialId: m.materialId,
-          quantity: m.quantity
+          externalId: m.externalId.toString(),
+          name: m.name,
+          partNumber: m.partNumber || null,
+          partDesc: m.partDesc || null,
+          manufacturer: m.manufacturer || null,
+          unit: m.unit,
+          price: Number(m.price || 0),
+          quantity: Number(m.quantity)
         }))
       };
     }

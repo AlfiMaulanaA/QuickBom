@@ -1,7 +1,7 @@
 -- =============================================================================
---  QUICKBOM DATABASE INITIALIZATION
+--  PRODUCT CONFIGURATOR DATABASE INITIALIZATION
 -- =============================================================================
--- PostgreSQL initialization script for QuickBom application
+-- PostgreSQL initialization script for Product Configurator application
 -- This script runs when the PostgreSQL container starts for the first time
 -- =============================================================================
 
@@ -38,8 +38,8 @@ SET default_transaction_isolation = 'read committed';
 -- -----------------------------------------------------------------------------
 --  CREATE SCHEMAS (if using multiple schemas)
 -- -----------------------------------------------------------------------------
--- CREATE SCHEMA IF NOT EXISTS quickbom;
--- SET search_path TO quickbom, public;
+-- CREATE SCHEMA IF NOT EXISTS product-configurator;
+-- SET search_path TO product-configurator, public;
 
 -- -----------------------------------------------------------------------------
 --  OPTIMIZATION SETTINGS
@@ -73,11 +73,11 @@ ALTER SYSTEM SET autovacuum_analyze_scale_factor = '0.01';
 --  CREATE ADDITIONAL USERS/ROLES (if needed)
 -- -----------------------------------------------------------------------------
 -- Create readonly user for analytics/reporting (optional)
--- CREATE USER quickbom_readonly WITH PASSWORD 'readonly_password';
--- GRANT CONNECT ON DATABASE quickbom_db TO quickbom_readonly;
--- GRANT USAGE ON SCHEMA public TO quickbom_readonly;
--- GRANT SELECT ON ALL TABLES IN SCHEMA public TO quickbom_readonly;
--- ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO quickbom_readonly;
+-- CREATE USER product-configurator_readonly WITH PASSWORD 'readonly_password';
+-- GRANT CONNECT ON DATABASE product-configurator_db TO product-configurator_readonly;
+-- GRANT USAGE ON SCHEMA public TO product-configurator_readonly;
+-- GRANT SELECT ON ALL TABLES IN SCHEMA public TO product-configurator_readonly;
+-- ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO product-configurator_readonly;
 
 -- -----------------------------------------------------------------------------
 --  CREATE INDEXES FOR PERFORMANCE (will be created by Prisma migrations)
@@ -115,14 +115,14 @@ ALTER SYSTEM SET autovacuum_analyze_scale_factor = '0.01';
 --  SETUP BACKUP USER (optional)
 -- -----------------------------------------------------------------------------
 -- Create user for automated backups
--- CREATE USER quickbom_backup WITH PASSWORD 'backup_password';
--- GRANT CONNECT ON DATABASE quickbom_db TO quickbom_backup;
--- GRANT SELECT ON ALL TABLES IN SCHEMA public TO quickbom_backup;
+-- CREATE USER product-configurator_backup WITH PASSWORD 'backup_password';
+-- GRANT CONNECT ON DATABASE product-configurator_db TO product-configurator_backup;
+-- GRANT SELECT ON ALL TABLES IN SCHEMA public TO product-configurator_backup;
 
 -- -----------------------------------------------------------------------------
 --  LOG INITIALIZATION COMPLETION
 -- -----------------------------------------------------------------------------
 DO $$
 BEGIN
-    RAISE NOTICE 'QuickBom database initialization completed successfully at %', now();
+    RAISE NOTICE 'Product Configurator database initialization completed successfully at %', now();
 END $$;

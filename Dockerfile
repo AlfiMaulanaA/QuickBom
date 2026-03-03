@@ -1,7 +1,7 @@
 # =============================================================================
-#  QUICKBOM DOCKERFILE
+#  PRODUCT CONFIGURATOR DOCKERFILE
 # =============================================================================
-# Multi-stage Dockerfile for QuickBom Next.js application
+# Multi-stage Dockerfile for Product Configurator Next.js application
 # Optimized for production deployment with database migration support
 # =============================================================================
 
@@ -71,17 +71,17 @@ RUN mkdir -p uploads && chown -R nextjs:nodejs uploads
 # Switch to non-root user
 USER nextjs
 
-# Expose port 4000 (as requested)
-EXPOSE 4000
+# Expose port 3400
+EXPOSE 3400
 
 # Set environment variables
-ENV PORT=4000
+ENV PORT=3400
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
+  CMD node -e "require('http').get('http://localhost:3400/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
 
 # Start the application
 CMD ["npm", "start"]

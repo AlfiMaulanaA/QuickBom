@@ -70,7 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
-    const { name, clientId, fromTemplateId, schematicDocs, qualityCheckDocs } = body;
+    const { name, clientId, fromTemplateId, budget, projectType, schematicDocs, qualityCheckDocs, crmInquiryId } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -112,11 +112,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       where: { id: parseInt(params.id) },
       data: {
         name,
-        clientId,
-        fromTemplateId,
+        clientId: (clientId && clientId !== 'none') ? clientId : null,
+        fromTemplateId: (fromTemplateId && fromTemplateId !== 'none') ? parseInt(fromTemplateId.toString()) : null,
         totalPrice,
-        ...(schematicDocs !== undefined && { schematicDocs }),
-        ...(qualityCheckDocs !== undefined && { qualityCheckDocs })
+        budget: budget ? Number(budget) : null,
+        projectType: projectType || null,
+        crmInquiryId: crmInquiryId ? Number(crmInquiryId) : null,
+        schematicDocs: schematicDocs !== undefined ? schematicDocs : undefined,
+        qualityCheckDocs: qualityCheckDocs !== undefined ? qualityCheckDocs : undefined,
       },
       include: {
         template: true

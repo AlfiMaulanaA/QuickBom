@@ -11,10 +11,8 @@ import {
   ArrowLeft,
   Download,
   FileText,
-  Calculator,
   Package,
   Building,
-  DollarSign,
   BarChart3,
   Settings,
   Eye,
@@ -54,6 +52,7 @@ interface Assembly {
   name: string;
   description: string | null;
   materials: AssemblyMaterial[];
+  category: { id: number; name: string; color: string | null };
   module: 'ELECTRONIC' | 'ELECTRICAL' | 'ASSEMBLY' | 'INSTALLATION' | 'MECHANICAL';
 }
 
@@ -122,6 +121,7 @@ interface BOQItem {
   qty: number;
   unit: string;
   assemblyName: string;
+  categoryName: string;
   isModuleHeader?: boolean;
   isAssemblyHeader?: boolean;
   assemblyId?: number;
@@ -217,6 +217,7 @@ export default function ProjectBOQPage() {
         qty: 0,
         unit: "",
         assemblyName: "",
+        categoryName: "",
         isModuleHeader: true
       });
 
@@ -238,6 +239,7 @@ export default function ProjectBOQPage() {
           qty: assemblyQuantity,
           unit: "Assembly",
           assemblyName: assembly.name,
+          categoryName: assembly.category?.name || "",
           isAssemblyHeader: true,
           assemblyId: templateAssembly.assemblyId
         });
@@ -258,6 +260,7 @@ export default function ProjectBOQPage() {
               qty: materialQuantity,
               unit: material.unit || "",
               assemblyName: assembly.name,
+              categoryName: assembly.category?.name || "",
               externalId: material.externalId
             });
           });
@@ -275,7 +278,7 @@ export default function ProjectBOQPage() {
   const exportToExcelHandler = () => {
     if (!project || boqData.length === 0) return;
 
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Assembly Name"];
+    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Category", "Assembly Name"];
 
     const data = [
       [`BILL OF QUANTITY - ${project.name.toUpperCase()}`],
@@ -294,6 +297,7 @@ export default function ProjectBOQPage() {
         item.item,
         item.qty,
         item.unit,
+        item.categoryName,
         item.assemblyName
       ])
     ];
@@ -313,9 +317,9 @@ export default function ProjectBOQPage() {
       `BILL OF QUANTITY - ${project.name}`,
       `Generated on: ${new Date().toLocaleString()}`,
       "",
-      "No\tManufactur\tPN\tItem\tQty\tUnit\tAssembly Name",
+      "No\tManufactur\tPN\tItem\tQty\tUnit\tCategory\tAssembly Name",
       ...boqData.map(item =>
-        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.assemblyName}`
+        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.categoryName}\t${item.assemblyName}`
       )
     ].join("\n");
 
@@ -595,7 +599,7 @@ export default function ProjectBOQPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Materials</CardTitle>
-            <Calculator className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4">
             <div className="text-lg sm:text-2xl font-bold">{totalMaterials}</div>
@@ -643,6 +647,7 @@ export default function ProjectBOQPage() {
                     <TableHead className="min-w-[200px] text-xs font-medium">Item</TableHead>
                     <TableHead className="min-w-[80px] text-xs font-medium text-right">Qty</TableHead>
                     <TableHead className="min-w-[60px] text-xs font-medium">Unit</TableHead>
+                    <TableHead className="min-w-[120px] text-xs font-medium">Category</TableHead>
                     <TableHead className="min-w-[120px] text-xs font-medium">Assembly Name</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -651,69 +656,71 @@ export default function ProjectBOQPage() {
                     const isModuleHeader = item.isModuleHeader;
                     const isAssemblyHeader = item.isAssemblyHeader;
 
-                    return (
-                      <TableRow
-                        key={`${item.no}-${index}`}
-                        className={`${isModuleHeader
-                          ? 'bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold'
-                          : isAssemblyHeader
-                            ? 'bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800'
-                            : 'hover:bg-muted/30'
-                          }`}
-                      >
-                        <TableCell className={`text-xs font-mono ${isModuleHeader ? 'text-purple-900 dark:text-purple-100 font-bold' :
-                          isAssemblyHeader ? 'text-blue-900 dark:text-blue-100 font-semibold' :
-                            'text-muted-foreground'
-                          }`}>
-                          {item.no}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {item.manufacturer === "-" || isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            item.manufacturer || <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs font-mono">
-                          {item.partNumber === "-" || isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            item.partNumber || <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className={`text-sm ${isModuleHeader ? 'font-bold text-purple-900 dark:text-purple-100' :
-                          isAssemblyHeader ? 'font-semibold text-blue-900 dark:text-blue-100' : ''
-                          }`}>
-                          {isModuleHeader ? (
+                    if (isModuleHeader) {
+                      return (
+                        <TableRow key={`${item.no}-${index}`} className="bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold">
+                          <TableCell colSpan={8} className="text-sm font-bold text-purple-900 dark:text-purple-100 py-3 uppercase tracking-wider">
                             <div className="flex items-center gap-2">
                               <FileText className="h-4 w-4 text-purple-600" />
-                              {item.item}
+                              {item.no}. {item.item}
                             </div>
-                          ) : isAssemblyHeader ? (
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (isAssemblyHeader) {
+                      return (
+                        <TableRow key={`${item.no}-${index}`} className="bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800">
+                          <TableCell className="text-xs font-mono text-blue-900 dark:text-blue-100 font-bold pl-4">
+                            {item.no}
+                          </TableCell>
+                          <TableCell colSpan={3} className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                             <div className="flex items-center gap-2">
                               <Building className="h-4 w-4 text-blue-600" />
                               {item.item}
                             </div>
-                          ) : (
-                            item.item
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-right font-mono">
-                          {isModuleHeader ? '-' : (
-                            <span>{item.qty.toLocaleString()}</span>
-                          )}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-bold text-blue-900 dark:text-blue-100">
+                            {item.qty}
+                          </TableCell>
+                          <TableCell className="text-xs text-blue-900 dark:text-blue-100">
+                            Assm
+                          </TableCell>
+                          <TableCell colSpan={2} className="text-xs text-blue-900 dark:text-blue-100 italic">
+                            {item.categoryName || "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    return (
+                      <TableRow key={`${item.no}-${index}`} className="hover:bg-muted/30">
+                        <TableCell className="text-xs font-mono text-muted-foreground pl-8">
+                          {item.no}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {isModuleHeader ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {item.unit}
-                            </Badge>
-                          )}
+                          {item.manufacturer || "-"}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">
+                          {item.partNumber || "-"}
+                        </TableCell>
+                        <TableCell className="text-xs font-medium pl-6 border-l-2 border-blue-100 dark:border-blue-900">
+                          {item.item}
+                        </TableCell>
+                        <TableCell className="text-xs text-right font-bold">
+                          {item.qty.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {isModuleHeader ? '-' : item.assemblyName}
+                          <Badge variant="outline" className="text-xs">
+                            {item.unit}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {item.categoryName || "-"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {item.assemblyName}
                         </TableCell>
                       </TableRow>
                     );

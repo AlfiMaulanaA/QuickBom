@@ -17,12 +17,10 @@ import {
   Save,
   Settings,
   Package,
-  Calculator,
   Upload,
   File,
   CheckCircle,
   AlertTriangle,
-  ShoppingCart,
   Eye,
   FileText,
   X,
@@ -31,10 +29,10 @@ import {
   Minus,
   Check,
   Clock,
-  DollarSign,
   Search,
   Trash2,
-  FolderOpen
+  FolderOpen,
+  BarChart3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -114,6 +112,11 @@ export default function CreateTemplatePage() {
         const data = await response.json();
         setFilteredAssemblyGroups(data);
         setAssemblyGroups(data); // Update main groups too for compatibility
+
+        // Auto-navigate to selection tab if no groups found to show the redirect button
+        if (data.length === 0) {
+          setActiveTab("select");
+        }
       }
     } catch (error) {
       console.error('Failed to fetch assembly groups for category:', error);
@@ -137,24 +140,12 @@ export default function CreateTemplatePage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
-
-  // Calculate total cost from validation result
-  const totalTemplateCost = validationResult?.totalCost || 0;
-
   // Calculate template statistics
   const templateStats = useMemo(() => {
     if (!validationResult) {
       return {
         totalAssemblies: 0,
         totalMaterials: 0,
-        avgAssemblyCost: 0,
-        totalCost: 0
       };
     }
 
@@ -164,17 +155,12 @@ export default function CreateTemplatePage() {
 
     const totalMaterials = validationResult.breakdown.reduce((sum, cat) =>
       sum + cat.groups.reduce((gSum, g) =>
-        gSum + g.assemblies.reduce((aSum, a) => aSum + (a.cost / a.quantity), 0), 0
-      ), 0
+        gSum + g.assemblies.length, 0), 0
     );
-
-    const avgAssemblyCost = totalAssemblies > 0 ? totalTemplateCost / totalAssemblies : 0;
 
     return {
       totalAssemblies,
       totalMaterials,
-      avgAssemblyCost,
-      totalCost: totalTemplateCost
     };
   }, [validationResult]);
 
@@ -295,7 +281,6 @@ export default function CreateTemplatePage() {
                   assemblyId: assembly.assemblyId,
                   quantity: assembly.quantity,
                   assembly: fullAssembly,
-                  estimatedCost: assembly.cost
                 });
               }
             });
@@ -325,7 +310,6 @@ export default function CreateTemplatePage() {
                   description: '',
                   materials: []
                 },
-                estimatedCost: assembly.cost
               });
             });
           });
@@ -341,13 +325,6 @@ export default function CreateTemplatePage() {
   // Check if we have any groups to work with
   const hasAssemblyGroups = assemblyGroups.length > 0;
 
-  // Calculate cost for an assembly
-  const calculateAssemblyCost = (assembly: any) => {
-    return assembly.materials?.reduce((total: number, am: any) => {
-      return total + (Number(am.material?.price || 0) * Number(am.quantity || 1));
-    }, 0) || 0;
-  };
-
   // Update assembly quantity
   const updateAssemblyQuantity = (assemblyId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -357,11 +334,9 @@ export default function CreateTemplatePage() {
 
     const updated = selectedAssemblies.map((sa: any) => {
       if (sa.assemblyId === assemblyId) {
-        const cost = calculateAssemblyCost(sa.assembly);
         return {
           ...sa,
           quantity: newQuantity,
-          estimatedCost: cost * newQuantity
         };
       }
       return sa;
@@ -413,9 +388,8 @@ export default function CreateTemplatePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                activeTab === "category" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${activeTab === "category" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}>
                 1
               </div>
               <span className={`font-medium ${activeTab === "category" ? "text-primary" : "text-muted-foreground"}`}>
@@ -423,9 +397,8 @@ export default function CreateTemplatePage() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                activeTab === "select" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${activeTab === "select" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}>
                 2
               </div>
               <span className={`font-medium ${activeTab === "select" ? "text-primary" : "text-muted-foreground"}`}>
@@ -433,9 +406,8 @@ export default function CreateTemplatePage() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                activeTab === "manage" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${activeTab === "manage" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}>
                 3
               </div>
               <span className={`font-medium ${activeTab === "manage" ? "text-primary" : "text-muted-foreground"}`}>
@@ -443,9 +415,8 @@ export default function CreateTemplatePage() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                activeTab === "review" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${activeTab === "review" ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}>
                 4
               </div>
               <span className={`font-medium ${activeTab === "review" ? "text-primary" : "text-muted-foreground"}`}>
@@ -527,11 +498,10 @@ export default function CreateTemplatePage() {
                     {categories.map((category) => (
                       <Card
                         key={category.id}
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          selectedCategoryId === category.id
-                            ? 'ring-2 ring-primary bg-primary/5'
-                            : 'hover:bg-muted/50'
-                        }`}
+                        className={`cursor-pointer transition-all hover:shadow-md ${selectedCategoryId === category.id
+                          ? 'ring-2 ring-primary bg-primary/5'
+                          : 'hover:bg-muted/50'
+                          }`}
                         onClick={() => {
                           setSelectedCategoryId(category.id);
                           fetchAssemblyGroupsForCategory(category.id);
@@ -614,11 +584,11 @@ export default function CreateTemplatePage() {
                     Assembly groups define the selection rules for different assembly categories.
                   </p>
                   <Button
-                    onClick={() => setActiveTab("manage")}
-                    className="mt-4"
+                    onClick={() => router.push("/assembly-groups")}
+                    className="mt-4 bg-primary hover:bg-primary/90 flex items-center gap-2"
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Create Assembly Groups
+                    <Plus className="h-4 w-4" />
+                    Go to Assembly Groups
                   </Button>
                 </CardContent>
               </Card>
@@ -737,7 +707,6 @@ export default function CreateTemplatePage() {
 
                     return filteredAndSortedAssemblies.map((sa) => {
                       const assembly = sa.assembly;
-                      const unitCost = calculateAssemblyCost(assembly);
 
                       return (
                         <Card key={sa.assemblyId} className="p-6">
@@ -750,11 +719,7 @@ export default function CreateTemplatePage() {
                                 </p>
                               )}
                               <div className="flex items-center gap-4 mt-3 text-sm">
-                                <span className="text-muted-foreground">Unit Cost:</span>
-                                <span className="font-semibold text-green-600 dark:text-green-400">
-                                  {formatCurrency(unitCost)}
-                                </span>
-                                <span className="text-muted-foreground">Materials:</span>
+                                <span className="text-muted-foreground">Components:</span>
                                 <Badge variant="secondary">
                                   {assembly.materials?.length || 0} items
                                 </Badge>
@@ -797,16 +762,6 @@ export default function CreateTemplatePage() {
                                 </Button>
                               </div>
 
-                              {/* Cost Display */}
-                              <div className="text-right min-w-[140px]">
-                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                  {formatCurrency(sa.estimatedCost)}
-                                </div>
-                                <div className="text-xs text-muted-foreground dark:text-gray-400">
-                                  Total Cost
-                                </div>
-                              </div>
-
                               {/* Remove Button */}
                               <Button
                                 variant="destructive"
@@ -845,7 +800,7 @@ export default function CreateTemplatePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
+                    <Settings className="h-5 w-5" />
                     Configuration Summary
                   </CardTitle>
                 </CardHeader>
@@ -867,9 +822,9 @@ export default function CreateTemplatePage() {
 
                     <div className="text-center p-4 bg-muted/50 rounded-lg">
                       <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(totalTemplateCost)}
+                        {categories.find(c => c.id === selectedCategoryId)?.name || "-"}
                       </div>
-                      <div className="text-sm text-muted-foreground">Total Cost</div>
+                      <div className="text-sm text-muted-foreground">Main Category</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1140,10 +1095,6 @@ export default function CreateTemplatePage() {
                                     <span>{Object.keys(categoryData.groups).length} groups</span>
                                     <span className="text-muted-foreground/50">•</span>
                                     <span>{Object.values(categoryData.groups).reduce((sum, g) => sum + g.assemblies.length, 0)} assemblies</span>
-                                    <span className="text-muted-foreground/50">•</span>
-                                    <span className="font-medium text-green-600 dark:text-green-400">
-                                      {formatCurrency(categoryData.totalCost)}
-                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -1165,11 +1116,6 @@ export default function CreateTemplatePage() {
                                           <p className="text-xs text-muted-foreground">
                                             {group.assemblies.length} assemblies
                                           </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right mr-4">
-                                        <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                          {formatCurrency(group.totalCost)}
                                         </div>
                                       </div>
                                     </div>
@@ -1194,15 +1140,6 @@ export default function CreateTemplatePage() {
                                               ×{assembly.quantity}
                                             </Badge>
                                           </div>
-                                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                            <span>Unit: {formatCurrency(calculateAssemblyCost(assembly.assembly))}</span>
-                                          </div>
-                                        </div>
-
-                                        <div className="text-right flex-shrink-0 mr-4">
-                                          <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                            {formatCurrency(assembly.estimatedCost)}
-                                          </div>
                                         </div>
                                       </div>
                                     ))}
@@ -1225,18 +1162,18 @@ export default function CreateTemplatePage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                      <Calculator className="h-4 w-4" />
+                      <BarChart3 className="h-4 w-4" />
                     </div>
                     <div>
                       <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Template Statistics</CardTitle>
                       <CardDescription className="text-sm text-muted-foreground dark:text-gray-400">
-                        Overview of your template composition and estimated costs
+                        Overview of your template composition
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="text-center p-3 bg-muted/50 rounded-lg border">
                       <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                         {templateStats.totalAssemblies}
@@ -1249,20 +1186,6 @@ export default function CreateTemplatePage() {
                         {validationResult.breakdown.length}
                       </div>
                       <div className="text-xs text-muted-foreground">Categories</div>
-                    </div>
-
-                    <div className="text-center p-3 bg-muted/50 rounded-lg border">
-                      <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-1">
-                        {formatCurrency(templateStats.avgAssemblyCost)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Avg Cost</div>
-                    </div>
-
-                    <div className="text-center p-3 bg-muted/50 rounded-lg border">
-                      <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-1">
-                        {formatCurrency(templateStats.totalCost)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Total Cost</div>
                     </div>
                   </div>
                 </CardContent>

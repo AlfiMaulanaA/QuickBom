@@ -106,11 +106,12 @@ export async function POST(request: NextRequest) {
         // Validate based on group type
         switch (group.groupType) {
           case 'REQUIRED':
-            if (groupSelections.length !== group.items.length) {
+            // Allow zero selection (skipping module) or all items
+            if (groupSelections.length > 0 && groupSelections.length !== group.items.length) {
               errors.push({
                 type: 'required',
                 groupId: group.id,
-                message: `Group "${group.name}" requires all ${group.items.length} items to be selected`,
+                message: `Group "${group.name}" requires all ${group.items.length} items to be selected if used`,
                 details: {
                   required: group.items.length,
                   selected: groupSelections.length
@@ -120,11 +121,12 @@ export async function POST(request: NextRequest) {
             break;
 
           case 'CHOOSE_ONE':
-            if (groupSelections.length !== 1) {
+            // Allow zero selection (skipping module) or exactly one
+            if (groupSelections.length > 1) {
               errors.push({
                 type: 'choose_one',
                 groupId: group.id,
-                message: `Group "${group.name}" requires exactly one item to be selected`,
+                message: `Group "${group.name}" allows only one item to be selected`,
                 details: {
                   selected: groupSelections.length,
                   available: group.items.length

@@ -1,5 +1,5 @@
 # =============================================================================
-#  QUICKBOM DOCKER IGNORE
+#  PRODUCT CONFIGURATOR DOCKER IGNORE
 # =============================================================================
 # Files and directories to exclude from Docker build context
 # This optimizes build time and reduces image size
@@ -47,7 +47,7 @@ build
 *.md
 docs/
 TASK.md
-QUICKBOM_SETUP.md
+PRODUCT CONFIGURATOR_SETUP.md
 API_DOCUMENTATION.md
 README.md
 VERCEL_DEPLOYMENT.md
