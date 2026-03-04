@@ -22,9 +22,9 @@ export async function fetchDatabaseContext(): Promise<string> {
                 _avg: { progress: true },
             }),
 
-            // Recent 10 projects
+            // Recent 30 projects
             prisma.project.findMany({
-                take: 10,
+                take: 30,
                 orderBy: { updatedAt: "desc" },
                 select: {
                     id: true,
@@ -36,8 +36,10 @@ export async function fetchDatabaseContext(): Promise<string> {
                     budget: true,
                     startDate: true,
                     endDate: true,
-                    location: true,
+                    actualStart: true,
+                    actualEnd: true,
                     projectType: true,
+                    assignedUsers: true,
                     client: {
                         select: { contactPerson: true, companyName: true, city: true },
                     },
@@ -60,9 +62,9 @@ export async function fetchDatabaseContext(): Promise<string> {
             // Template count
             prisma.template.count(),
 
-            // Top 5 assemblies
+            // Top 10 assemblies
             prisma.assembly.findMany({
-                take: 5,
+                take: 10,
                 include: {
                     category: { select: { name: true } },
                     _count: { select: { templates: true } },
@@ -72,7 +74,7 @@ export async function fetchDatabaseContext(): Promise<string> {
 
             // Recent clients
             prisma.client.findMany({
-                take: 5,
+                take: 10,
                 orderBy: { updatedAt: "desc" },
                 select: {
                     contactPerson: true,
@@ -150,9 +152,9 @@ export async function fetchDatabaseContext(): Promise<string> {
 
         // ── PROJECT ──────────────────────────────────────────────────────────
         ctx += `\n## RINGKASAN PROYEK\n`;
-        ctx += `- Total proyek: ${totalProjects}\n`;
-        ctx += `- Total nilai kontrak: ${fmt(totalContractValue)}\n`;
-        ctx += `- Total budget: ${fmt(totalBudget)}\n\n`;
+        ctx += `- Total proyek tersimpan: ${totalProjects}\n`;
+        ctx += `- Total nilai kontrak berjalan: ${fmt(totalContractValue)}\n`;
+        ctx += `- Total proyek budget tercatat: ${fmt(totalBudget)}\n\n`;
 
         ctx += `### Status Proyek:\n`;
         for (const s of projectStats) {
@@ -160,10 +162,15 @@ export async function fetchDatabaseContext(): Promise<string> {
             ctx += `- ${s.status}: ${s._count.id} proyek | nilai ${fmt(Number(s._sum.totalPrice || 0))} | progress rata-rata ${avg}%\n`;
         }
 
-        ctx += `\n### 10 Proyek Terbaru:\n`;
+        ctx += `\n### 30 Proyek Terbaru (Urut berdasarkan update terakhir):\n`;
         for (const p of recentProjects) {
             const clientName = p.client?.companyName || p.client?.contactPerson || "Tanpa klien";
-            ctx += `- "${p.name}" | ${p.status} | Progress: ${Number(p.progress).toFixed(0)}% | ${fmt(Number(p.totalPrice))} | Klien: ${clientName} | Lokasi: ${p.location || "-"} | ${fmtDate(p.startDate)} → ${fmtDate(p.endDate)}\n`;
+            const budgetCheck = p.budget ? (Number(p.totalPrice) > Number(p.budget) ? "(OVER BUDGET)" : "(UNDER BUDGET)") : "";
+            const assignedCount = p.assignedUsers?.length || 0;
+            ctx += `- "${p.name}" (${p.projectType || "General"}) | Status: ${p.status} | Priority: ${p.priority} | Progress: ${Number(p.progress).toFixed(0)}%\n`;
+            ctx += `  - Nilai: ${fmt(Number(p.totalPrice))} | Budget: ${p.budget ? fmt(Number(p.budget)) : "-"} ${budgetCheck}\n`;
+            ctx += `  - Klien: ${clientName}\n`;
+            ctx += `  - Timeline Plan: ${fmtDate(p.startDate)} s/d ${fmtDate(p.endDate)} | Assigned: ${assignedCount} user\n`;
         }
 
         // ── ASSEMBLY ─────────────────────────────────────────────────────────

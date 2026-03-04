@@ -30,6 +30,15 @@ const createPrismaClient = () => {
 async function smartUpsert(prisma, modelName, data, uniqueField = null) {
     const model = prisma[modelName];
     try {
+        // Handle composite IDs if any (specifically TemplateAssembly)
+        if (modelName === 'templateAssembly') {
+            return await model.upsert({
+                where: { templateId_assemblyId: { templateId: data.templateId, assemblyId: data.assemblyId } },
+                update: data,
+                create: data
+            });
+        }
+
         // 1. Try standard upsert first (covers ID match or clean insert)
         await model.upsert({ where: { id: data.id }, update: data, create: data });
     } catch (error) {
@@ -57,6 +66,7 @@ async function smartUpsert(prisma, modelName, data, uniqueField = null) {
                 console.log(`      Unknown conflict state.`);
             }
         } else {
+            console.log(`      ❌ Error in ${modelName}: ${error.message.split('\n')[0]}`);
             throw error; // Rethrow other errors
         }
     }
@@ -64,48 +74,82 @@ async function smartUpsert(prisma, modelName, data, uniqueField = null) {
 
 // --- DATA SEEDING FUNCTIONS ---
 
-async function seedUsers(prisma) {
-    console.log('👥 Seeding Users...');
-    const dataPath = path.join(__dirname, '../../data/user.json');
-    if (!fs.existsSync(dataPath)) return console.log('⚠️ user.json not found');
-
-    const users = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    for (const u of users) {
-        try {
-            ['dateOfBirth', 'hireDate', 'lastLogin', 'createdAt', 'updatedAt'].forEach(f => { if (u[f]) u[f] = new Date(u[f]); });
-            if (u.salary) u.salary = u.salary.toString();
-            await smartUpsert(prisma, 'user', u, 'email');
-        } catch (e) { console.log(`Error user ${u.email}: ${e.message}`); }
-    }
-}
-
-async function seedClients(prisma) {
-    console.log('🏢 Seeding Clients...');
-    const dataPath = path.join(__dirname, '../../data/client.json');
-    if (!fs.existsSync(dataPath)) return console.log('⚠️ client.json not found');
-
-    const clients = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    for (const c of clients) {
-        try {
-            ['lastPaymentDate', 'createdAt', 'updatedAt'].forEach(f => { if (c[f]) c[f] = new Date(c[f]); });
-            ['annualRevenue', 'creditLimit', 'totalContractValue', 'outstandingBalance'].forEach(f => { if (c[f]) c[f] = c[f].toString(); });
-            await smartUpsert(prisma, 'client', c);
-        } catch (e) { console.log(`Error client ${c.contactPerson}: ${e.message}`); }
-    }
-}
-
-async function seedAssemblyCategories(prisma) {
-    console.log('📂 Seeding Assembly Categories...');
-    const dataPath = path.join(__dirname, '../../data/assemblyCategory.json');
-    if (!fs.existsSync(dataPath)) return console.log('⚠️ assemblyCategory.json not found');
+async function seedGeneric(prisma, modelName, fileName, uniqueField = null, dateFields = [], decimalFields = []) {
+    console.log(`📦 Seeding ${modelName}...`);
+    const dataPath = path.join(__dirname, `../../data/${fileName}`);
+    if (!fs.existsSync(dataPath)) return console.log(`⚠️ ${fileName} not found`);
 
     const items = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
     for (const i of items) {
         try {
-            ['createdAt', 'updatedAt'].forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
-            await smartUpsert(prisma, 'assemblyCategory', i, 'name');
-        } catch (e) { console.log(`Error category ${i.name}: ${e.message}`); }
+            dateFields.forEach(f => { if (i[f]) i[f] = new Date(i[f]); });
+            decimalFields.forEach(f => { if (i[f]) i[f] = i[f].toString(); });
+            await smartUpsert(prisma, modelName, i, uniqueField);
+        } catch (e) { console.log(`   ❌ Error ${modelName}: ${e.message}`); }
     }
+}
+
+async function seedUsers(prisma) {
+    await seedGeneric(prisma, 'user', 'user.json', 'email',
+        ['dateOfBirth', 'hireDate', 'lastLogin', 'createdAt', 'updatedAt'],
+        ['salary']);
+}
+
+async function seedClients(prisma) {
+    await seedGeneric(prisma, 'client', 'client.json', null,
+        ['lastPaymentDate', 'createdAt', 'updatedAt'],
+        ['annualRevenue', 'creditLimit', 'totalContractValue', 'outstandingBalance']);
+}
+
+async function seedAssemblyCategories(prisma) {
+    await seedGeneric(prisma, 'assemblyCategory', 'assemblyCategory.json', 'name',
+        ['createdAt', 'updatedAt']);
+}
+
+async function seedAssemblies(prisma) {
+    await seedGeneric(prisma, 'assembly', 'assembly.json', 'name',
+        ['createdAt', 'updatedAt']);
+}
+
+async function seedAssemblyMaterials(prisma) {
+    await seedGeneric(prisma, 'assemblyMaterial', 'assemblyMaterial.json', null,
+        ['createdAt', 'updatedAt'], ['price', 'quantity']);
+}
+
+async function seedAssemblyGroups(prisma) {
+    await seedGeneric(prisma, 'assemblyGroup', 'assemblyGroup.json', null,
+        ['createdAt', 'updatedAt']);
+}
+
+async function seedAssemblyGroupItems(prisma) {
+    await seedGeneric(prisma, 'assemblyGroupItem', 'assemblyGroupItem.json', null,
+        ['createdAt', 'updatedAt'], ['quantity']);
+}
+
+async function seedTemplates(prisma) {
+    await seedGeneric(prisma, 'template', 'template.json', 'name',
+        ['createdAt', 'updatedAt']);
+}
+
+async function seedTemplateAssemblies(prisma) {
+    await seedGeneric(prisma, 'templateAssembly', 'templateAssembly.json', null,
+        [], ['quantity']);
+}
+
+async function seedTemplateAssemblyGroups(prisma) {
+    await seedGeneric(prisma, 'templateAssemblyGroup', 'templateAssemblyGroup.json', null,
+        ['createdAt', 'updatedAt']);
+}
+
+async function seedTemplateAssemblyGroupItems(prisma) {
+    await seedGeneric(prisma, 'templateAssemblyGroupItem', 'templateAssemblyGroupItem.json', null,
+        ['createdAt', 'updatedAt'], ['quantity']);
+}
+
+async function seedProjects(prisma) {
+    await seedGeneric(prisma, 'project', 'project.json', null,
+        ['startDate', 'endDate', 'actualStart', 'actualEnd', 'createdAt', 'updatedAt'],
+        ['budget', 'totalPrice', 'progress']);
 }
 
 // --- MAIN RUNNER ---
@@ -114,6 +158,15 @@ const SEEDERS = {
     users: { fn: seedUsers, deps: [] },
     clients: { fn: seedClients, deps: [] },
     'assembly-categories': { fn: seedAssemblyCategories, deps: [] },
+    assemblies: { fn: seedAssemblies, deps: ['assembly-categories'] },
+    'assembly-materials': { fn: seedAssemblyMaterials, deps: ['assemblies'] },
+    'assembly-groups': { fn: seedAssemblyGroups, deps: ['assembly-categories'] },
+    'assembly-group-items': { fn: seedAssemblyGroupItems, deps: ['assembly-groups', 'assemblies'] },
+    templates: { fn: seedTemplates, deps: [] },
+    'template-assemblies': { fn: seedTemplateAssemblies, deps: ['templates', 'assemblies'] },
+    'template-assembly-groups': { fn: seedTemplateAssemblyGroups, deps: ['templates', 'assembly-categories'] },
+    'template-assembly-group-items': { fn: seedTemplateAssemblyGroupItems, deps: ['template-assembly-groups', 'assemblies'] },
+    projects: { fn: seedProjects, deps: ['users', 'clients', 'templates'] },
 };
 
 async function runSeeder(name, prisma, ran = new Set()) {
@@ -134,10 +187,12 @@ async function main() {
 
     try {
         if (cmd === 'all') {
-            await runSeeder('users', prisma);
-            await runSeeder('clients', prisma);
-            await runSeeder('assembly-categories', prisma);
-            console.log('🎉 Selected Seeding Completed!');
+            const allSeeders = Object.keys(SEEDERS);
+            const ran = new Set();
+            for (const s of allSeeders) {
+                await runSeeder(s, prisma, ran);
+            }
+            console.log('🎉 Comprehensive Seeding Completed!');
         } else {
             await runSeeder(cmd, prisma);
             console.log(`✅ ${cmd} Completed`);
@@ -155,5 +210,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-    seedUsers, seedClients, seedAssemblyCategories
+    seedUsers, seedClients, seedAssemblyCategories, seedAssemblies, seedAssemblyMaterials,
+    seedAssemblyGroups, seedAssemblyGroupItems, seedTemplates, seedTemplateAssemblies,
+    seedTemplateAssemblyGroups, seedTemplateAssemblyGroupItems, seedProjects
 };

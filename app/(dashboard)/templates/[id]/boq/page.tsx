@@ -621,8 +621,8 @@ export default function TemplateBOQPage() {
                     <TableHead className="w-12 text-xs font-medium">#</TableHead>
                     <TableHead className="min-w-[120px] text-xs font-medium">Manufacturer</TableHead>
                     <TableHead className="min-w-[100px] text-xs font-medium">Part Number</TableHead>
-                    <TableHead className="min-w-[200px] text-xs font-medium">Item</TableHead>
-                    <TableHead className="min-w-[200px] text-xs font-medium">Description</TableHead> {/* Added Description */}
+                    <TableHead className="min-w-[200px] text-xs font-medium">Item Description</TableHead>
+                    <TableHead className="min-w-[200px] text-xs font-medium">Part Desc</TableHead>
                     <TableHead className="min-w-[80px] text-xs font-medium text-right">Qty</TableHead>
                     <TableHead className="min-w-[60px] text-xs font-medium">Unit</TableHead>
                     <TableHead className="min-w-[120px] text-xs font-medium">Category</TableHead>

@@ -1,0 +1,102 @@
+[
+  {
+    "id": 97,
+    "name": "[Containment] Material Instalation",
+    "description": null,
+    "module": "INSTALLATION",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:17:42.456Z",
+    "updatedAt": "2026-03-03T06:17:42.456Z"
+  },
+  {
+    "id": 98,
+    "name": " [Containment] Rack Cold Aisle",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:25:39.046Z",
+    "updatedAt": "2026-03-03T06:36:37.954Z"
+  },
+  {
+    "id": 99,
+    "name": " [Containment] Rack Hot Aisle",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:44:40.945Z",
+    "updatedAt": "2026-03-03T06:45:26.314Z"
+  },
+  {
+    "id": 100,
+    "name": " [Containment] Automatic Front Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:55:08.877Z",
+    "updatedAt": "2026-03-03T06:55:08.877Z"
+  },
+  {
+    "id": 101,
+    "name": " [Containment] Automatic Back Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:55:12.154Z",
+    "updatedAt": "2026-03-03T06:55:23.982Z"
+  },
+  {
+    "id": 102,
+    "name": " [Containment] Manual Back Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:55:29.146Z",
+    "updatedAt": "2026-03-03T06:55:57.441Z"
+  },
+  {
+    "id": 103,
+    "name": " [Containment] Manual Front Door",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T06:55:59.735Z",
+    "updatedAt": "2026-03-03T06:56:09.330Z"
+  },
+  {
+    "id": 104,
+    "name": " [Containment] Main Control Component",
+    "description": null,
+    "module": "ELECTRONIC",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T07:10:39.712Z",
+    "updatedAt": "2026-03-03T07:10:39.712Z"
+  },
+  {
+    "id": 105,
+    "name": " [Containment] Sensor",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T07:19:28.601Z",
+    "updatedAt": "2026-03-03T07:19:28.601Z"
+  },
+  {
+    "id": 106,
+    "name": " [Containment] Monitor",
+    "description": null,
+    "module": "ELECTRICAL",
+    "categoryId": 1,
+    "docs": null,
+    "createdAt": "2026-03-03T07:25:10.405Z",
+    "updatedAt": "2026-03-03T07:25:10.405Z"
+  }
+]

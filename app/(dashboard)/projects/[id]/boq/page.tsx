@@ -117,6 +117,7 @@ interface BOQItem {
   no: string;
   manufacturer: string;
   partNumber: string;
+  partDesc?: string;
   item: string;
   qty: number;
   unit: string;
@@ -133,6 +134,7 @@ export default function ProjectBOQPage() {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'breakdown' | 'consolidated'>('breakdown');
   const { toast } = useToast();
 
   const projectId = params.id as string;
@@ -171,48 +173,29 @@ export default function ProjectBOQPage() {
 
   // Use useMemo to generate BOQ data - prevents infinite re-renders
   const boqData = useMemo(() => {
-    if (!project) return [];
-
-    // Check if project has a template
-    if (!project.template) {
-      return [];
-    }
-
-    // Check if template has assemblies
-    if (!project.template.assemblies || !Array.isArray(project.template.assemblies)) {
-      return [];
-    }
+    if (!project || !project.template || !project.template.assemblies) return [];
 
     const boqItems: BOQItem[] = [];
-
-    // Define module order as requested
     const moduleOrder: Array<'ELECTRONIC' | 'ELECTRICAL' | 'INSTALLATION' | 'MECHANICAL' | 'ASSEMBLY'> =
       ['ELECTRONIC', 'ELECTRICAL', 'INSTALLATION', 'MECHANICAL', 'ASSEMBLY'];
 
-    // Group assemblies by module
     const assembliesByModule: Record<string, TemplateAssembly[]> = {};
-    project.template.assemblies.forEach((templateAssembly) => {
-      if (!templateAssembly || !templateAssembly.assembly) return;
-
-      const module = templateAssembly.assembly.module;
-      if (!assembliesByModule[module]) {
-        assembliesByModule[module] = [];
-      }
-      assembliesByModule[module].push(templateAssembly);
+    project.template.assemblies.forEach((ta) => {
+      const module = ta.assembly.module;
+      if (!assembliesByModule[module]) assembliesByModule[module] = [];
+      assembliesByModule[module].push(ta);
     });
 
     let moduleNumber = 1;
-
-    // Process modules in the specified order
     moduleOrder.forEach((moduleName) => {
       const assemblies = assembliesByModule[moduleName];
       if (!assemblies || assemblies.length === 0) return;
 
-      // Add module header
       boqItems.push({
         no: moduleNumber.toString(),
         manufacturer: "",
         partNumber: "",
+        partDesc: "",
         item: `${moduleName} MODULE`,
         qty: 0,
         unit: "",
@@ -222,206 +205,178 @@ export default function ProjectBOQPage() {
       });
 
       let assemblyNumber = 1;
+      assemblies.forEach((ta) => {
+        const assembly = ta.assembly;
+        const assemblyQty = Number(ta.quantity);
 
-      // Process assemblies in this module
-      assemblies.forEach((templateAssembly) => {
-        if (!templateAssembly || !templateAssembly.assembly) return;
-
-        const assembly = templateAssembly.assembly;
-        const assemblyQuantity = Number(templateAssembly.quantity);
-
-        // Add assembly header row
         boqItems.push({
           no: `${moduleNumber}.${assemblyNumber}`,
           manufacturer: "-",
           partNumber: "-",
+          partDesc: assembly.description || "-",
           item: assembly.name,
-          qty: assemblyQuantity,
+          qty: assemblyQty,
           unit: "Assembly",
           assemblyName: assembly.name,
           categoryName: assembly.category?.name || "",
           isAssemblyHeader: true,
-          assemblyId: templateAssembly.assemblyId
+          assemblyId: ta.assemblyId
         });
 
-        // Add material rows for this assembly
         if (assembly.materials && Array.isArray(assembly.materials)) {
-          assembly.materials.forEach((assemblyMaterial, materialIndex) => {
-            if (!assemblyMaterial) return;
-
-            const material = assemblyMaterial; // Use direct fields
-            const materialQuantity = Number(assemblyMaterial.quantity || 0) * assemblyQuantity;
-
+          assembly.materials.forEach((am, mIdx) => {
+            const totalQty = Number(am.quantity || 0) * assemblyQty;
             boqItems.push({
-              no: `${moduleNumber}.${assemblyNumber}.${materialIndex + 1}`,
-              manufacturer: material.manufacturer || "",
-              partNumber: material.partNumber || "",
-              item: material.name || "",
-              qty: materialQuantity,
-              unit: material.unit || "",
+              no: `${moduleNumber}.${assemblyNumber}.${mIdx + 1}`,
+              manufacturer: am.manufacturer || "",
+              partNumber: am.partNumber || "",
+              partDesc: (am as any).partDesc || "",
+              item: am.name || "",
+              qty: totalQty,
+              unit: am.unit || "",
               assemblyName: assembly.name,
               categoryName: assembly.category?.name || "",
-              externalId: material.externalId
+              externalId: am.externalId
             });
           });
         }
-
         assemblyNumber++;
       });
-
       moduleNumber++;
     });
 
     return boqItems;
   }, [project]);
 
-  const exportToExcelHandler = () => {
-    if (!project || boqData.length === 0) return;
+  const consolidatedData = useMemo(() => {
+    if (!project || !project.template) return { typical: [], installation: [] };
 
-    const headers = ["No", "Manufactur", "PN", "Item", "Qty", "Unit", "Category", "Assembly Name"];
-
-    const data = [
-      [`BILL OF QUANTITY - ${project.name.toUpperCase()}`],
-      [`Generated on: ${new Date().toLocaleString()}`],
-      [`Project Description: ${project.description || "No description"}`],
-      [`Client: ${project.client ? (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : 'No client'}`],
-      [`Location: ${project.location || 'Not specified'}`],
-      [`Template: ${project.template?.name || 'No template'}`],
-      [`Total Assemblies: ${project.template?.assemblies?.length || 0}`],
-      [],
-      headers,
-      ...boqData.map(item => [
-        item.no,
-        item.manufacturer,
-        item.partNumber,
-        item.item,
-        item.qty,
-        item.unit,
-        item.categoryName,
-        item.assemblyName
-      ])
-    ];
-
-    exportToExcel(data, `${project.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_BOQ`, "BOQ");
-
-    toast({
-      title: "BOQ Exported",
-      description: "Bill of Quantity has been exported to Excel",
-    });
-  };
-
-  const copyToClipboard = async () => {
-    if (!project || boqData.length === 0) return;
-
-    const text = [
-      `BILL OF QUANTITY - ${project.name}`,
-      `Generated on: ${new Date().toLocaleString()}`,
-      "",
-      "No\tManufactur\tPN\tItem\tQty\tUnit\tCategory\tAssembly Name",
-      ...boqData.map(item =>
-        `${item.no}\t${item.manufacturer}\t${item.partNumber}\t${item.item}\t${item.qty}\t${item.unit}\t${item.categoryName}\t${item.assemblyName}`
-      )
-    ].join("\n");
-
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied to clipboard",
-        description: "BOQ data has been copied to clipboard",
-      });
-    } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy to clipboard. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const exportCombinedExcel = () => {
-    if (!project || !project.template) return;
-
-    // Create a map to consolidate materials
-    const materialMap = new Map<string, {
+    const typicalMap = new Map<string, {
       name: string;
       partNumber: string;
+      partDesc: string;
       manufacturer: string;
       unit: string;
       totalQuantity: number;
       assemblies: string[];
     }>();
 
-    // Process all assemblies and their materials
-    project.template.assemblies.forEach((templateAssembly) => {
-      if (!templateAssembly || !templateAssembly.assembly) return;
+    const installation: Array<{
+      name: string;
+      partNumber: string;
+      partDesc: string;
+      manufacturer: string;
+      unit: string;
+      quantity: number;
+      assemblyName: string;
+    }> = [];
 
-      const assembly = templateAssembly.assembly;
-      const assemblyQuantity = Number(templateAssembly.quantity);
+    project.template.assemblies.forEach((ta) => {
+      const assembly = ta.assembly;
+      const assemblyQty = Number(ta.quantity);
+      const isInst = assembly.module === 'INSTALLATION';
 
-      if (assembly.materials && Array.isArray(assembly.materials)) {
-        assembly.materials.forEach((assemblyMaterial) => {
-          if (!assemblyMaterial) return;
-
-          const material = assemblyMaterial; // Use direct fields
-          const materialQuantity = Number(assemblyMaterial.quantity || 0) * assemblyQuantity;
-
-          // Create unique key for material consolidation
-          const materialKey = `${material.name}_${material.partNumber || ''}_${material.manufacturer || ''}_${material.unit}`;
-
-          if (materialMap.has(materialKey)) {
-            // Update existing material
-            const existing = materialMap.get(materialKey)!;
-            existing.totalQuantity += materialQuantity;
+      assembly.materials.forEach((am) => {
+        const totalQty = Number(am.quantity) * assemblyQty;
+        if (isInst) {
+          installation.push({
+            name: am.name,
+            partNumber: am.partNumber || "",
+            partDesc: (am as any).partDesc || "",
+            manufacturer: am.manufacturer || "",
+            unit: am.unit,
+            quantity: totalQty,
+            assemblyName: assembly.name
+          });
+        } else {
+          const key = `${am.name}_${am.partNumber || ''}_${am.manufacturer || ''}_${am.unit}`;
+          if (typicalMap.has(key)) {
+            const existing = typicalMap.get(key)!;
+            existing.totalQuantity += totalQty;
             if (!existing.assemblies.includes(assembly.name)) {
               existing.assemblies.push(assembly.name);
             }
           } else {
-            // Add new material
-            materialMap.set(materialKey, {
-              name: material.name || '',
-              partNumber: material.partNumber || '',
-              manufacturer: material.manufacturer || '',
-              unit: material.unit || '',
-              totalQuantity: materialQuantity,
+            typicalMap.set(key, {
+              name: am.name,
+              partNumber: am.partNumber || "",
+              partDesc: (am as any).partDesc || "",
+              manufacturer: am.manufacturer || "",
+              unit: am.unit,
+              totalQuantity: totalQty,
               assemblies: [assembly.name]
             });
           }
-        });
-      }
+        }
+      });
     });
 
-    // Convert map to array for Excel export
-    const consolidatedMaterials = Array.from(materialMap.values());
+    return {
+      typical: Array.from(typicalMap.values()),
+      installation
+    };
+  }, [project]);
 
-    const headers = ["No", "Manufacturer", "Part Number", "Item", "Total Qty", "Unit", "Used in Assemblies"];
+  const exportToExcelHandler = () => {
+    if (!project) return;
 
-    const data = [
-      [`CONSOLIDATED BILL OF QUANTITY - ${project.name.toUpperCase()}`],
-      [`Generated on: ${new Date().toLocaleString()}`],
-      [`Project Description: ${project.description || "No description"}`],
-      [`Client: ${project.client ? (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson) : 'No client'}`],
-      [`Location: ${project.location || 'Not specified'}`],
-      [`Template: ${project.template?.name || 'No template'}`],
-      [`Unique Materials: ${consolidatedMaterials.length}`],
-      [],
-      headers,
-      ...consolidatedMaterials.map((material, index) => [
-        index + 1,
-        material.manufacturer,
-        material.partNumber,
-        material.name,
-        material.totalQuantity,
-        material.unit,
-        material.assemblies.join('; ')
-      ])
-    ];
-
-    exportToExcel(data, `${project.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').replace(/-+/g, '_').substring(0, 50)}_Combined_BOQ`, "Combined BOQ");
+    if (viewMode === 'breakdown') {
+      const headers = ["No", "Manufacturer", "Part Number", "Item", "Part Desc", "Qty", "Unit", "Category", "Assembly"];
+      const data = [
+        [`BILL OF QUANTITY - ${project.name.toUpperCase()}`],
+        [`Generated on: ${new Date().toLocaleString()}`],
+        [],
+        headers,
+        ...boqData.map(item => [
+          item.no,
+          item.manufacturer,
+          item.partNumber,
+          item.item,
+          item.partDesc,
+          item.qty,
+          item.unit,
+          item.categoryName,
+          item.assemblyName
+        ])
+      ];
+      exportToExcel(data, `${project.name.replace(/\s+/g, '_')}_BOQ_Breakdown`);
+    } else {
+      const headers = ["No", "Manufacturer", "Part Number", "Item", "Part Desc", "Total Qty", "Unit", "Usage"];
+      const data = [
+        [`CONSOLIDATED BOQ - ${project.name.toUpperCase()}`],
+        [`Generated on: ${new Date().toLocaleString()}`],
+        [],
+        ["TYPICAL MATERIALS"],
+        headers,
+        ...consolidatedData.typical.map((m, i) => [
+          i + 1, m.manufacturer, m.partNumber, m.name, m.partDesc, m.totalQuantity, m.unit, m.assemblies.join(', ')
+        ]),
+        [],
+        ["INSTALLATION MATERIALS"],
+        headers,
+        ...consolidatedData.installation.map((m, i) => [
+          `INST-${i + 1}`, m.manufacturer, m.partNumber, m.name, m.partDesc, m.quantity, m.unit, m.assemblyName
+        ])
+      ];
+      exportToExcel(data, `${project.name.replace(/\s+/g, '_')}_BOQ_Consolidated`);
+    }
 
     toast({
-      title: "Combined BOQ Exported",
-      description: "Consolidated Bill of Quantity has been exported to Excel",
+      title: "Export Success",
+      description: "BOQ has been exported to Excel",
     });
+  };
+
+  const copyToClipboard = async () => {
+    if (!project) return;
+    const items = viewMode === 'breakdown' ? boqData : [...consolidatedData.typical, ...consolidatedData.installation];
+    const text = JSON.stringify(items, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied", description: "BOQ data copied to clipboard" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to copy", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -439,11 +394,8 @@ export default function ProjectBOQPage() {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">Project not found</h2>
-          <p className="text-gray-500 mt-2">The project you're looking for doesn't exist.</p>
-          <Button onClick={() => router.push("/projects")} className="mt-4">
-            Back to Projects
-          </Button>
+          <h2 className="text-xl font-semibold">Project not found</h2>
+          <Button onClick={() => router.push("/projects")} className="mt-4">Back to Projects</Button>
         </div>
       </div>
     );
@@ -453,11 +405,8 @@ export default function ProjectBOQPage() {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">No Template Available</h2>
-          <p className="text-gray-500 mt-2">This project doesn't have a template. BOQ can only be generated for projects based on templates.</p>
-          <Button onClick={() => router.push(`/projects/${project.id}`)} className="mt-4">
-            Back to Project Details
-          </Button>
+          <h2 className="text-xl font-semibold">No Template Available</h2>
+          <Button onClick={() => router.push(`/projects/${project.id}`)} className="mt-4">Back to Project</Button>
         </div>
       </div>
     );
@@ -467,281 +416,140 @@ export default function ProjectBOQPage() {
   const totalAssemblies = project.template?.assemblies?.length || 0;
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
-      {/* Header */}
+    <div className="p-3 sm:p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/projects")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Projects
+          <Button variant="outline" size="sm" onClick={() => router.push("/projects")} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-              <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-              <span className="truncate">Bill of Quantity</span>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <FileText className="h-6 w-6 text-primary" /> Bill of Quantity
             </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              {project.name} - Complete material breakdown
-            </p>
+            <p className="text-sm text-muted-foreground">{project.name}</p>
           </div>
         </div>
 
-        <div className="flex gap-2 flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={copyToClipboard}
-            className="flex items-center gap-2"
-          >
-            <Copy className="h-4 w-4" />
-            Copy
-          </Button>
-          <Button
-            variant="outline"
-            onClick={exportToExcelHandler}
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Download Excel
-          </Button>
-          <Button
-            onClick={exportCombinedExcel}
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Download Combined Excel
-          </Button>
+        <div className="flex items-center gap-2">
+          <div className="bg-muted p-1 rounded-lg flex mr-2">
+            <Button
+              variant={viewMode === 'breakdown' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('breakdown')}
+              className="text-xs h-8 px-4"
+            >
+              Breakdown
+            </Button>
+            <Button
+              variant={viewMode === 'consolidated' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('consolidated')}
+              className="text-xs h-8 px-4"
+            >
+              Consolidated
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={copyToClipboard}><Copy className="h-4 w-4 mr-2" /> Copy</Button>
+          <Button size="sm" onClick={exportToExcelHandler}><Download className="h-4 w-4 mr-2" /> Export</Button>
         </div>
       </div>
 
-      {/* Project Information Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Project Name</CardTitle>
-            <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-base font-bold truncate">{project.name}</div>
-            <p className="text-xs text-muted-foreground truncate">
-              {project.projectType || 'No type specified'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Client</CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-base font-bold truncate">
-              {project.client ?
-                (project.client.clientType === 'COMPANY' ? project.client.companyName : project.client.contactPerson)
-                : 'No client'}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              {project.client?.contactEmail || ''}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Location</CardTitle>
-            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-base font-bold truncate">
-              {project.location || 'Not specified'}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              {project.area ? `${project.area} m²` : 'No area specified'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Template</CardTitle>
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-sm sm:text-base font-bold truncate">
-              {project.template.name}
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              {totalAssemblies} assemblies
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase text-muted-foreground">Project</CardTitle></CardHeader><CardContent><div className="text-lg font-bold truncate">{project.name}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase text-muted-foreground">Client</CardTitle></CardHeader><CardContent><div className="text-lg font-bold truncate">{project.client?.companyName || project.client?.contactPerson || '-'}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase text-muted-foreground">Assemblies</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{totalAssemblies}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium uppercase text-muted-foreground">Materials</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{totalMaterials}</div></CardContent></Card>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Assemblies</CardTitle>
-            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-2xl font-bold">{totalAssemblies}</div>
-            <p className="text-xs text-muted-foreground truncate">
-              Work packages
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Materials</CardTitle>
-            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-2xl font-bold">{totalMaterials}</div>
-            <p className="text-xs text-muted-foreground truncate">
-              Individual items
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium truncate">Total Items</CardTitle>
-            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-lg sm:text-2xl font-bold">{boqData.length}</div>
-            <p className="text-xs text-muted-foreground truncate">
-              Rows in BOQ
-            </p>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* BOQ Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Complete Bill of Quantity
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-600" />
+            {viewMode === 'breakdown' ? 'Hierarchical Breakdown' : 'Consolidated Materials'}
           </CardTitle>
-          <CardDescription>
-            Detailed breakdown of all materials required for project "{project.name}" based on template "{project.template.name}"
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
               <Table>
-                <TableHeader className="bg-muted/50 sticky top-0">
+                <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="w-12 text-xs font-medium">#</TableHead>
-                    <TableHead className="min-w-[120px] text-xs font-medium">Manufacturer</TableHead>
-                    <TableHead className="min-w-[100px] text-xs font-medium">Part Number</TableHead>
-                    <TableHead className="min-w-[200px] text-xs font-medium">Item</TableHead>
-                    <TableHead className="min-w-[80px] text-xs font-medium text-right">Qty</TableHead>
-                    <TableHead className="min-w-[60px] text-xs font-medium">Unit</TableHead>
-                    <TableHead className="min-w-[120px] text-xs font-medium">Category</TableHead>
-                    <TableHead className="min-w-[120px] text-xs font-medium">Assembly Name</TableHead>
+                    <TableHead className="w-12 text-xs">#</TableHead>
+                    <TableHead className="text-xs">Manufacturer</TableHead>
+                    <TableHead className="text-xs">Part Number</TableHead>
+                    <TableHead className="min-w-[200px] text-xs">Item Description</TableHead>
+                    <TableHead className="min-w-[200px] text-xs">Part Desc</TableHead>
+                    <TableHead className="text-right text-xs">Qty</TableHead>
+                    <TableHead className="text-xs">Unit</TableHead>
+                    <TableHead className="text-xs">{viewMode === 'breakdown' ? 'Assembly' : 'Usage'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {boqData.map((item, index) => {
-                    const isModuleHeader = item.isModuleHeader;
-                    const isAssemblyHeader = item.isAssemblyHeader;
-
-                    if (isModuleHeader) {
-                      return (
-                        <TableRow key={`${item.no}-${index}`} className="bg-purple-50 dark:bg-purple-950/20 border-t-4 border-purple-200 dark:border-purple-800 font-semibold">
-                          <TableCell colSpan={8} className="text-sm font-bold text-purple-900 dark:text-purple-100 py-3 uppercase tracking-wider">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-purple-600" />
-                              {item.no}. {item.item}
-                            </div>
-                          </TableCell>
+                  {viewMode === 'breakdown' ? (
+                    boqData.map((item, idx) => {
+                      if (item.isModuleHeader) return (
+                        <TableRow key={idx} className="bg-slate-100 dark:bg-slate-800/50 font-bold">
+                          <TableCell colSpan={8} className="text-[10px] py-2 uppercase tracking-widest">{item.item}</TableCell>
                         </TableRow>
                       );
-                    }
-
-                    if (isAssemblyHeader) {
-                      return (
-                        <TableRow key={`${item.no}-${index}`} className="bg-blue-50/50 dark:bg-blue-950/20 border-t-2 border-blue-200 dark:border-blue-800">
-                          <TableCell className="text-xs font-mono text-blue-900 dark:text-blue-100 font-bold pl-4">
-                            {item.no}
-                          </TableCell>
-                          <TableCell colSpan={3} className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                            <div className="flex items-center gap-2">
-                              <Building className="h-4 w-4 text-blue-600" />
-                              {item.item}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-bold text-blue-900 dark:text-blue-100">
-                            {item.qty}
-                          </TableCell>
-                          <TableCell className="text-xs text-blue-900 dark:text-blue-100">
-                            Assm
-                          </TableCell>
-                          <TableCell colSpan={2} className="text-xs text-blue-900 dark:text-blue-100 italic">
-                            {item.categoryName || "-"}
-                          </TableCell>
+                      if (item.isAssemblyHeader) return (
+                        <TableRow key={idx} className="bg-blue-50/50 dark:bg-blue-900/10 border-t">
+                          <TableCell className="text-xs font-bold text-blue-600">{item.no}</TableCell>
+                          <TableCell colSpan={4} className="text-sm font-semibold">{item.item}</TableCell>
+                          <TableCell className="text-right text-xs font-bold">{item.qty}</TableCell>
+                          <TableCell className="text-xs">Assy</TableCell>
+                          <TableCell className="text-[10px] italic text-muted-foreground">{item.categoryName}</TableCell>
                         </TableRow>
                       );
-                    }
-
-                    return (
-                      <TableRow key={`${item.no}-${index}`} className="hover:bg-muted/30">
-                        <TableCell className="text-xs font-mono text-muted-foreground pl-8">
-                          {item.no}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {item.manufacturer || "-"}
-                        </TableCell>
-                        <TableCell className="text-xs font-mono">
-                          {item.partNumber || "-"}
-                        </TableCell>
-                        <TableCell className="text-xs font-medium pl-6 border-l-2 border-blue-100 dark:border-blue-900">
-                          {item.item}
-                        </TableCell>
-                        <TableCell className="text-xs text-right font-bold">
-                          {item.qty.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <Badge variant="outline" className="text-xs">
-                            {item.unit}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {item.categoryName || "-"}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {item.assemblyName}
-                        </TableCell>
+                      return (
+                        <TableRow key={idx} className="hover:bg-muted/30">
+                          <TableCell className="text-[10px] text-muted-foreground pl-6">{item.no.split('.').pop()}</TableCell>
+                          <TableCell className="text-xs">{item.manufacturer || '-'}</TableCell>
+                          <TableCell className="text-[10px] font-mono">{item.partNumber || '-'}</TableCell>
+                          <TableCell className="text-xs">{item.item}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={item.partDesc}>{item.partDesc || '-'}</TableCell>
+                          <TableCell className="text-right text-xs font-bold">{item.qty.toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{item.unit}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground truncate max-w-[150px]">{item.assemblyName}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  ) : (
+                    <>
+                      <TableRow className="bg-blue-50/50 font-bold border-l-4 border-l-blue-500">
+                        <TableCell colSpan={8} className="text-xs py-2 uppercase tracking-wider text-blue-800">Typical Materials</TableCell>
                       </TableRow>
-                    );
-                  })}
+                      {consolidatedData.typical.map((m, i) => (
+                        <TableRow key={`typ-${i}`} className="hover:bg-muted/30">
+                          <TableCell className="text-[10px] text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                          <TableCell className="text-[10px] font-mono">{m.partNumber || '-'}</TableCell>
+                          <TableCell className="text-xs font-medium">{m.name}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={m.partDesc}>{m.partDesc || '-'}</TableCell>
+                          <TableCell className="text-right text-xs font-bold text-blue-600">{m.totalQuantity.toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{m.unit}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground italic">In: {m.assemblies.slice(0, 2).join(', ')}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-orange-50/50 font-bold border-l-4 border-l-orange-500 mt-4">
+                        <TableCell colSpan={8} className="text-xs py-2 uppercase tracking-wider text-orange-800">Installation Materials</TableCell>
+                      </TableRow>
+                      {consolidatedData.installation.map((m, i) => (
+                        <TableRow key={`inst-${i}`} className="hover:bg-muted/30">
+                          <TableCell className="text-[10px] text-muted-foreground">INST-{i + 1}</TableCell>
+                          <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                          <TableCell className="text-[10px] font-mono">{m.partNumber || '-'}</TableCell>
+                          <TableCell className="text-xs font-medium">{m.name}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={m.partDesc}>{m.partDesc || '-'}</TableCell>
+                          <TableCell className="text-right text-xs font-bold text-orange-600">{m.quantity.toLocaleString()}</TableCell>
+                          <TableCell className="text-xs">{m.unit}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground italic">{m.assemblyName}</TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
                 </TableBody>
               </Table>
-            </div>
-          </div>
-
-          {/* Summary Footer */}
-          <div className="flex justify-between items-center pt-4 border-t mt-4">
-            <div className="text-sm text-muted-foreground">
-              Showing {boqData.length} items in the Bill of Quantity
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-sm">
-                <span className="font-medium">Total Materials:</span> {totalMaterials}
-              </div>
-              <div className="text-sm">
-                <span className="font-medium">Total Assemblies:</span> {totalAssemblies}
-              </div>
             </div>
           </div>
         </CardContent>

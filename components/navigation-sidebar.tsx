@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, FileText, FolderOpen, BarChart3, HelpCircle, Sparkles, ClipboardList } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Package, LayoutDashboard, Settings, Users, Database, Activity, FileText, FolderOpen, BarChart3, HelpCircle, Sparkles, ClipboardList, ArrowRightLeft, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -154,6 +154,13 @@ const hardcodedMenuGroups = [
         roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "ENGINEER", "ESTIMATOR"]
       },
       {
+        id: "bom-compare",
+        label: "Compare BOM",
+        path: "/bom-compare",
+        icon: "ArrowRightLeft",
+        roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "ENGINEER", "ESTIMATOR"]
+      },
+      {
         id: "pdf-config",
         label: "PDF Configuration",
         path: "/pdf-config",
@@ -189,6 +196,13 @@ const hardcodedMenuGroups = [
         path: "/help",
         icon: "HelpCircle",
         roles: ["SUPER_ADMIN", "ADMIN", "PROJECT_MANAGER", "SITE_MANAGER", "FOREMAN", "WORKER", "CLIENT", "ACCOUNTANT", "ESTIMATOR", "ENGINEER"]
+      },
+      {
+        id: "api-reference",
+        label: "API Reference",
+        path: "/api-docs",
+        icon: "BookOpen",
+        roles: ["SUPER_ADMIN", "ADMIN", "ESTIMATOR", "ENGINEER"]
       }
     ]
   },

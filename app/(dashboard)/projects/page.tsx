@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, FolderOpen, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File, FileSpreadsheet, Calculator, DollarSign, Check, ChevronsUpDown, ListTree, Combine, Calculator as CalcIcon, LayoutGrid } from "lucide-react";
+import { Plus, Edit, Trash2, FolderOpen, Search, Download, ArrowUpDown, Copy, MoreHorizontal, Eye, Calendar, MapPin, Building2, Target, AlertTriangle, Users, Clock, Package, BarChart3, FileText, Lightbulb, Info, File, FileSpreadsheet, Calculator, DollarSign, Check, ChevronsUpDown, ListTree, Combine, Calculator as CalcIcon, LayoutGrid, ChevronDown, History, ArrowRightLeft } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -146,8 +146,9 @@ export default function ProjectsPage() {
     }
   };
 
-  const fetchBoqData = async (projectId: number) => {
+  const fetchBoqData = async (projectId: number, defaultTab: string = "hierarchy") => {
     setIsBoqLoading(true);
+    setActiveBoqTab(defaultTab);
     try {
       const response = await fetch(`/api/projects/${projectId}/boq`);
       if (response.ok) {
@@ -168,11 +169,90 @@ export default function ProjectsPage() {
     }
   };
 
+  const exportBoqHierarchical = () => {
+    if (!boqData) return;
+
+    const data: any[][] = [
+      ["Assembly Name", "Module", "Material Name", "Part Number", "Description", "Manufacturer", "Qty/Assy", "Total Qty", "Unit"]
+    ];
+
+    boqData.hierarchy.forEach((assembly: any) => {
+      assembly.materials.forEach((m: any) => {
+        data.push([
+          assembly.name,
+          assembly.module,
+          m.name,
+          m.partNumber || "",
+          m.partDesc || "",
+          m.manufacturer || "",
+          m.quantityPerAssembly,
+          m.totalQuantity,
+          m.unit
+        ]);
+      });
+    });
+
+    exportToExcel(data, `BOQ_Hierarchy_${boqData.projectName.replace(/\s+/g, '_')}`);
+  };
+
+  const exportBoqConsolidated = () => {
+    if (!boqData) return;
+
+    const data: any[][] = [
+      ["Type", "Material Name", "Part Number", "Description", "Manufacturer", "Total Qty", "Unit", "Used in Assemblies"]
+    ];
+
+    // Added typical
+    boqData.consolidated.typical.forEach((m: any) => {
+      data.push([
+        "Typical",
+        m.name,
+        m.partNumber || "",
+        m.partDesc || "",
+        m.manufacturer || "",
+        m.totalQuantity,
+        m.unit,
+        m.assemblies.join(", ")
+      ]);
+    });
+
+    // Added installation
+    boqData.consolidated.installation.forEach((m: any) => {
+      data.push([
+        "Installation",
+        m.name,
+        m.partNumber || "",
+        m.partDesc || "",
+        m.manufacturer || "",
+        m.quantity,
+        m.unit,
+        m.assemblyName
+      ]);
+    });
+
+    exportToExcel(data, `BOQ_Consolidated_${boqData.projectName.replace(/\s+/g, '_')}`);
+  };
+
   useEffect(() => {
     fetchProjects();
     fetchTemplates();
     fetchClients();
     fetchInquiries();
+
+    // Check query params for template initialization
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const templateId = params.get('templateId');
+
+      if (action === 'create_project' && templateId) {
+        setFormData(prev => ({
+          ...prev,
+          fromTemplateId: templateId
+        }));
+        setIsCreateDialogOpen(true);
+      }
+    }
   }, []);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -1239,6 +1319,10 @@ export default function ProjectsPage() {
               </Select>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 border-indigo-200" onClick={() => router.push('/bom-compare')}>
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                Compare BOM
+              </Button>
               <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Materials
@@ -1328,21 +1412,29 @@ export default function ProjectsPage() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setIsDetailsDialogOpen(true);
-                            }}
-                            className="hover:text-primary hover:underline text-left transition-colors"
-                            title="Click to view project details"
-                          >
-                            {project.name}
-                          </button>
-                          {isNewItem(project.createdAt) && (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
-                              New
-                            </Badge>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setIsDetailsDialogOpen(true);
+                              }}
+                              className="hover:text-primary hover:underline text-left transition-colors"
+                              title="Click to view project details"
+                            >
+                              {project.name}
+                            </button>
+                            {isNewItem(project.createdAt) && (
+                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs px-1.5 py-0.5">
+                                New
+                              </Badge>
+                            )}
+                          </div>
+                          {project.template && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <FileText className="h-3 w-3" />
+                              <span className="truncate max-w-[150px]" title={project.template.name}>{project.template.name}</span>
+                            </div>
                           )}
                         </div>
                       </TableCell>
@@ -1499,10 +1591,16 @@ export default function ProjectsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => fetchBoqData(project.id)}>
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                View BOQ
+                              <DropdownMenuLabel>BOQ Analysis</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => fetchBoqData(project.id, "hierarchy")}>
+                                <ListTree className="h-4 w-4 mr-2" />
+                                Hierarchical View
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => fetchBoqData(project.id, "consolidated")}>
+                                <Combine className="h-4 w-4 mr-2" />
+                                Consolidated View
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => {
                                 setSelectedProject(project);
                                 setIsDetailsDialogOpen(true);
@@ -2171,10 +2269,14 @@ export default function ProjectsPage() {
                       })}
                     </div>
 
-                    <div className="pt-2 border-t flex justify-end">
-                      <Button variant="default" size="sm" onClick={() => fetchBoqData(selectedProject.id)}>
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Detailed BOQ View
+                    <div className="pt-2 border-t flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => fetchBoqData(selectedProject.id, "hierarchy")}>
+                        <ListTree className="h-4 w-4 mr-2" />
+                        Hierarchical BOQ
+                      </Button>
+                      <Button variant="default" size="sm" onClick={() => fetchBoqData(selectedProject.id, "consolidated")}>
+                        <Combine className="h-4 w-4 mr-2" />
+                        Consolidated BOQ
                       </Button>
                     </div>
                   </div>
@@ -2279,211 +2381,219 @@ export default function ProjectsPage() {
                   Project: &quot;{boqData?.projectName}&quot;
                 </DialogDescription>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  if (boqData) {
-                    const csvRows = [];
-                    csvRows.push(["Category", "Part Name", "Part Number", "Description", "Manufacturer", "Quantity", "Unit"]);
+              <div className="flex items-center gap-4">
+                <div className="bg-muted p-1 rounded-lg flex shrink-0">
+                  <Button
+                    variant={activeBoqTab === 'hierarchy' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveBoqTab('hierarchy')}
+                    className="text-xs h-8 px-4"
+                  >
+                    Breakdown
+                  </Button>
+                  <Button
+                    variant={activeBoqTab === 'consolidated' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveBoqTab('consolidated')}
+                    className="text-xs h-8 px-4"
+                  >
+                    Consolidated
+                  </Button>
+                </div>
 
-                    boqData.consolidated.typical.forEach((m: any) => {
-                      csvRows.push([
-                        "Typical",
-                        m.name,
-                        m.partNumber,
-                        m.partDesc,
-                        m.manufacturer,
-                        m.totalQuantity,
-                        m.unit
-                      ]);
-                    });
-
-                    boqData.consolidated.installation.forEach((m: any) => {
-                      csvRows.push([
-                        "Installation",
-                        m.name,
-                        m.partNumber,
-                        m.partDesc,
-                        m.manufacturer,
-                        m.quantity,
-                        m.unit
-                      ]);
-                    });
-
-                    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `BOQ_${boqData.projectName.replace(/\s+/g, '_')}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Excel
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={exportBoqHierarchical}>
+                      <ListTree className="h-4 w-4 mr-2" />
+                      Hierarchical Export (.xlsx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportBoqConsolidated}>
+                      <Combine className="h-4 w-4 mr-2" />
+                      Consolidated Export (.xlsx)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </DialogHeader>
 
           <Tabs value={activeBoqTab} onValueChange={setActiveBoqTab} className="flex-1 flex flex-col min-h-0">
-            <div className="px-6 border-b">
-              <TabsList className="grid w-full grid-cols-2 max-w-md">
-                <TabsTrigger value="hierarchy" className="flex items-center gap-2">
-                  <ListTree className="h-4 w-4" />
-                  Hierarchy View
-                </TabsTrigger>
-                <TabsTrigger value="consolidated" className="flex items-center gap-2">
-                  <Combine className="h-4 w-4" />
-                  Consolidated View
-                </TabsTrigger>
-              </TabsList>
+            <div className="px-6 py-2 border-b flex items-center justify-end bg-muted/10">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground mr-2">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="h-5 bg-blue-50 text-blue-700 border-blue-200">
+                    {boqData?.summary.totalAssemblies}
+                  </Badge>
+                  <span>Assemblies</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="h-5 bg-green-50 text-green-700 border-green-200">
+                    {boqData?.summary.totalTypicalItems + boqData?.summary.totalInstallationItems}
+                  </Badge>
+                  <span>Materials</span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-hidden p-6 pt-2">
-              <TabsContent value="hierarchy" className="mt-0 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4 mt-2">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <LayoutGrid className="h-5 w-5 text-muted-foreground" />
-                    Assemblies & Materials
-                  </h3>
-                  <Badge variant="outline" className="px-3 py-1 bg-blue-50/50">
-                    Total: {boqData?.summary.totalAssemblies} Assemblies
-                  </Badge>
-                </div>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <TabsContent value="hierarchy" className="mt-0 flex-1 flex flex-col overflow-hidden">
+                <div className="overflow-x-auto max-h-full">
+                  <Table>
+                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                      <TableRow>
+                        <TableHead className="w-12 text-xs">#</TableHead>
+                        <TableHead className="text-xs">Manufacturer</TableHead>
+                        <TableHead className="text-xs">Part Number</TableHead>
+                        <TableHead className="min-w-[200px] text-xs">Item Description</TableHead>
+                        <TableHead className="min-w-[150px] text-xs">Part Desc</TableHead>
+                        <TableHead className="text-right text-xs">Qty</TableHead>
+                        <TableHead className="text-xs">Unit</TableHead>
+                        <TableHead className="text-xs">Assembly</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const rows: any[] = [];
+                        let lastModule = "";
+                        let assemblyIdx = 1;
 
-                <div className="flex-1 overflow-y-auto pr-2">
-                  <Accordion type="multiple" className="w-full space-y-4">
-                    {boqData?.hierarchy.map((assembly: any, idx: number) => (
-                      <AccordionItem key={assembly.id || idx} value={`item-${idx}`} className="border rounded-lg px-4 bg-muted/20 hover:bg-muted/30 transition-colors">
-                        <AccordionTrigger className="hover:no-underline py-4">
-                          <div className="flex flex-col items-start gap-1">
-                            <span className="text-base font-semibold text-left">{assembly.name}</span>
-                            <div className="flex gap-4 text-xs text-muted-foreground font-normal">
-                              <span className="flex items-center gap-1"><Badge variant="outline" className="text-[10px] h-4">{assembly.module}</Badge></span>
-                              <span className="flex items-center gap-1">Qty: <b>{assembly.quantity}</b></span>
-                              <span className="flex items-center gap-1">Items: <b>{assembly.materials.length}</b></span>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="rounded-md border bg-background overflow-hidden mt-2 mb-4">
-                            <Table>
-                              <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                  <TableHead className="w-[40%]">Material/Part</TableHead>
-                                  <TableHead>Mfr</TableHead>
-                                  <TableHead className="text-right">Qty/Assy</TableHead>
-                                  <TableHead className="text-right">Total Qty</TableHead>
-                                  <TableHead className="text-right">Unit</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {assembly.materials.map((m: any, mIdx: number) => (
-                                  <TableRow key={mIdx} className="hover:bg-muted/30">
-                                    <TableCell>
-                                      <div className="flex flex-col">
-                                        <span className="font-medium text-sm">{m.name}</span>
-                                        <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m.partNumber || m.partDesc || 'No part number'}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
-                                    <TableCell className="text-right font-mono text-xs">{m.quantityPerAssembly}</TableCell>
-                                    <TableCell className="text-right font-mono font-semibold text-blue-600">{m.totalQuantity}</TableCell>
-                                    <TableCell className="text-right text-xs">{m.unit}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+                        boqData?.hierarchy.forEach((assembly: any, idx: number) => {
+                          // Module Header
+                          if (assembly.module !== lastModule) {
+                            rows.push(
+                              <TableRow key={`mod-${assembly.module}`} className="bg-slate-100 dark:bg-slate-800/50 font-bold border-t-2">
+                                <TableCell colSpan={8} className="text-[10px] py-1.5 uppercase tracking-widest text-slate-600 dark:text-slate-400">
+                                  {assembly.module} MODULE
+                                </TableCell>
+                              </TableRow>
+                            );
+                            lastModule = assembly.module;
+                          }
+
+                          // Assembly Header
+                          rows.push(
+                            <TableRow key={`assy-${assembly.id || idx}`} className="bg-blue-50/30 dark:bg-blue-900/10 border-t">
+                              <TableCell className="text-[10px] font-mono font-bold text-blue-600">{assemblyIdx++}</TableCell>
+                              <TableCell colSpan={4} className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                {assembly.name}
+                              </TableCell>
+                              <TableCell className="text-right text-xs font-bold text-blue-900">{assembly.quantity}</TableCell>
+                              <TableCell className="text-xs text-blue-900/70">Assy</TableCell>
+                              <TableCell className="text-[10px] text-blue-900/50 italic">{assembly.category || '-'}</TableCell>
+                            </TableRow>
+                          );
+
+                          // Material Rows
+                          assembly.materials.forEach((m: any, mIdx: number) => {
+                            rows.push(
+                              <TableRow key={`mat-${m.id || mIdx}`} className="hover:bg-muted/30 border-l-4 border-l-transparent hover:border-l-blue-400">
+                                <TableCell className="text-[10px] text-muted-foreground pl-6">{mIdx + 1}</TableCell>
+                                <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                                <TableCell className="text-[10px] font-mono">{m.partNumber || '-'}</TableCell>
+                                <TableCell>
+                                  <span className="text-xs font-medium">{m.name}</span>
+                                </TableCell>
+                                <TableCell className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={m.partDesc}>
+                                  {m.partDesc || '-'}
+                                </TableCell>
+                                <TableCell className="text-right text-xs font-bold">{m.totalQuantity.toLocaleString()}</TableCell>
+                                <TableCell className="text-[10px]">{m.unit}</TableCell>
+                                <TableCell className="text-[9px] text-muted-foreground truncate max-w-[100px]">{assembly.name}</TableCell>
+                              </TableRow>
+                            );
+                          });
+                        });
+
+                        return rows;
+                      })()}
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
 
-              <TabsContent value="consolidated" className="mt-0 h-full flex flex-col">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full overflow-hidden pt-4">
-                  {/* Typical Materials */}
-                  <div className="flex flex-col h-full border rounded-lg bg-background shadow-sm overflow-hidden">
-                    <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-                      <h3 className="font-bold flex items-center gap-2">
-                        <Package className="h-5 w-5 text-blue-500" />
-                        Typical Materials
-                      </h3>
-                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">{boqData?.summary.totalTypicalItems} Items</Badge>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                          <TableRow>
-                            <TableHead>Part Information</TableHead>
-                            <TableHead className="text-right">Total Qty</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {boqData?.consolidated.typical.map((m: any, idx: number) => (
-                            <TableRow key={idx} className="hover:bg-muted/10">
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium line-clamp-1">{m.name}</span>
-                                  <span className="text-[10px] text-muted-foreground">{m.partNumber || m.manufacturer || 'No details'}</span>
-                                  <div className="flex gap-1 mt-1">
-                                    {m.assemblies.slice(0, 2).map((a: string, aid: number) => (
-                                      <Badge key={aid} variant="outline" className="text-[9px] px-1 h-3">{a}</Badge>
-                                    ))}
-                                    {m.assemblies.length > 2 && <span className="text-[9px] text-muted-foreground">+{m.assemblies.length - 2} more</span>}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="font-bold text-blue-600">{m.totalQuantity}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase">{m.unit}</div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+              <TabsContent value="consolidated" className="mt-0 flex-1 flex flex-col overflow-hidden">
+                <div className="overflow-x-auto max-h-full">
+                  <Table>
+                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                      <TableRow>
+                        <TableHead className="w-12 text-xs">#</TableHead>
+                        <TableHead className="text-xs">Manufacturer</TableHead>
+                        <TableHead className="text-xs">Part Number</TableHead>
+                        <TableHead className="min-w-[250px] text-xs">Item Description</TableHead>
+                        <TableHead className="min-w-[150px] text-xs">Part Desc</TableHead>
+                        <TableHead className="text-right text-xs">Total Qty</TableHead>
+                        <TableHead className="text-xs">Unit</TableHead>
+                        <TableHead className="text-xs">Usage In</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Typical Materials Section */}
+                      <TableRow className="bg-blue-50/50 dark:bg-blue-900/20 font-bold border-l-4 border-l-blue-500">
+                        <TableCell colSpan={8} className="text-xs py-2 uppercase tracking-wider text-blue-800">
+                          TYPICAL MATERIALS (CONSOLIDATED)
+                        </TableCell>
+                      </TableRow>
+                      {boqData?.consolidated.typical.map((m: any, idx: number) => (
+                        <TableRow key={`typ-${idx}`} className="hover:bg-muted/30">
+                          <TableCell className="text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                          <TableCell className="text-[10px] font-mono">{m.partNumber || '-'}</TableCell>
+                          <TableCell>
+                            <span className="text-xs font-medium">{m.name}</span>
+                          </TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={m.partDesc}>
+                            {m.partDesc || '-'}
+                          </TableCell>
+                          <TableCell className="text-right text-xs font-bold text-blue-600">
+                            {m.totalQuantity.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-[10px]">{m.unit}</TableCell>
+                          <TableCell className="max-w-[150px]">
+                            <div className="flex flex-wrap gap-1">
+                              {m.assemblies.slice(0, 2).map((a: string, aid: number) => (
+                                <Badge key={aid} variant="outline" className="text-[8px] px-1 h-3">{a}</Badge>
+                              ))}
+                              {m.assemblies.length > 2 && <span className="text-[8px] text-muted-foreground">+{m.assemblies.length - 2}</span>}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
 
-                  {/* Installation Materials */}
-                  <div className="flex flex-col h-full border rounded-lg bg-background shadow-sm overflow-hidden">
-                    <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-                      <h3 className="font-bold flex items-center gap-2">
-                        <Plus className="h-5 w-5 text-orange-500" />
-                        Installation Materials
-                      </h3>
-                      <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">{boqData?.summary.totalInstallationItems} Items</Badge>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                          <TableRow>
-                            <TableHead>Installation Item</TableHead>
-                            <TableHead className="text-right">Quantity</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {boqData?.consolidated.installation.map((m: any, idx: number) => (
-                            <TableRow key={idx} className="hover:bg-muted/10">
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium line-clamp-1">{m.name}</span>
-                                  <span className="text-[10px] text-muted-foreground">{m.assemblyName}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="font-bold text-orange-600">{m.quantity}</div>
-                                <div className="text-[10px] text-muted-foreground uppercase">{m.unit}</div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+                      {/* Installation Materials Section */}
+                      <TableRow className="bg-orange-50/50 dark:bg-orange-900/20 font-bold border-l-4 border-l-orange-500 mt-4">
+                        <TableCell colSpan={8} className="text-xs py-2 uppercase tracking-wider text-orange-800">
+                          INSTALLATION MATERIALS (SEPARATED)
+                        </TableCell>
+                      </TableRow>
+                      {boqData?.consolidated.installation.map((m: any, idx: number) => (
+                        <TableRow key={`inst-${idx}`} className="hover:bg-muted/30 bg-orange-50/10">
+                          <TableCell className="text-[10px] text-muted-foreground">INST-{idx + 1}</TableCell>
+                          <TableCell className="text-xs">{m.manufacturer || '-'}</TableCell>
+                          <TableCell className="text-[10px] font-mono">{m.partNumber || '-'}</TableCell>
+                          <TableCell>
+                            <span className="text-xs font-medium">{m.name}</span>
+                          </TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={m.partDesc}>
+                            {m.partDesc || '-'}
+                          </TableCell>
+                          <TableCell className="text-right text-xs font-bold text-orange-600">
+                            {m.quantity.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-[10px]">{m.unit}</TableCell>
+                          <TableCell className="text-[9px] text-muted-foreground italic">
+                            Individual Assembly Item
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
             </div>

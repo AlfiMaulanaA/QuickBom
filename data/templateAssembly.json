@@ -1,0 +1,137 @@
+[
+  {
+    "templateId": 41,
+    "assemblyId": 97,
+    "quantity": "1"
+  },
+  {
+    "templateId": 41,
+    "assemblyId": 98,
+    "quantity": "10"
+  },
+  {
+    "templateId": 41,
+    "assemblyId": 100,
+    "quantity": "1"
+  },
+  {
+    "templateId": 41,
+    "assemblyId": 101,
+    "quantity": "1"
+  },
+  {
+    "templateId": 41,
+    "assemblyId": 104,
+    "quantity": "1"
+  },
+  {
+    "templateId": 41,
+    "assemblyId": 105,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 97,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 99,
+    "quantity": "10"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 100,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 101,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 104,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 105,
+    "quantity": "1"
+  },
+  {
+    "templateId": 42,
+    "assemblyId": 106,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 97,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 99,
+    "quantity": "10"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 102,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 103,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 104,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 105,
+    "quantity": "1"
+  },
+  {
+    "templateId": 43,
+    "assemblyId": 106,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 97,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 98,
+    "quantity": "10"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 102,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 103,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 104,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 105,
+    "quantity": "1"
+  },
+  {
+    "templateId": 44,
+    "assemblyId": 106,
+    "quantity": "1"
+  }
+]

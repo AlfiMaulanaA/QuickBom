@@ -1,0 +1,117 @@
+[
+  {
+    "id": 41,
+    "name": "[ CAC ] Cold Aisle Containment - 2x10 Rows Automatic Full System",
+    "description": null,
+    "docs": null,
+    "assemblySelections": {
+      "1": {
+        "cmma9wcob0039gvb0s4rv38p5": [
+          104
+        ],
+        "cmma9wtku003dgvb0fqz3hb6x": [
+          100
+        ],
+        "cmma9xcvp003igvb0q1li7p4p": [
+          101
+        ],
+        "cmma9z6n6003ngvb0uluvxbru": [
+          97,
+          105
+        ],
+        "cmma9zpsw003rgvb02xeadant": [
+          98
+        ]
+      }
+    },
+    "createdAt": "2026-03-03T07:22:58.670Z",
+    "updatedAt": "2026-03-03T07:22:58.670Z"
+  },
+  {
+    "id": 42,
+    "name": "[ HAC ] Hot Aisle Containment - 2x10 Rows Automatic Full System",
+    "description": null,
+    "docs": null,
+    "assemblySelections": {
+      "1": {
+        "cmma9wcob0039gvb0s4rv38p5": [
+          104
+        ],
+        "cmma9wtku003dgvb0fqz3hb6x": [
+          100
+        ],
+        "cmma9xcvp003igvb0q1li7p4p": [
+          101
+        ],
+        "cmma9z6n6003ngvb0uluvxbru": [
+          97,
+          105,
+          106
+        ],
+        "cmma9zpsw003rgvb02xeadant": [
+          99
+        ]
+      }
+    },
+    "createdAt": "2026-03-03T07:25:39.096Z",
+    "updatedAt": "2026-03-03T07:27:15.438Z"
+  },
+  {
+    "id": 43,
+    "name": "[ HAC ] Hot Aisle Containment - 2x10 Rows Manual Full System",
+    "description": null,
+    "docs": null,
+    "assemblySelections": {
+      "1": {
+        "cmma9wcob0039gvb0s4rv38p5": [
+          104
+        ],
+        "cmma9wtku003dgvb0fqz3hb6x": [
+          103
+        ],
+        "cmma9xcvp003igvb0q1li7p4p": [
+          102
+        ],
+        "cmma9z6n6003ngvb0uluvxbru": [
+          105,
+          97,
+          106
+        ],
+        "cmma9zpsw003rgvb02xeadant": [
+          99
+        ]
+      }
+    },
+    "createdAt": "2026-03-03T07:30:56.036Z",
+    "updatedAt": "2026-03-03T07:31:27.789Z"
+  },
+  {
+    "id": 44,
+    "name": "[ CAC ] Cold Aisle Containment - 2x10 Rows Manual Full System",
+    "description": null,
+    "docs": null,
+    "assemblySelections": {
+      "1": {
+        "cmma9wcob0039gvb0s4rv38p5": [
+          104
+        ],
+        "cmma9wtku003dgvb0fqz3hb6x": [
+          103
+        ],
+        "cmma9xcvp003igvb0q1li7p4p": [
+          102
+        ],
+        "cmma9z6n6003ngvb0uluvxbru": [
+          97,
+          105,
+          106
+        ],
+        "cmma9zpsw003rgvb02xeadant": [
+          98
+        ]
+      }
+    },
+    "createdAt": "2026-03-03T07:31:00.896Z",
+    "updatedAt": "2026-03-03T07:31:39.017Z"
+  }
+]

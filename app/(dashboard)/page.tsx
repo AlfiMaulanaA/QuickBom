@@ -98,6 +98,10 @@ export default function MainDashboardPage() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [copiedPartNumber, setCopiedPartNumber] = useState<string | null>(null);
+
+  const [insights, setInsights] = useState<{ type: string, title: string, description: string }[]>([]);
+  const [loadingInsights, setLoadingInsights] = useState(false);
+
   const { toast } = useToast();
 
   const copyToClipboard = async (text: string, partNumber: string) => {
@@ -138,6 +142,27 @@ export default function MainDashboardPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "insights" && insights.length === 0 && !loadingInsights) {
+      fetchInsights();
+    }
+  }, [activeTab]);
+
+  const fetchInsights = async () => {
+    setLoadingInsights(true);
+    try {
+      const res = await fetch('/api/dashboard-analytics/insights');
+      if (res.ok) {
+        const data = await res.json();
+        setInsights(data.insights || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -1059,41 +1084,55 @@ export default function MainDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-blue-900">Efficiency Opportunity</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Consolidating material categories could improve search speed and procurement planning.
-                        </p>
-                      </div>
+                  {loadingInsights ? (
+                    <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <p className="text-sm text-muted-foreground">Generating AI insights based on your latest metrics...</p>
                     </div>
-                  </div>
+                  ) : insights.length === 0 ? (
+                    <div className="text-center p-8 text-muted-foreground">
+                      <p className="text-sm">No insights available right now.</p>
+                      <Button variant="outline" size="sm" className="mt-4" onClick={fetchInsights}>Retry</Button>
+                    </div>
+                  ) : (
+                    insights.map((insight, idx) => {
+                      let bgColor = "bg-primary/5", borderColor = "border-primary/20", textColor = "text-primary", titleColor = "text-gray-900 dark:text-gray-100", Icon = TrendingUp;
 
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Target className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-green-900">Template Reusability</h4>
-                        <p className="text-sm text-green-700 mt-1">
-                          Standardized templates are used in 75% of your current project pipeline.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                      if (insight.type === "alert") {
+                        bgColor = "bg-red-50 dark:bg-red-950/20";
+                        borderColor = "border-red-200 dark:border-red-800";
+                        textColor = "text-red-700 dark:text-red-400";
+                        titleColor = "text-red-900 dark:text-red-300";
+                        Icon = AlertTriangle;
+                      } else if (insight.type === "efficiency") {
+                        bgColor = "bg-blue-50 dark:bg-blue-950/20";
+                        borderColor = "border-blue-200 dark:border-blue-800";
+                        textColor = "text-blue-700 dark:text-blue-400";
+                        titleColor = "text-blue-900 dark:text-blue-300";
+                        Icon = Zap;
+                      } else if (insight.type === "opportunity" || insight.type === "financial") {
+                        bgColor = "bg-emerald-50 dark:bg-emerald-950/20";
+                        borderColor = "border-emerald-200 dark:border-emerald-800";
+                        textColor = "text-emerald-700 dark:text-emerald-400";
+                        titleColor = "text-emerald-900 dark:text-emerald-300";
+                        Icon = Target;
+                      }
 
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-yellow-900">Inventory Alert</h4>
-                        <p className="text-sm text-yellow-700 mt-1">
-                          "Bata Merah" stock is projected to run out in 2 weeks based on current project pipeline.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                      return (
+                        <div key={idx} className={`p-4 ${bgColor} border ${borderColor} rounded-lg`}>
+                          <div className="flex items-start gap-3">
+                            <Icon className={`h-5 w-5 ${textColor} mt-0.5`} />
+                            <div>
+                              <h4 className={`font-medium ${titleColor}`}>{insight.title}</h4>
+                              <p className={`text-sm ${textColor} mt-1`}>
+                                {insight.description}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>

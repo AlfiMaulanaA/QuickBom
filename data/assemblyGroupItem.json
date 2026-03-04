@@ -1,0 +1,112 @@
+[
+  {
+    "id": "cmma9wcob003bgvb04i6qms57",
+    "groupId": "cmma9wcob0039gvb0s4rv38p5",
+    "assemblyId": 104,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 0,
+    "createdAt": "2026-03-03T07:15:09.228Z",
+    "updatedAt": "2026-03-03T07:15:09.228Z"
+  },
+  {
+    "id": "cmma9wtku003fgvb0buohcyy3",
+    "groupId": "cmma9wtku003dgvb0fqz3hb6x",
+    "assemblyId": 100,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": true,
+    "sortOrder": 0,
+    "createdAt": "2026-03-03T07:15:31.134Z",
+    "updatedAt": "2026-03-03T07:15:31.134Z"
+  },
+  {
+    "id": "cmma9wtku003ggvb0aew7zgee",
+    "groupId": "cmma9wtku003dgvb0fqz3hb6x",
+    "assemblyId": 103,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 1,
+    "createdAt": "2026-03-03T07:15:31.134Z",
+    "updatedAt": "2026-03-03T07:15:31.134Z"
+  },
+  {
+    "id": "cmma9xcvp003kgvb0wdxdcfqf",
+    "groupId": "cmma9xcvp003igvb0q1li7p4p",
+    "assemblyId": 101,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": true,
+    "sortOrder": 0,
+    "createdAt": "2026-03-03T07:15:56.149Z",
+    "updatedAt": "2026-03-03T07:15:56.149Z"
+  },
+  {
+    "id": "cmma9xcvp003lgvb0r84rvh3i",
+    "groupId": "cmma9xcvp003igvb0q1li7p4p",
+    "assemblyId": 102,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 1,
+    "createdAt": "2026-03-03T07:15:56.149Z",
+    "updatedAt": "2026-03-03T07:15:56.149Z"
+  },
+  {
+    "id": "cmma9zpsw003tgvb0dv5t3g7w",
+    "groupId": "cmma9zpsw003rgvb02xeadant",
+    "assemblyId": 98,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": true,
+    "sortOrder": 0,
+    "createdAt": "2026-03-03T07:17:46.208Z",
+    "updatedAt": "2026-03-03T07:17:46.208Z"
+  },
+  {
+    "id": "cmma9zpsw003ugvb0848347cs",
+    "groupId": "cmma9zpsw003rgvb02xeadant",
+    "assemblyId": 99,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 1,
+    "createdAt": "2026-03-03T07:17:46.208Z",
+    "updatedAt": "2026-03-03T07:17:46.208Z"
+  },
+  {
+    "id": "cmmaa9iib0042gvb0m8u4qufi",
+    "groupId": "cmma9z6n6003ngvb0uluvxbru",
+    "assemblyId": 97,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 0,
+    "createdAt": "2026-03-03T07:25:23.315Z",
+    "updatedAt": "2026-03-03T07:25:23.315Z"
+  },
+  {
+    "id": "cmmaa9iib0043gvb06svld1by",
+    "groupId": "cmma9z6n6003ngvb0uluvxbru",
+    "assemblyId": 105,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 1,
+    "createdAt": "2026-03-03T07:25:23.315Z",
+    "updatedAt": "2026-03-03T07:25:23.315Z"
+  },
+  {
+    "id": "cmmaa9iib0044gvb067e7y9j3",
+    "groupId": "cmma9z6n6003ngvb0uluvxbru",
+    "assemblyId": 106,
+    "quantity": "1",
+    "conflictsWith": [],
+    "isDefault": false,
+    "sortOrder": 2,
+    "createdAt": "2026-03-03T07:25:23.315Z",
+    "updatedAt": "2026-03-03T07:25:23.315Z"
+  }
+]

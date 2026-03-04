@@ -322,15 +322,49 @@ export default function QuestionnairePage() {
         });
     };
 
+    const handleCopyTemplate = async (templateId: number) => {
+        try {
+            toast({ title: "Copying template...", description: "Please wait" });
+            const fetchRes = await fetch(`/api/templates/${templateId}`);
+            if (!fetchRes.ok) throw new Error("Failed to fetch template detail");
+            const template = await fetchRes.json();
+
+            const duplicateData = {
+                name: `${template.name} (Copy)`,
+                description: template.description,
+                assemblies: template.assemblies.map((ta: any) => ({
+                    assemblyId: ta.assemblyId,
+                    quantity: ta.quantity
+                }))
+            };
+
+            const response = await fetch("/api/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(duplicateData),
+            });
+
+            if (response.ok) {
+                const newTpl = await response.json();
+                toast({ title: "Template Duplicated", description: "Navigating to template..." });
+                router.push(`/templates/edit/${newTpl.id}`);
+            } else {
+                throw new Error("Failed to copy template");
+            }
+        } catch (err) {
+            toast({ title: "Error", description: "Failed to copy template", variant: "destructive" });
+        }
+    };
+
     // ── Render ─────────────────────────────────────────────────────────
     return (
         <div className="min-h-full bg-gray-50 dark:bg-gray-950 p-6">
 
             {/* Page Header */}
-            <div className="max-w-5xl mx-auto mb-8">
+            <div className="max-w-7xl mx-auto mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
-                        <Sparkles className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
+                        <Sparkles className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Smart Questionnaire</h1>
@@ -346,7 +380,7 @@ export default function QuestionnairePage() {
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 <StepIndicator currentStep={step} />
 
                 {/* ══════════════════════════════════════════════════════════ */}
@@ -420,18 +454,18 @@ export default function QuestionnairePage() {
                                                     className={cn(
                                                         "flex flex-col gap-3 p-5 rounded-xl border-2 text-left transition-all hover:shadow-md",
                                                         isSelected
-                                                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 shadow-md shadow-indigo-500/10"
-                                                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-indigo-200 dark:hover:border-indigo-800"
+                                                            ? "border-primary bg-primary/5 shadow-sm"
+                                                            : "border-border bg-white dark:bg-gray-900 hover:border-primary/50"
                                                     )}
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div
-                                                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md"
-                                                            style={{ backgroundColor: cat.color || "#6366f1" }}
+                                                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-sm"
+                                                            style={{ backgroundColor: cat.color || "#0f172a" }}
                                                         >
                                                             {cat.name.slice(0, 2).toUpperCase()}
                                                         </div>
-                                                        {isSelected && <CheckCircle2 className="w-5 h-5 text-indigo-600" />}
+                                                        {isSelected && <CheckCircle2 className="w-5 h-5 text-primary" />}
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-gray-900 dark:text-white">{cat.name}</p>
@@ -456,7 +490,7 @@ export default function QuestionnairePage() {
                             <Button
                                 onClick={goToStep2}
                                 disabled={!selectedCategory}
-                                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white gap-2 rounded-xl px-6"
+                                className="bg-primary text-primary-foreground gap-2 rounded-xl px-6"
                             >
                                 Next <ChevronRight className="w-4 h-4" />
                             </Button>
@@ -660,18 +694,18 @@ export default function QuestionnairePage() {
                                                                             isRequired
                                                                                 ? "border-red-200 dark:border-red-800 bg-red-50/40 dark:bg-red-950/20 cursor-default"
                                                                                 : isSelected
-                                                                                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 hover:shadow-sm"
-                                                                                    : "border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:shadow-sm cursor-pointer"
+                                                                                    ? "border-primary bg-primary/5 hover:shadow-sm"
+                                                                                    : "border-border hover:border-primary/50 hover:bg-muted/50 hover:shadow-sm cursor-pointer"
                                                                         )}
                                                                     >
                                                                         {/* Checkbox / Radio / Lock */}
                                                                         <div className={cn(
-                                                                            "flex-shrink-0 mt-0.5 flex items-center justify-center w-5 h-5 transition-all",
+                                                                            "flex-shrink-0 mt-0.5 flex items-center justify-center w-5 h-5 transition-all text-white",
                                                                             isRequired
                                                                                 ? "rounded bg-red-400 dark:bg-red-600"
                                                                                 : isChooseOne
-                                                                                    ? cn("rounded-full border-2", isSelected ? "border-indigo-600 bg-indigo-600" : "border-gray-300 dark:border-gray-600")
-                                                                                    : cn("rounded border-2", isSelected ? "border-indigo-600 bg-indigo-600" : "border-gray-300 dark:border-gray-600")
+                                                                                    ? cn("rounded-full border-2", isSelected ? "border-primary bg-primary" : "border-gray-300 dark:border-gray-600")
+                                                                                    : cn("rounded border-2", isSelected ? "border-primary bg-primary" : "border-gray-300 dark:border-gray-600")
                                                                         )}>
                                                                             {isRequired
                                                                                 ? <Lock className="w-3 h-3 text-white" />
@@ -735,7 +769,7 @@ export default function QuestionnairePage() {
                             <Button
                                 onClick={getRecommendations}
                                 disabled={allSelectedIds.length === 0 || loadingResult}
-                                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white gap-2 rounded-xl px-6"
+                                className="bg-primary text-primary-foreground gap-2 rounded-xl px-6"
                             >
                                 {loadingResult ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</>
@@ -918,10 +952,10 @@ export default function QuestionnairePage() {
                                                         <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                                                             {canUse ? (
                                                                 <>
-                                                                    <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white gap-1.5 rounded-lg" onClick={() => router.push(`/templates/${res.template.id}`)}>
+                                                                    <Button size="sm" className="bg-primary text-primary-foreground gap-1.5 rounded-lg" onClick={() => router.push(`/projects?action=create_project&templateId=${res.template.id}`)}>
                                                                         <ArrowRight className="w-3.5 h-3.5" /> Use Template
                                                                     </Button>
-                                                                    <Button size="sm" variant="outline" className="gap-1.5 rounded-lg" onClick={() => router.push(`/templates/${res.template.id}/edit?mode=copy`)}>
+                                                                    <Button size="sm" variant="outline" className="gap-1.5 rounded-lg" onClick={() => handleCopyTemplate(res.template.id)}>
                                                                         <Copy className="w-3.5 h-3.5" /> Copy Template
                                                                     </Button>
                                                                 </>
@@ -947,7 +981,7 @@ export default function QuestionnairePage() {
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                                     None of the existing templates contain the assemblies you selected. Create a new template to get started.
                                 </p>
-                                <Button onClick={() => router.push("/templates/create")} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white gap-2 rounded-xl">
+                                <Button onClick={() => router.push("/templates/create")} className="bg-primary text-primary-foreground gap-2 rounded-xl">
                                     <Plus className="w-4 h-4" /> Create New Template
                                 </Button>
                             </div>
