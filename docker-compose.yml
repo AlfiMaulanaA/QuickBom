@@ -5,42 +5,54 @@
 # Includes database initialization, migrations, and seeding
 # =============================================================================
 
-version: '3.8'
-
 services:
   # -----------------------------------------------------------------------------
-  #  PRODUCT CONFIGURATOR APPLICATION (Supabase Database)
+  #  DATABASE SERVICE (PostgreSQL)
+  # -----------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: product-configurator-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=quickbom
+      - POSTGRES_PASSWORD=quickbom_password
+      - POSTGRES_DB=quickbom
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - product-configurator-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U quickbom -d quickbom" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #  PRODUCT CONFIGURATOR APPLICATION
   # -----------------------------------------------------------------------------
   product-configurator:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: product-configurator-app
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
-      - "3400:3400" # Expose on port 3400 as requested
+      - "5000:5000" # Expose on port 5000
     environment:
       # Application Configuration
       - NODE_ENV=production
-      - PORT=3400
+      - PORT=5000
       - NEXT_PUBLIC_APP_NAME=Product Configurator - Management System
 
-      # Database Configuration (Supabase)
-      - DATABASE_URL=${DATABASE_URL}
-      - DIRECT_URL=${DIRECT_URL}
+      # Database Configuration
+      - DATABASE_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom?schema=public
+      - DIRECT_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom
 
       # JWT Configuration (generate secure secrets in production)
       - JWT_SECRET=${JWT_SECRET}
-
-      # Supabase Configuration (required for Supabase database)
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
-
-      # File Storage (Supabase Storage)
-      - SUPABASE_STORAGE_BUCKET=product-configurator-uploads
-      - SUPABASE_STORAGE_USER_FOLDER=user_files
-      - SUPABASE_STORAGE_PROJECT_FOLDER=project_files
 
       # Disable Next.js telemetry
       - NEXT_TELEMETRY_DISABLED=1
@@ -58,31 +70,27 @@ services:
 
     # Health check for the application
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3400/api/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  # -----------------------------------------------------------------------------
-  #  DATABASE MIGRATION SERVICE (Supabase)
+  #  DATABASE MIGRATION SERVICE
   # -----------------------------------------------------------------------------
   migration:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: product-configurator-migration
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      # Database Configuration (Supabase)
-      - DATABASE_URL=${DATABASE_URL}
-      - DIRECT_URL=${DIRECT_URL}
+      # Database Configuration
+      - DATABASE_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom?schema=public
+      - DIRECT_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom
       - NODE_ENV=production
-
-      # Supabase Configuration (required for migrations)
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
 
     volumes:
       - ./prisma:/app/prisma:ro
@@ -91,7 +99,7 @@ services:
       - product-configurator-network
 
     command: >
-      sh -c " echo 'Running Prisma migrations to Supabase...' && npx prisma migrate deploy && echo 'Running database seeding...' && npm run db:seed && echo 'Migration and seeding completed!' "
+      sh -c " echo 'Running Prisma migrations...' && npx prisma migrate deploy && echo 'Running database seeding...' && npm run db:seed && echo 'Migration and seeding completed!' "
 
     profiles:
       - migration # Only runs when explicitly requested with --profile migration
@@ -103,3 +111,8 @@ networks:
   product-configurator-network:
     driver: bridge
     name: product-configurator-network
+
+volumes:
+  postgres_data:
+
+
