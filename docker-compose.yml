@@ -99,7 +99,7 @@ services:
       - product-configurator-network
 
     command: >
-      sh -c " echo 'Running Prisma migrations...' && npx prisma migrate deploy && echo 'Running database seeding...' && npm run db:seed && echo 'Migration and seeding completed!' "
+      sh -c " echo 'Pushing Prisma schema to database...' && npx prisma db push --accept-data-loss && echo 'Running database seeding...' && npm run db:seed && echo 'Migration and seeding completed!' "
 
     profiles:
       - migration # Only runs when explicitly requested with --profile migration

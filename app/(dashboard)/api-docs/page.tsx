@@ -86,6 +86,43 @@ export default function ApiDocsPage() {
             ]
         },
         {
+            id: "get-inquiry-consolidated",
+            name: "Consolidated BOQ (by Inquiry)",
+            method: "GET",
+            path: "/api/boq/inquiry/{inquiryId}/consolidated",
+            description: "Returns project data and materials aggregated across all assemblies. Ideal for procurement summaries.",
+            params: [
+                { name: "inquiryId", type: "integer", required: true, description: "CRM Inquiry ID" }
+            ],
+            response: {
+                project: { name: "NDC Jakarta", crmInquiryId: 4748, status: "PLANNING" },
+                consolidatedMaterials: {
+                    typical: [{ name: "LAMP", partNumber: "206010254", totalQuantity: 20, unit: "EA" }],
+                    installation: []
+                }
+            }
+        },
+        {
+            id: "get-inquiry-hierarki",
+            name: "Hierarchical BOQ (by Inquiry)",
+            method: "GET",
+            path: "/api/boq/inquiry/{inquiryId}/hierarki",
+            description: "Returns the detailed breakdown of assemblies and their component materials for the project.",
+            params: [
+                { name: "inquiryId", type: "integer", required: true, description: "CRM Inquiry ID" }
+            ],
+            response: {
+                project: { name: "NDC Jakarta", crmInquiryId: 4748 },
+                hierarchy: [
+                    {
+                        name: "Assembly X",
+                        quantity: 1,
+                        materials: [{ name: "LAMP", quantityPerAssembly: 20, totalQuantity: 20 }]
+                    }
+                ]
+            }
+        },
+        {
             id: "get-crm-inquiries",
             name: "Get CRM Inquiries",
             method: "GET",

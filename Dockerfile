@@ -59,6 +59,9 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
+# Copy Prisma schema
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
 # Generate Prisma client for production
 RUN npx prisma generate
 
@@ -68,7 +71,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy other necessary files
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
 COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 
