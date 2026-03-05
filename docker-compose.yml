@@ -40,11 +40,11 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "5000:5000" # Expose on port 5000
+      - "3200:3200" # Expose on port 3200
     environment:
       # Application Configuration
       - NODE_ENV=production
-      - PORT=5000
+      - PORT=3200
       - NEXT_PUBLIC_APP_NAME=Product Configurator - Management System
 
       # Database Configuration
@@ -70,7 +70,7 @@ services:
 
     # Health check for the application
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:3200/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
