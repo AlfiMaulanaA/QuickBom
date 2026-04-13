@@ -1,0 +1,63 @@
+{
+  "categories": [
+    { "code": "MECH", "name": "Mechanical", "sortOrder": 1 },
+    { "code": "ELEC", "name": "Electrical", "sortOrder": 2 },
+    { "code": "ELX",  "name": "Electronics", "sortOrder": 3 },
+    { "code": "SVC",  "name": "Services",    "sortOrder": 4 }
+  ],
+  "group":    { "code": "FREE_STANDING", "name": "Free Standing", "sortOrder": 1, "isDefault": true },
+  "subGroup": { "code": "RCP",           "name": "Rack Cabinet Panel", "sortOrder": 1 },
+  "product": {
+    "code": "RCP-SCH-42U",
+    "name": "RCP Schneider NetShelter 42U",
+    "brand": "Schneider",
+    "basePrice": 0,
+    "dimensionsJson": { "H": 2000, "W": 800, "D": 1000, "kW": 6 },
+    "inputSpecJson": [
+      { "key": "rackU",    "type": "int",   "min": 6, "max": 48, "default": 42 },
+      { "key": "kW",       "type": "float", "min": 1, "max": 40, "default": 6 },
+      { "key": "offshore", "type": "bool",                        "default": false }
+    ]
+  },
+  "components": [
+    { "itemCode": "MEC-FRM-42U",    "name": "Schneider NetShelter 42U frame", "uom": "EA",  "category": "MECH", "currentUnitCost": 18000, "currentListPrice": 24000, "manufacturer": "Schneider" },
+    { "itemCode": "MEC-SIDE-PAIR",  "name": "Side panels (pair)",             "uom": "SET", "category": "MECH", "currentUnitCost": 2100,  "currentListPrice": 3200 },
+    { "itemCode": "MEC-CBL-ENTRY",  "name": "Top/bottom cable entry",         "uom": "SET", "category": "MECH", "currentUnitCost": 900,   "currentListPrice": 1400 },
+    { "itemCode": "MEC-BP-1U",      "name": "Blanking panel 1U",              "uom": "EA",  "category": "MECH", "currentUnitCost": 220,   "currentListPrice": 350 },
+    { "itemCode": "MEC-VCM",        "name": "Vertical cable manager",         "uom": "EA",  "category": "MECH", "currentUnitCost": 1800,  "currentListPrice": 2800 },
+    { "itemCode": "MEC-PACK-STD",   "name": "Standard packing",               "uom": "LOT", "category": "MECH", "currentUnitCost": 300,   "currentListPrice": 500 },
+    { "itemCode": "MEC-PACK-MAR",   "name": "Marine packing",                 "uom": "LOT", "category": "MECH", "currentUnitCost": 550,   "currentListPrice": 800 },
+    { "itemCode": "ELE-PDU-32A",    "name": "PDU 32A metered",                "uom": "EA",  "category": "ELEC", "currentUnitCost": 8500,  "currentListPrice": 12500 },
+    { "itemCode": "ELE-EARTH",      "name": "Earth/bonding kit",              "uom": "SET", "category": "ELEC", "currentUnitCost": 600,   "currentListPrice": 900 },
+    { "itemCode": "ELE-PATCH-CAT6", "name": "Cat6 patch cord",                "uom": "EA",  "category": "ELEC", "currentUnitCost": 180,   "currentListPrice": 250 },
+    { "itemCode": "ELX-SENSOR-TH",  "name": "Environmental sensor (temp/humidity)", "uom": "EA", "category": "ELX", "currentUnitCost": 3000, "currentListPrice": 4500 },
+    { "itemCode": "ELX-NETBOTZ-GW", "name": "NetBotz gateway",                "uom": "EA",  "category": "ELX",  "currentUnitCost": 9000,  "currentListPrice": 14000 },
+    { "itemCode": "ELX-KVM-8",      "name": "Rack KVM 8-port",                "uom": "EA",  "category": "ELX",  "currentUnitCost": 12000, "currentListPrice": 18000 },
+    { "itemCode": "SVC-QC",         "name": "Factory test & QC",              "uom": "LOT", "category": "SVC",  "currentUnitCost": 1500,  "currentListPrice": 2500, "isService": true },
+    { "itemCode": "SVC-INST-D1",    "name": "On-site installation (1 day)",   "uom": "DAY", "category": "SVC",  "currentUnitCost": 9000,  "currentListPrice": 22000, "isService": true },
+    { "itemCode": "SVC-AMC-Y1",     "name": "1-year AMC",                     "uom": "YR",  "category": "SVC",  "currentUnitCost": 5000,  "currentListPrice": 9000,  "isService": true }
+  ],
+  "mappings": [
+    { "itemCode": "MEC-FRM-42U",    "isMandatory": true,  "defaultQty": 1, "sortOrder": 1 },
+    { "itemCode": "MEC-SIDE-PAIR",  "isMandatory": true,  "defaultQty": 1, "sortOrder": 2 },
+    { "itemCode": "MEC-CBL-ENTRY",  "isMandatory": true,  "defaultQty": 1, "sortOrder": 3 },
+    { "itemCode": "MEC-PACK-STD",   "isMandatory": true,  "defaultQty": 1, "sortOrder": 4 },
+    { "itemCode": "ELE-PDU-32A",    "isMandatory": true,  "defaultQty": 1, "qtyFormula": "ceil(kW / 4)", "sortOrder": 5 },
+    { "itemCode": "ELE-EARTH",      "isMandatory": true,  "defaultQty": 1, "sortOrder": 6 },
+    { "itemCode": "ELX-SENSOR-TH",  "isMandatory": true,  "defaultQty": 1, "sortOrder": 7 },
+    { "itemCode": "SVC-QC",         "isMandatory": true,  "defaultQty": 1, "sortOrder": 8 },
+    { "itemCode": "MEC-BP-1U",      "isDefaultSelected": false, "defaultQty": 1, "qtyFormula": "ceil(rackU / 6)", "sortOrder": 9 },
+    { "itemCode": "MEC-VCM",        "isDefaultSelected": false, "defaultQty": 2, "sortOrder": 10 },
+    { "itemCode": "ELX-KVM-8",      "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 11 },
+    { "itemCode": "SVC-INST-D1",    "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 12 },
+    { "itemCode": "SVC-AMC-Y1",     "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 13 },
+    { "itemCode": "ELE-PATCH-CAT6", "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 14 },
+    { "itemCode": "ELX-NETBOTZ-GW", "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 15 },
+    { "itemCode": "MEC-PACK-MAR",   "isDefaultSelected": false, "defaultQty": 1, "sortOrder": 16 }
+  ],
+  "rules": [
+    { "source": "ELX-KVM-8",     "ruleType": "REQUIRES", "target": "ELE-PATCH-CAT6", "condition": null },
+    { "source": "ELX-SENSOR-TH", "ruleType": "SUGGESTS", "target": "ELX-NETBOTZ-GW", "condition": null },
+    { "source": "MEC-PACK-STD",  "ruleType": "REPLACES", "target": "MEC-PACK-MAR",   "condition": "offshore == true" }
+  ]
+}
