@@ -503,3 +503,108 @@ model ChatMessage {
 
   @@index([sessionId])
 }
+
+// =========================================================
+// PRODUCT CONFIGURATOR — SP1
+// =========================================================
+
+model ProductGroup {
+  id        Int               @id @default(autoincrement())
+  code      String            @unique
+  name      String
+  sortOrder Int               @default(0)
+  isDefault Boolean           @default(false)
+  subGroups ProductSubGroup[]
+}
+
+model ProductSubGroup {
+  id        Int          @id @default(autoincrement())
+  groupId   Int
+  group     ProductGroup @relation(fields: [groupId], references: [id])
+  code      String
+  name      String
+  sortOrder Int          @default(0)
+  products  Product[]
+
+  @@unique([groupId, code])
+}
+
+model ProductCategory {
+  id         Int                       @id @default(autoincrement())
+  code       String                    @unique // MECH | ELEC | ELX | SVC
+  name       String
+  sortOrder  Int                       @default(0)
+  components Component[]
+  mappings   ProductComponentMapping[]
+}
+
+model Product {
+  id             Int                       @id @default(autoincrement())
+  subGroupId     Int
+  subGroup       ProductSubGroup           @relation(fields: [subGroupId], references: [id])
+  code           String                    @unique
+  name           String
+  brand          String?
+  specJson       Json?
+  basePrice      Decimal                   @default(0)
+  dimensionsJson Json?
+  inputSpecJson  Json?
+  isActive       Boolean                   @default(true)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  mappings       ProductComponentMapping[]
+  rules          ComponentRule[]
+}
+
+model Component {
+  id               Int                       @id @default(autoincrement())
+  externalId       String?
+  itemCode         String                    @unique
+  name             String
+  description      String?
+  uom              String
+  manufacturer     String?
+  categoryId       Int
+  category         ProductCategory           @relation(fields: [categoryId], references: [id])
+  specJson         Json?
+  isService        Boolean                   @default(false)
+  currentUnitCost  Decimal                   @default(0)
+  currentListPrice Decimal                   @default(0)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  mappings         ProductComponentMapping[]
+  rulesFrom        ComponentRule[]           @relation("RuleSource")
+  rulesTo          ComponentRule[]           @relation("RuleTarget")
+}
+
+model ProductComponentMapping {
+  id                Int             @id @default(autoincrement())
+  productId         Int
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  componentId       Int
+  component         Component       @relation(fields: [componentId], references: [id])
+  categoryId        Int
+  category          ProductCategory @relation(fields: [categoryId], references: [id])
+  isMandatory       Boolean         @default(false)
+  isDefaultSelected Boolean         @default(false)
+  defaultQty        Decimal         @default(1)
+  qtyFormula        String?
+  minQty            Decimal?
+  maxQty            Decimal?
+  sortOrder         Int             @default(0)
+  remarks           String?
+
+  @@unique([productId, componentId])
+}
+
+model ComponentRule {
+  id                Int       @id @default(autoincrement())
+  productId         Int
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sourceComponentId Int
+  sourceComponent   Component @relation("RuleSource", fields: [sourceComponentId], references: [id])
+  ruleType          String // REQUIRES | EXCLUDES | REPLACES | SUGGESTS
+  targetComponentId Int
+  targetComponent   Component @relation("RuleTarget", fields: [targetComponentId], references: [id])
+  condition         String?
+}
