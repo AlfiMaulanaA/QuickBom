@@ -73,13 +73,15 @@ export function applyRules(
         const targetLine = lines.find(l => l.componentId === r.targetComponentId)
         if (!targetLine) continue
         if (USER_SOURCES.has(targetLine.source)) {
-          violations.push({
-            ruleId: r.id,
-            ruleType: 'EXCLUDES',
-            sourceComponentId: r.sourceComponentId,
-            targetComponentId: r.targetComponentId,
-            message: `Component ${r.targetComponentId} conflicts with ${r.sourceComponentId}`,
-          })
+          if (!violations.some(v => v.ruleId === r.id)) {
+            violations.push({
+              ruleId: r.id,
+              ruleType: 'EXCLUDES',
+              sourceComponentId: r.sourceComponentId,
+              targetComponentId: r.targetComponentId,
+              message: `Component ${r.targetComponentId} conflicts with ${r.sourceComponentId}`,
+            })
+          }
         } else {
           // Rule-added target: silently remove and mark changed so loop re-evaluates
           lines = lines.filter(l => l.componentId !== r.targetComponentId)

@@ -136,4 +136,16 @@ describe('applyRules — iteration and cycles', () => {
     const result = applyRules(lines, rules, {}, components)
     expect(result.violations.some(v => v.message.toLowerCase().includes('cycle') || v.message.toLowerCase().includes('converge'))).toBe(true)
   })
+
+  it('does not emit duplicate EXCLUDES violations across iterations', () => {
+    const lines = [line(1, 'A', 'OPTIONAL')]
+    const rules = [
+      rule({ id: 1, ruleType: 'REQUIRES', sourceComponentId: 1, targetComponentId: 2 }),
+      rule({ id: 2, ruleType: 'EXCLUDES', sourceComponentId: 2, targetComponentId: 1 }),
+    ]
+    const components = [comp(1, 'A'), comp(2, 'B')]
+    const result = applyRules(lines, rules, {}, components)
+    const excludesViolations = result.violations.filter(v => v.ruleType === 'EXCLUDES')
+    expect(excludesViolations).toHaveLength(1)
+  })
 })
