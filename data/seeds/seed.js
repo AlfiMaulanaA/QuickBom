@@ -12,6 +12,7 @@
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
 const fs = require('fs');
+const { seedConfigurator } = require('./seed-configurator');
 
 // Environment-aware database configuration
 const getDatabaseConfig = () => {
@@ -167,6 +168,7 @@ const SEEDERS = {
     'template-assembly-groups': { fn: seedTemplateAssemblyGroups, deps: ['templates', 'assembly-categories'] },
     'template-assembly-group-items': { fn: seedTemplateAssemblyGroupItems, deps: ['template-assembly-groups', 'assemblies'] },
     projects: { fn: seedProjects, deps: ['users', 'clients', 'templates'] },
+    configurator: { fn: seedConfigurator, deps: [] },
 };
 
 async function runSeeder(name, prisma, ran = new Set()) {
@@ -212,5 +214,5 @@ if (require.main === module) {
 module.exports = {
     seedUsers, seedClients, seedAssemblyCategories, seedAssemblies, seedAssemblyMaterials,
     seedAssemblyGroups, seedAssemblyGroupItems, seedTemplates, seedTemplateAssemblies,
-    seedTemplateAssemblyGroups, seedTemplateAssemblyGroupItems, seedProjects
+    seedTemplateAssemblyGroups, seedTemplateAssemblyGroupItems, seedProjects, seedConfigurator
 };
