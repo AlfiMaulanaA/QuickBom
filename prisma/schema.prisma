@@ -64,6 +64,7 @@ model User {
   // Relations
   createdProjects Project[] // Projects created by this user
   chatSessions    ChatSession[]
+  configurations  Configuration[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -554,6 +555,7 @@ model Product {
   updatedAt      DateTime                  @updatedAt
   mappings       ProductComponentMapping[]
   rules          ComponentRule[]
+  configurations Configuration[]
 }
 
 model Component {
@@ -607,4 +609,44 @@ model ComponentRule {
   targetComponentId Int
   targetComponent   Component @relation("RuleTarget", fields: [targetComponentId], references: [id])
   condition         String?
+}
+
+model Configuration {
+  id              Int                 @id @default(autoincrement())
+  productId       Int
+  product         Product             @relation(fields: [productId], references: [id])
+  userId          String
+  user            User                @relation(fields: [userId], references: [id])
+  name            String?
+  inputsJson      Json                @default("{}")
+  selectionsJson  Json                @default("[]")
+  adjustmentsJson Json                @default("[]")
+  status          String              @default("DRAFT")
+  quotedAt        DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  lines           ConfigurationLine[]
+
+  @@index([userId, status])
+  @@index([productId])
+}
+
+model ConfigurationLine {
+  id              Int           @id @default(autoincrement())
+  configurationId Int
+  configuration   Configuration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  componentId     Int?
+  itemCode        String
+  name            String
+  categoryCode    String
+  uom             String
+  qty             Decimal
+  unitCost        Decimal
+  unitListPrice   Decimal
+  lineTotal       Decimal
+  source          String
+  isService       Boolean       @default(false)
+  formulaUsed     String?
+  remarks         String?
+  sortOrder       Int           @default(0)
 }
