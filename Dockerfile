@@ -26,10 +26,11 @@ RUN npx prisma generate
 # Copy the rest of the application
 COPY . .
 
-# Build the application (Next.js automatically detects output: 'standalone')
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres" \
-  DIRECT_URL="postgresql://postgres:postgres@localhost:5432/postgres" \
-  JWT_SECRET="placeholder_secret" \
+# Build the application with dummy env vars for build-time only
+# These are not used at runtime - real values come from docker-compose environment
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost/dummy" \
+  DIRECT_URL="postgresql://dummy:dummy@localhost/dummy" \
+  JWT_SECRET="dummy-build-secret-not-used-in-production" \
   npm run build
 
 # -----------------------------------------------------------------------------

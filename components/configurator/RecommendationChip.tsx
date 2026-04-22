@@ -2,7 +2,8 @@
 import { useConfiguratorStore } from '@/lib/configurator/store'
 
 export function RecommendationChip() {
-  const recs = useConfiguratorStore(s => s.lastPriceResult?.recommendations ?? [])
+  const lastPriceResult = useConfiguratorStore(s => s.lastPriceResult)
+  const recs = lastPriceResult?.recommendations ?? []
   const toggle = useConfiguratorStore(s => s.toggleSelection)
   if (recs.length === 0) return null
   return (

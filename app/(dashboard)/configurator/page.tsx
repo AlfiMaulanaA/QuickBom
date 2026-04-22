@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { ProductPicker } from '@/components/configurator/ProductPicker'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ConfiguratorPage() {
   const products = await prisma.product.findMany({
     where: { isActive: true },

@@ -48,6 +48,7 @@ services:
       - NEXT_PUBLIC_APP_NAME=Product Configurator - Management System
 
       # Database Configuration
+      # Note: Use port 5432 (internal container port) not 5435 (external mapping)
       - DATABASE_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom?schema=public
       - DIRECT_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom
 
@@ -88,6 +89,7 @@ services:
         condition: service_healthy
     environment:
       # Database Configuration
+      # Note: Use port 5432 (internal container port) not 5435 (external mapping)
       - DATABASE_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom?schema=public
       - DIRECT_URL=postgresql://quickbom:quickbom_password@db:5432/quickbom
       - NODE_ENV=production
@@ -114,5 +116,3 @@ networks:
 
 volumes:
   postgres_data:
-
-

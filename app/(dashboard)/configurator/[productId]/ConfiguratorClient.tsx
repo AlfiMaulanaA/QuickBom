@@ -117,7 +117,8 @@ export function ConfiguratorClient({ product, draft }: { product: any; draft: an
 function GenerateQuoteButton() {
   const configurationId = useConfiguratorStore(s => s.configurationId)
   const status = useConfiguratorStore(s => s.status)
-  const violations = useConfiguratorStore(s => s.lastPriceResult?.ruleViolations ?? [])
+  const lastPriceResult = useConfiguratorStore(s => s.lastPriceResult)
+  const violations = lastPriceResult?.ruleViolations ?? []
   const disabled =
     !configurationId || status !== 'DRAFT' || violations.some(v => v.ruleType !== 'SUGGESTS')
   return (

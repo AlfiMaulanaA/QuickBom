@@ -2,7 +2,8 @@
 import { useConfiguratorStore } from '@/lib/configurator/store'
 
 export function RuleViolationBanner() {
-  const violations = useConfiguratorStore(s => s.lastPriceResult?.ruleViolations ?? [])
+  const lastPriceResult = useConfiguratorStore(s => s.lastPriceResult)
+  const violations = lastPriceResult?.ruleViolations ?? []
   const nonSuggests = violations.filter(v => v.ruleType !== 'SUGGESTS')
   if (nonSuggests.length === 0) return null
   return (
